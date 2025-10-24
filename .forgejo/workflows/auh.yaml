@@ -1,0 +1,15 @@
+on: [push]
+jobs:
+  build-auh:
+    runs-on: docker
+    steps:
+      - run: echo All good!
+      - uses: actions/checkout@v4
+        with:
+          repository: 'tgamblin/openembedded-core'
+          path: 'openembedded-core'
+      - uses: actions/checkout@v4
+        with:
+          repository: 'tgamblin/bitbake'
+          path: 'openembedded-core/bitbake'
+      - run: ls -la && pwd
