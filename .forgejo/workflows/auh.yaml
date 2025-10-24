@@ -2,14 +2,27 @@ on: [push]
 jobs:
   build-auh:
     runs-on: docker
+    container:
+      image: tgamblin/yocto-builder
+      volumes:
+        - /buildcache:/buildcache
     steps:
-      - run: echo All good!
-      - uses: actions/checkout@v4
-        with:
-          repository: 'tgamblin/openembedded-core'
-          path: 'openembedded-core'
-      - uses: actions/checkout@v4
-        with:
-          repository: 'tgamblin/bitbake'
-          path: 'openembedded-core/bitbake'
-      - run: ls -la && pwd
+      - run: |
+          ls -la && pwd
+          id -u && id -g
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
+          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
+          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
+          git clone https://git.lab.ecocode.site/tgamblin/auto-upgrade-helper.git openembedded-core/build/auto-upgrade-helper
+          git config --global user.name "tgamblin AUH"
+          git config --global user.email "auh@git.lab.ecocode.site"
+          cd openembedded-core && source oe-init-build-env
+          mkdir -p upgrade-helper
+          cp ../../configs/upgrade-helper.conf upgrade-helper
+          ls -la && pwd
+          ls -l /buildcache
+          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
+          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          ./auto-upgrade-helper/upgrade-helper.py all
