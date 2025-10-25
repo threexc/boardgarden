@@ -1,0 +1,21 @@
+on:
+  schedule:
+    - cron: '0 1 * * *'
+jobs:
+  build-auh:
+    runs-on: docker
+    container:
+      image: tgamblin/yocto-builder
+    steps:
+      - run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
+          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
+          cd openembedded-core && source oe-init-build-env
+          bitbake-layers add-layer ../meta-selftest
+          echo "BB_SERVER_TIMEOUT = \"60\"" >> conf/local.conf
+          cd ..
+          python3 -m venv venv
+          pip install -r meta/lib/patchtest/requirements.txt
+          ./meta/lib/patchtest/selftest/selftest
