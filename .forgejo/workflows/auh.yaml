@@ -5,11 +5,9 @@ jobs:
     container:
       image: tgamblin/yocto-builder
       volumes:
-        - /buildcache:/buildcache
+        - /auto/runner/buildcache:/buildcache
     steps:
       - run: |
-          ls -la && pwd
-          id -u && id -g
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
           git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
@@ -21,8 +19,6 @@ jobs:
           cd openembedded-core && source oe-init-build-env
           mkdir -p upgrade-helper
           cp ../../configs/upgrade-helper.conf upgrade-helper
-          ls -la && pwd
-          ls -l /buildcache
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
           ./auto-upgrade-helper/upgrade-helper.py all
