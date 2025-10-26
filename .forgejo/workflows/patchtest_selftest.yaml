@@ -17,5 +17,6 @@ jobs:
           echo "BB_SERVER_TIMEOUT = \"60\"" >> conf/local.conf
           cd ..
           python3 -m venv venv
+          source venv/bin/activate
           pip install -r meta/lib/patchtest/requirements.txt
           ./meta/lib/patchtest/selftest/selftest
