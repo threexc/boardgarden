@@ -9,7 +9,8 @@ jobs:
       volumes:
         - /auto/runner/buildcache:/buildcache
     steps:
-      - run: |
+      - name: run AUH
+        run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
           git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
@@ -24,3 +25,9 @@ jobs:
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
           ./auto-upgrade-helper/upgrade-helper.py all
+
+      - name: upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: AUH outputs
+          path: openembedded-core/build/upgrade-helper
