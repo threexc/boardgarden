@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: '0 3 * * 0'
+    - cron: '15 1 * * *'
   workflow_dispatch:
 jobs:
   check-meta-riscv:
