@@ -1,0 +1,25 @@
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+jobs:
+  check-meta-riscv:
+    runs-on: docker
+    container:
+      image: tgamblin/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+    steps:
+      - name: run yocto-check-layer-wrapper
+        run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
+          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
+          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
+          git clone https://git.lab.ecocode.site/tgamblin/meta-riscv.git
+          cd openembedded-core && source oe-init-build-env
+          bitbake-layers add-layer ../../meta-riscv
+          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
+          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          yocto-check-layer-wrapper ../../meta-riscv
