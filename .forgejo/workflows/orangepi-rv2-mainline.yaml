@@ -29,6 +29,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          scp -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/Image
-          scp -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/k1-orangepi-rv2.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/k1-orangepi-rv2.dtb
+          scp -v -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/Image
+          scp -v -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/k1-orangepi-rv2.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/k1-orangepi-rv2.dtb
 
