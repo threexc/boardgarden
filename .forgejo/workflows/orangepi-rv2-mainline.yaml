@@ -1,0 +1,34 @@
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+jobs:
+  build-orangepi-rv2-image:
+    runs-on: docker
+    container:
+      image: tgamblin/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+    steps:
+      - name: build core-image-full-cmdline
+        run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
+          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
+          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
+          git clone https://git.lab.ecocode.site/tgamblin/meta-riscv.git
+          cd openembedded-core && source oe-init-build-env
+          bitbake-layers add-layer ../../meta-riscv
+          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
+          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          MACHINE=orangepi-rv2-mainline bitbake core-image-full-cmdline
+
+      - name: copy kernel and dtb to TFTP server
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          scp -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/Image
+          scp -o StrictHostKeyChecking=no openembedded-core/build/tmp/deploy/images/orangepi-rv2-mainline/k1-orangepi-rv2.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/orangepi-rv2-mainline/k1-orangepi-rv2.dtb
+
