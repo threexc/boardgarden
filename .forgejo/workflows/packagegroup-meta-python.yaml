@@ -23,4 +23,4 @@ jobs:
           bitbake-layers add-layer ../../meta-openembedded/meta-python
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
-          bitbake packagegroup-meta-python
+          bitbake -k packagegroup-meta-python
