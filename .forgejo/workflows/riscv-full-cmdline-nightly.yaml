@@ -3,11 +3,11 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 jobs:
-  build-riscv-images:
+  build-riscv-image:
     runs-on: docker
     strategy:
       matrix:
-        machine: ['orangepi-rv2-mainline', 'bananapi-f3']
+        machine: ['orangepi-rv2-mainline', 'bananapi-f3', 'nezha-allwinner-d1']
     container:
       image: tgamblin/yocto-builder
       volumes:
