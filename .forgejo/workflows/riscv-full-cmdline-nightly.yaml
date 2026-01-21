@@ -40,3 +40,38 @@ jobs:
         env:
           RISCV_MACHINE: ${{matrix.machine}}
 
+  test-board-boot:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: ['orangepi-rv2-mainline']
+    container:
+      image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101
+    steps:
+      - name: clone labgrid-power-up
+        run: |
+          git clone https://git.lab.ecocode.site/tgamblin/labgrid-power-up.git
+
+      - name: set up virtualenv
+        run: |
+          cd labgrid-power-up
+          python3 -m venv venv && source venv/bin/activate
+          pip install --upgrade pip
+          pip install labgrid pytest pytest-html
+
+      - name: run labgrid-client
+        run: |
+          cd labgrid-power-up
+          source venv/bin/activate
+          eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          echo $LG_TOKEN
+          labgrid-client wait
+          labgrid-client -p + lock
+          labgrid-client -p + show
+          BOARD="${RISCV_MACHINE%-mainline}"
+          pytest -v --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py
+          labgrid-client -p + release
+        env:
+          LG_COORDINATOR: ecogrid
+          RISCV_MACHINE: ${{matrix.machine}}
