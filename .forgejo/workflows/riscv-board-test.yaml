@@ -13,7 +13,7 @@ jobs:
       options: --add-host ecogrid:192.168.40.101 --add-host lg-exporter-1:192.168.40.176
     steps:
       - name: set up keys
-        working-directory: /home/lg-operator
+        working-directory: /home/labgrid
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -22,7 +22,7 @@ jobs:
           ssh-keyscan 100.91.92.1 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: test SSH connection
-        working-directory: /home/lg-operator
+        working-directory: /home/labgrid
         run: |
           # Check if the key is encrypted
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
@@ -37,19 +37,19 @@ jobs:
           ssh -v labgrid@lg-exporter-1 "echo SSH connection successful"
 
       - name: clone labgrid-power-up
-        working-directory: /home/lg-operator
+        working-directory: /home/labgrid
         run: |
           git clone https://git.lab.ecocode.site/tgamblin/labgrid-power-up.git
 
       - name: set up virtualenv
-        working-directory: /home/lg-operator/labgrid-power-up
+        working-directory: /home/labgrid/labgrid-power-up
         run: |
           python3 -m venv venv && source venv/bin/activate
           pip install --upgrade pip
           pip install labgrid pytest pytest-html
 
       - name: run labgrid-client
-        working-directory: /home/lg-operator/labgrid-power-up
+        working-directory: /home/labgrid/labgrid-power-up
         run: |
           source venv/bin/activate
           eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
