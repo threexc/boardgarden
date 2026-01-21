@@ -35,8 +35,9 @@ jobs:
           echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
-          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/${RISCV_MACHINE}/Image
-          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${RISCV_MACHINE}/
+          BOARD="${RISCV_MACHINE%-mainline}"
+          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/Image
+          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
         env:
           RISCV_MACHINE: ${{matrix.machine}}
 
