@@ -19,6 +19,8 @@ jobs:
           echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.LG_EXPORTER_1_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
+          chmod 644 ~/.ssh/known_hosts
+          ssh-keyscan 100.91.92.1 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: test SSH connection
         working-directory: /home/lg-operator
