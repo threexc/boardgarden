@@ -1,0 +1,59 @@
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+jobs:
+  test-board-boot:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: ['orangepi-rv2-mainline']
+    container:
+      image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101 --add-host lg-exporter-1:192.168.40.176
+    steps:
+      - name: set up keys
+        working-directory: /home/lg-operator
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.LG_EXPORTER_1_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: test SSH connection
+        working-directory: /home/lg-operator
+        run: |
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@lg-exporter-1 "echo SSH connection successful"
+
+      - name: clone labgrid-power-up
+        working-directory: /home/lg-operator
+        run: |
+          git clone https://git.lab.ecocode.site/tgamblin/labgrid-power-up.git
+
+      - name: set up virtualenv
+        working-directory: /home/lg-operator/labgrid-power-up
+        run: |
+          python3 -m venv venv && source venv/bin/activate
+          pip install --upgrade pip
+          pip install labgrid pytest pytest-html
+
+      - name: run labgrid-client
+        working-directory: /home/lg-operator/labgrid-power-up
+        run: |
+          source venv/bin/activate
+          eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          echo $LG_TOKEN
+          labgrid-client wait
+          labgrid-client -p + lock
+          labgrid-client -p + show
+          BOARD="${RISCV_MACHINE%-mainline}"
+          pytest -v --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py
+          labgrid-client -p + release
+        env:
+          LG_COORDINATOR: ecogrid
+          RISCV_MACHINE: ${{matrix.machine}}
