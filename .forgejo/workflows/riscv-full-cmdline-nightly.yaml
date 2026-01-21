@@ -58,6 +58,16 @@ jobs:
           echo "${{ secrets.LG_EXPORTER_1_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
 
+      - name: test SSH connection
+        working-directory: /home/lg-operator
+        run: |
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@lg-exporter-1 "echo SSH connection successful"
+
       - name: clone labgrid-power-up
         working-directory: /home/lg-operator
         run: |
