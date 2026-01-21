@@ -25,6 +25,11 @@ jobs:
       - name: test SSH connection
         working-directory: /home/lg-operator
         run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@lg-exporter-1 "echo SSH connection successful"
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
