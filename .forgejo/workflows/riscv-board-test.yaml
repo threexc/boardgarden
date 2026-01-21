@@ -58,7 +58,7 @@ jobs:
           labgrid-client -p + lock
           labgrid-client -p + show
           BOARD="${RISCV_MACHINE%-mainline}"
-          pytest -v --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py
+          pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py
           labgrid-client -p + release
         env:
           LG_COORDINATOR: ecogrid
