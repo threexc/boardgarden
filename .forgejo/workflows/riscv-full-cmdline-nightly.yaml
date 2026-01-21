@@ -50,6 +50,13 @@ jobs:
       image: tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101
     steps:
+      - name: set up keys
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.LG_EXPORTER_1_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+
       - name: clone labgrid-power-up
         run: |
           git clone https://git.lab.ecocode.site/tgamblin/labgrid-power-up.git
