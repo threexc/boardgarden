@@ -39,7 +39,7 @@ jobs:
       - name: clone labgrid-power-up
         working-directory: /home/labgrid
         run: |
-          git clone https://git.lab.ecocode.site/tgamblin/labgrid-power-up.git
+          git clone -b rv2-fix https://github.com/threexc/labgrid-power-up.git
 
       - name: set up virtualenv
         working-directory: /home/labgrid/labgrid-power-up
