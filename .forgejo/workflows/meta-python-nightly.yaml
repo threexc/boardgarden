@@ -19,11 +19,14 @@ jobs:
           git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
           git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
           git clone https://git.lab.ecocode.site/tgamblin/meta-openembedded.git
+          git clone https://git.lab.ecocode.site/tgamblin/meta-yocto.git
           cd openembedded-core && source oe-init-build-env
+          bitbake-layers add-layer ../../meta-yocto/meta-poky
           bitbake-layers add-layer ../../meta-openembedded/meta-oe
           bitbake-layers add-layer ../../meta-openembedded/meta-python
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          echo "DISTRO = \"poky\"" >> conf/local.conf
           bitbake -k packagegroup-meta-python
         continue-on-error: true
 
