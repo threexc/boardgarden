@@ -36,8 +36,8 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
           BOARD="${RISCV_MACHINE%-mainline}"
-          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/Image
-          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          scp openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/Image auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/Image
+          rsync -avz --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
         env:
           RISCV_MACHINE: ${{matrix.machine}}
