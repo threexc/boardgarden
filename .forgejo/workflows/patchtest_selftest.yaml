@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: '15 1 * * *'
+    - cron: '15 3 * * *'
 jobs:
   build-auh:
     runs-on: docker
