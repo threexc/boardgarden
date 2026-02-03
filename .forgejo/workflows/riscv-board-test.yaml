@@ -46,7 +46,9 @@ jobs:
         run: |
           python3 -m venv venv && source venv/bin/activate
           pip install --upgrade pip
-          pip install labgrid pytest pytest-html
+          pip install pytest pytest-html
+          git clone https://github.com/threexc/labgrid.git -b tgamblin/strip-uboot-timestamps
+          pip install ./labgrid
 
       - name: run labgrid-client
         working-directory: /home/labgrid/labgrid-power-up
