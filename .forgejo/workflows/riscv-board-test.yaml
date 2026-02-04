@@ -39,7 +39,7 @@ jobs:
       - name: clone labgrid-power-up
         working-directory: /home/labgrid
         run: |
-          git clone -b rv2-fix https://github.com/threexc/labgrid-power-up.git
+          git clone https://github.com/threexc/labgrid-power-up.git
 
       - name: set up virtualenv
         working-directory: /home/labgrid/labgrid-power-up
@@ -60,18 +60,14 @@ jobs:
           labgrid-client -p + lock
           labgrid-client -p + show
           BOARD="${RISCV_MACHINE%-mainline}"
-          for i in {1..3}; do
-            echo "pytest attempt $i of 3"
-            if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
-              echo "Tests passed on attempt $i"
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying..."
-            sleep 5
-          done
+          if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
+            echo "Tests passed"
+            exit 0
+          fi
           echo "All pytest attempts failed"
           labgrid-client -p + release
           exit 1
         env:
           LG_COORDINATOR: ecogrid
           RISCV_MACHINE: ${{matrix.machine}}
+          VERSION: 6.19
