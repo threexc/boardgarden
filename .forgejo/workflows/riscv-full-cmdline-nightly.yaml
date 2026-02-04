@@ -41,3 +41,71 @@ jobs:
           rsync -avz --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
         env:
           RISCV_MACHINE: ${{matrix.machine}}
+  test-board-boot:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: ['orangepi-rv2-mainline']
+    container:
+      image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101 --add-host lg-exporter-1:192.168.40.176
+    steps:
+      - name: set up keys
+        working-directory: /home/labgrid
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan lg-exporter-1 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.91.92.1 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@lg-exporter-1 "echo SSH connection successful"
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@lg-exporter-1 "echo SSH connection successful"
+
+      - name: clone labgrid-power-up
+        working-directory: /home/labgrid
+        run: |
+          git clone https://github.com/threexc/labgrid-power-up.git
+
+      - name: set up virtualenv
+        working-directory: /home/labgrid/labgrid-power-up
+        run: |
+          python3 -m venv venv && source venv/bin/activate
+          pip install --upgrade pip
+          pip install pytest pytest-html
+          git clone https://github.com/threexc/labgrid.git -b tgamblin/strip-uboot-timestamps
+          pip install ./labgrid
+
+      - name: run labgrid-client
+        working-directory: /home/labgrid/labgrid-power-up
+        run: |
+          source venv/bin/activate
+          eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          echo $LG_TOKEN
+          labgrid-client wait
+          labgrid-client -p + lock
+          labgrid-client -p + show
+          BOARD="${RISCV_MACHINE%-mainline}"
+          if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
+            echo "Tests passed"
+            exit 0
+          fi
+          echo "All pytest attempts failed"
+          labgrid-client -p + release
+          exit 1
+        env:
+          LG_COORDINATOR: ecogrid
+          RISCV_MACHINE: ${{matrix.machine}}
+          VERSION: 6.19
