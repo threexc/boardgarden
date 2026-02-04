@@ -98,13 +98,17 @@ jobs:
           labgrid-client -p + lock
           labgrid-client -p + show
           BOARD="${RISCV_MACHINE%-mainline}"
+          EXIT_CODE=0
+
           if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
-            echo "Tests passed"
-            exit 0
+            echo "Tests passed. Releasing reservation"
+          else
+            echo "All pytest attempts failed"
+            EXIT_CODE=1
           fi
-          echo "All pytest attempts failed"
+
           labgrid-client -p + release
-          exit 1
+          exit $EXIT_CODE
         env:
           LG_COORDINATOR: ecogrid
           RISCV_MACHINE: ${{matrix.machine}}
