@@ -10,11 +10,13 @@ jobs:
       - run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
+          git config --global user.email "patchtest@ecocode.ca"
+          git.config --global user.name "patchtest"
           git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
           git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
           cd openembedded-core && source oe-init-build-env
           bitbake-layers add-layer ../meta-selftest
-          echo "BB_SERVER_TIMEOUT = \"60\"" >> conf/local.conf
+          echo "BB_SERVER_TIMEOUT = \"180\"" >> conf/local.conf
           cd ..
           python3 -m venv venv
           source venv/bin/activate
