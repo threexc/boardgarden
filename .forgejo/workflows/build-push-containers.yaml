@@ -1,5 +1,10 @@
 name: Build and Push Container Images
-on: [ push ]
+on:
+  push:
+    paths:
+      - 'dockerfiles/**'
+  schedule:
+    - cron: '45 1 * * *'
 
 jobs:
   build-yocto-builder:
