@@ -5,6 +5,7 @@ on:
       - 'dockerfiles/**'
   schedule:
     - cron: '45 1 * * *'
+  workflow_dispatch:
 
 jobs:
   build-yocto-builder:
