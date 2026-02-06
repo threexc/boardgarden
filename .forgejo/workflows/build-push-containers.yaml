@@ -9,7 +9,7 @@ on:
 jobs:
   build-yocto-builder:
     name: Build and push image
-    runs-on: ubuntu-latest
+    runs-on: docker
 
     steps:
     - name: Checkout
