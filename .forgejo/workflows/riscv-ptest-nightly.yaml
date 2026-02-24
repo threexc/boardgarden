@@ -1,0 +1,100 @@
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+jobs:
+  build-riscv-image:
+    runs-on: docker
+    strategy:
+      matrix:
+        package: ['python3-cryptography']
+    container:
+      image: tgamblin/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+    steps:
+      - name: build core-image-ptest image
+        working-directory: /home/yoctouser/yocto-build
+        run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
+          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
+          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
+          git clone https://git.lab.ecocode.site/tgamblin/meta-yocto.git
+          cd openembedded-core && source oe-init-build-env
+          bitbake-layers add-layer ../../meta-yocto/meta-poky
+          bitbake-layers add-layer ../../meta-yocto/meta-yocto-bsp
+          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
+          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          echo "IMAGE_FSTYPES += \" ext4\"" >> conf/local.conf
+          echo "DISTRO = \"poky\"" >> conf/local.conf
+          echo "EXTRA_IMAGE_FEATURES ?= \"allow-empty-password empty-root-password allow-root-login\"" >> conf/local.conf
+          MACHINE=qemuriscv64 bitbake core-image-ptest-${PTEST_PACKAGE}
+        env:
+          PTEST_PACKAGE: ${{ matrix.package }}
+      - name: Archive qemuriscv64 bios
+        uses: actions/upload-artifact@v3
+        with:
+          name: ptest_image_bios_${{ matrix.package }}
+          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
+      - name: Archive qemuriscv64 kernel
+        uses: actions/upload-artifact@v3
+        with:
+          name: ptest_image_kernel_${{ matrix.package }}
+          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/Image
+      - name: Archive qemuriscv64 ext4 rootfs
+        uses: actions/upload-artifact@v3
+        with:
+          name: ptest_image_ext4_${{ matrix.package }}
+          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
+
+  run-ptests:
+    runs-on: docker
+    strategy:
+      matrix:
+        package: ['python3-cryptography']
+    container:
+      image: tgamblin/lg-operator
+    steps:
+      - name: Download qemuriscv64 bios
+        uses: actions/download-artifact@v3
+        with:
+          name: ptest_image_bios_${{ matrix.package }}
+          path: /home/labgrid/bios_download
+      - name: Rename bios
+        run: |
+          mv /home/labgrid/bios_download/fw_jump.elf /home/labgrid/fw_jump.elf
+      - name: Download qemuriscv64 kernel
+        uses: actions/download-artifact@v3
+        with:
+          name: ptest_image_kernel_${{ matrix.package }}
+          path: /home/labgrid/kernel_download
+      - name: Rename kernel
+        run: |
+          mv /home/labgrid/kernel_download/Image /home/labgrid/Image
+      - name: Download qemuriscv64 ext4 rootfs
+        uses: actions/download-artifact@v3
+        with:
+          name: ptest_image_ext4_${{ matrix.package }}
+          path: /home/labgrid/ext4_download
+      - name: Rename ext4 image
+        run: |
+          mv /home/labgrid/ext4_download/*.ext4 /home/labgrid/ptest_image.ext4
+      - name: clone labgrid-power-up
+        working-directory: /home/labgrid
+        run: |
+          git clone -b qemuriscv64 https://github.com/threexc/labgrid-power-up.git
+
+      - name: set up virtualenv
+        working-directory: /home/labgrid/labgrid-power-up
+        run: |
+          python3 -m venv venv && source venv/bin/activate
+          pip install --upgrade pip
+          pip install labgrid pytest pytest-html
+
+      - name: run labgrid-client
+        working-directory: /home/labgrid/labgrid-power-up
+        run: |
+          source venv/bin/activate
+          pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/qemuriscv64/env.yaml boardfarm/qemuriscv64/tests/test_boot.py
