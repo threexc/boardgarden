@@ -84,7 +84,7 @@ jobs:
       - name: clone labgrid-power-up
         working-directory: /home/labgrid
         run: |
-          git clone -b qemuriscv64 https://github.com/threexc/labgrid-power-up.git
+          git clone https://github.com/threexc/labgrid-power-up.git
 
       - name: set up virtualenv
         working-directory: /home/labgrid/labgrid-power-up
@@ -97,4 +97,4 @@ jobs:
         working-directory: /home/labgrid/labgrid-power-up
         run: |
           source venv/bin/activate
-          pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/qemuriscv64/env.yaml boardfarm/qemuriscv64/tests/test_boot.py
+          pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/qemuriscv64/env.yaml boardfarm/qemuriscv64/tests/test_ptests.py
