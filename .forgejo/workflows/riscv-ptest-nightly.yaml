@@ -7,7 +7,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        package: ['python3-cryptography']
+        package: ['python3-cryptography', 'coreutils']
     container:
       image: tgamblin/yocto-builder
       volumes:
@@ -53,7 +53,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        package: ['python3-cryptography']
+        package: ['python3-cryptography', 'coreutils']
     container:
       image: tgamblin/lg-operator
     steps:
