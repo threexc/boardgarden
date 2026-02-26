@@ -7,7 +7,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        package: ['bzip2', 'coreutils', 'gzip', 'python3-cryptography', 'xz']
+        package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
     container:
       image: tgamblin/yocto-builder
       volumes:
@@ -53,7 +53,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        package: ['bzip2', 'coreutils', 'gzip', 'python3-cryptography', 'xz']
+        package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
     container:
       image: tgamblin/lg-operator
     steps:
