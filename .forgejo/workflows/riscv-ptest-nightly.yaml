@@ -56,6 +56,7 @@ jobs:
         package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
     container:
       image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101
     steps:
       - name: Download qemuriscv64 bios
         uses: actions/download-artifact@v3
@@ -98,3 +99,20 @@ jobs:
         run: |
           source venv/bin/activate
           pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/qemuriscv64/env.yaml boardfarm/qemuriscv64/tests/test_ptests.py
+
+      - name: Setup SSH key
+        working-directory: /home/labgrid
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.REPORTER_SSH_KEY }}" >> ~/.ssh/id_rsa
+          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy report
+        env:
+          SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
+        run: |
+          REPORT_DIR="testreports/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+          ssh -o StrictHostKeyChecking=no reporter@ecogrid "mkdir -p /var/www/testreports/$REPORT_DIR"
+          rsync -av /home/labgrid/labgrid-power-up/report.html reporter@ecogrid:/var/www/testreports/$REPORT_DIR/
