@@ -8,9 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-yocto-builder:
+  build-container-images:
     name: Build and push image
     runs-on: docker
+    container:
+      image: tgamblin/container-builder
 
     steps:
     - name: Checkout
@@ -42,12 +44,32 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_TOKEN }}
 
-    - name: Build and push
+    - name: Build and push yocto-builder
       uses: docker/build-push-action@v5
       with:
-        context: ./dockerfiles/yocto-builder
+        context: ./dockerfiles
         file: ./dockerfiles/yocto-builder/Dockerfile
         push: true
         platforms: linux/amd64,linux/arm64,linux/riscv64
         tags: |
           git.lab.ecocode.site/tgamblin/yocto-builder:latest
+
+    - name: Build and push container-builder
+      uses: docker/build-push-action@v5
+      with:
+        context: ./dockerfiles
+        file: ./dockerfiles/container-builder/Dockerfile
+        push: true
+        platforms: linux/amd64,linux/arm64,linux/riscv64
+        tags: |
+          git.lab.ecocode.site/tgamblin/container-builder:latest
+
+    - name: Build and push lg-operator
+      uses: docker/build-push-action@v5
+      with:
+        context: ./dockerfiles
+        file: ./dockerfiles/labgrid-operator/Dockerfile
+        push: true
+        platforms: linux/amd64,linux/arm64,linux/riscv64
+        tags: |
+          git.lab.ecocode.site/tgamblin/lg-operator:latest
