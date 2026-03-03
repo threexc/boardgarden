@@ -15,11 +15,11 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://git.lab.ecocode.site/tgamblin/workflows.git .
-          git clone https://git.lab.ecocode.site/tgamblin/openembedded-core.git
-          git clone https://git.lab.ecocode.site/tgamblin/bitbake.git openembedded-core/bitbake
-          git clone https://git.lab.ecocode.site/tgamblin/meta-openembedded.git
-          git clone https://git.lab.ecocode.site/tgamblin/meta-yocto.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-openembedded.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-yocto.git
           cd openembedded-core && source oe-init-build-env
           bitbake-layers add-layer ../../meta-yocto/meta-poky
           bitbake-layers add-layer ../../meta-openembedded/meta-oe
