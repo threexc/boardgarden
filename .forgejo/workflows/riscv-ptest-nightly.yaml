@@ -56,7 +56,7 @@ jobs:
         package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
     container:
       image: tgamblin/lg-operator
-      options: --add-host ecogrid:192.168.40.101
+      options: --add-host ecogrid:192.168.40.101 ecovault:192.168.40.134
     steps:
       - name: Download qemuriscv64 bios
         uses: actions/download-artifact@v3
@@ -107,8 +107,8 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_KEY" >> ~/.ssh/id_rsa
-          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
-          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
           chmod 600 ~/.ssh/id_rsa
 
       - name: test SSH connection
@@ -118,16 +118,16 @@ jobs:
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
 
           # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecogrid "echo SSH connection successful" || true
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful" || true
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
           cat ~/.ssh/known_hosts
           echo "=== Testing SSH connection ==="
-          ssh -v reporter@ecogrid "echo SSH connection successful"
+          ssh -v reporter@ecovault "echo SSH connection successful"
 
       - name: Deploy report
         run: |
-          REPORT_DIR="testreports/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
-          ssh -o StrictHostKeyChecking=no reporter@ecogrid "mkdir -p /var/www/testreports/$REPORT_DIR"
-          rsync -av /home/labgrid/labgrid-power-up/report.html reporter@ecogrid:/var/www/testreports/$REPORT_DIR/
+          REPORT_DIR="yocto/oe-core/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+          ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/$REPORT_DIR"
+          rsync -av /home/labgrid/labgrid-power-up/report.html reporter@ecovault:/testresults/$REPORT_DIR/
