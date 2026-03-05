@@ -11,7 +11,7 @@ jobs:
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
           git config --global user.email "patchtest@ecocode.ca"
-          git.config --global user.name "patchtest"
+          git config --global user.name "patchtest"
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
           cd openembedded-core && source oe-init-build-env
