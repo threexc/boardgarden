@@ -107,6 +107,7 @@ jobs:
             EXIT_CODE=1
           fi
 
+          labgrid-client -p + -c boardfarm/$BOARD/$BOARD-client.yaml pw off
           labgrid-client -p + release
           exit $EXIT_CODE
         env:
