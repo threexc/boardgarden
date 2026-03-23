@@ -113,4 +113,4 @@ jobs:
         env:
           LG_COORDINATOR: ecogrid
           RISCV_MACHINE: ${{matrix.machine}}
-          VERSION: 6.19
+          VERSION: 7.0
