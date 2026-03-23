@@ -48,7 +48,7 @@ jobs:
         machine: ['orangepi-rv2-mainline']
     container:
       image: tgamblin/lg-operator
-      options: --add-host ecogrid:192.168.40.101 --add-host lg-exporter-1:192.168.40.176
+      options: --add-host ecogrid:192.168.40.101
     steps:
       - name: set up keys
         working-directory: /home/labgrid
@@ -56,8 +56,8 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan lg-exporter-1 >> ~/.ssh/known_hosts 2>/dev/null
-          ssh-keyscan 100.91.92.1 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: test SSH connection
         working-directory: /home/labgrid
@@ -66,13 +66,13 @@ jobs:
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
 
           # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@lg-exporter-1 "echo SSH connection successful"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@ecogrid "echo SSH connection successful"
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
           cat ~/.ssh/known_hosts
           echo "=== Testing SSH connection ==="
-          ssh -v labgrid@lg-exporter-1 "echo SSH connection successful"
+          ssh -v labgrid@ecogrid "echo SSH connection successful"
 
       - name: clone labgrid-power-up
         working-directory: /home/labgrid
