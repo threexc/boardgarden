@@ -45,7 +45,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        machine: ['orangepi-rv2-mainline']
+        machine: ['muse-pi-pro', 'orangepi-rv2-mainline']
     container:
       image: tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101
