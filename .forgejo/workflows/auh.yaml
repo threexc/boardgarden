@@ -25,6 +25,7 @@ jobs:
           cp ../../configs/upgrade-helper.conf upgrade-helper
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          echo "BB_HASHSERVE_DB_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
           ./auto-upgrade-helper/upgrade-helper.py all
 
       - name: upload outputs

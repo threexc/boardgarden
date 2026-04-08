@@ -27,6 +27,7 @@ jobs:
           bitbake-layers add-layer ../../meta-yocto/meta-yocto-bsp
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
+          echo "BB_HASHSERVE_DB_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
           echo "IMAGE_FSTYPES += \" ext4\"" >> conf/local.conf
           echo "DISTRO = \"poky\"" >> conf/local.conf
           echo "EXTRA_IMAGE_FEATURES ?= \"allow-empty-password empty-root-password allow-root-login\"" >> conf/local.conf
