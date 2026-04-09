@@ -29,7 +29,7 @@ jobs:
           ./auto-upgrade-helper/upgrade-helper.py all
 
       - name: upload outputs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: AUH outputs
           path: openembedded-core/build/upgrade-helper
