@@ -94,21 +94,23 @@ jobs:
         run: |
           source venv/bin/activate
           eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          BOARD="${RISCV_MACHINE%-mainline}"
+          LG_PLACE="bf-${BOARD}"
+          echo $LG_PLACE
           echo $LG_TOKEN
           labgrid-client wait
           labgrid-client -p + lock
           labgrid-client -p + show
-          BOARD="${RISCV_MACHINE%-mainline}"
           EXIT_CODE=0
 
-          if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/$BOARD-client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
+          if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
             echo "Tests passed. Releasing reservation"
           else
             echo "All pytest attempts failed"
             EXIT_CODE=1
           fi
 
-          labgrid-client -p + -c boardfarm/$BOARD/$BOARD-client.yaml pw off
+          labgrid-client -p + -c boardfarm/$BOARD/client.yaml pw off
           labgrid-client -p + release
           exit $EXIT_CODE
         env:
