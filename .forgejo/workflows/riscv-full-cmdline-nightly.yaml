@@ -20,7 +20,7 @@ jobs:
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
-          git clone https://github.com/threexc/meta-riscv.git -b tgamblin/move-wic-files
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
           cd openembedded-core && source oe-init-build-env
           bitbake-layers add-layer ../../meta-riscv
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
