@@ -7,7 +7,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        machine: ['orangepi-rv2-mainline', 'bananapi-f3', 'nezha-allwinner-d1', 'eswin-ebc77-mainline', 'muse-pi-pro', 'visionfive2']
+        machine: ['orangepi-rv2-mainline', 'bananapi-f3', 'nezha-allwinner-d1', 'eswin-ebc77-mainline', 'muse-pi-pro']
     container:
       image: tgamblin/yocto-builder
       volumes:
