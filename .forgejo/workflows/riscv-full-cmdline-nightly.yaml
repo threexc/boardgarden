@@ -28,21 +28,30 @@ jobs:
       volumes:
         - /auto/runner/buildcache:/buildcache
     steps:
-      - name: build core-image-full-cmdline
+      - name: set up bitbake, workflows
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
-          git clone "${META_RISCV_URL}" -b "${META_RISCV_BRANCH}"
-          cd openembedded-core && source oe-init-build-env
-          bitbake-layers add-layer ../../meta-riscv
-          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
-          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
-          echo "BB_HASHSERVE_DB_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
-          MACHINE=${RISCV_MACHINE} bitbake core-image-full-cmdline
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
+
+      - name: configure bitbake and layers
+        run: |
+          ./bitbake/bin/bitbake-setup \
+          --debug \
+          init \
+          --non-interactive \
+          workflows/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
+          nodistro \
+          machine/${{ matrix.machine }}
+
+      - name: build core-image-full-cmdline
+        run: |
+          . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+          bitbake core-image-full-cmdline
         env:
+          DL_DIR: "/buildcache/downloads"
+          SSTATE_DIR: "/buildcache/sstate-cache"
           META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
           META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
           RISCV_MACHINE: ${{ matrix.machine }}
@@ -54,9 +63,9 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args openembedded-core/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
         env:
           RISCV_MACHINE: ${{ matrix.machine }}
   test-board-boot:
