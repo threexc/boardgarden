@@ -106,38 +106,39 @@ jobs:
         run: |
           git clone https://github.com/threexc/labgrid-power-up.git
 
-      - name: set up virtualenv
+      - name: install uv
+        working-directory: /home/labgrid
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: run uv sync
         working-directory: /home/labgrid/labgrid-power-up
         run: |
-          python3 -m venv venv && source venv/bin/activate
-          pip install --upgrade pip
-          pip install pytest pytest-html
-          git clone https://github.com/labgrid-project/labgrid.git
-          pip install ./labgrid
+          cd boardfarm
+          uv sync
 
       - name: run labgrid-client
-        working-directory: /home/labgrid/labgrid-power-up
+        working-directory: /home/labgrid/labgrid-power-up/boardfarm
         run: |
-          source venv/bin/activate
-          eval `labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
           BOARD="${RISCV_MACHINE%-mainline}"
           LG_PLACE="bf-${BOARD}"
           echo $LG_PLACE
           echo $LG_TOKEN
-          labgrid-client wait
-          labgrid-client -p + lock
-          labgrid-client -p + show
+          uv run labgrid-client wait
+          uv run labgrid-client -p + lock
+          uv run labgrid-client -p + show
           EXIT_CODE=0
 
-          if pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/$BOARD/client.yaml boardfarm/$BOARD/pytest/test_tftp.py; then
+          if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
             echo "Tests passed. Releasing reservation"
           else
             echo "All pytest attempts failed"
             EXIT_CODE=1
           fi
 
-          labgrid-client -p + -c boardfarm/$BOARD/client.yaml pw off
-          labgrid-client -p + release
+          uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+          uv run labgrid-client -p + release
           exit $EXIT_CODE
         env:
           LG_COORDINATOR: ecogrid
