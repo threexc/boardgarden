@@ -1,0 +1,146 @@
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      meta_riscv_url:
+        description: 'The URL to clone meta-riscv from'
+        required: true
+        default: 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git'
+        type: choice
+        options:
+          - https://github.com/riscv/meta-riscv.git
+          - https://github.com/threexc/meta-riscv.git
+          - https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
+      meta_riscv_branch:
+        description: 'The branch to checkout for the meta-riscv repo'
+        required: true
+        default: 'master'
+        type: string
+jobs:
+  build-riscv-image:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: ['orangepi-rv2-mainline', 'bananapi-f3', 'nezha-allwinner-d1', 'eswin-ebc77-mainline', 'muse-pi-pro']
+    container:
+      image: tgamblin/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+    steps:
+      - name: set up bitbake, workflows
+        run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
+
+      - name: configure bitbake and layers
+        run: |
+          ./bitbake/bin/bitbake-setup \
+          --debug \
+          init \
+          --non-interactive \
+          workflows/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
+          nodistro \
+          machine/${{ matrix.machine }}
+
+      - name: build core-image-full-cmdline
+        run: |
+          . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+          bitbake core-image-full-cmdline
+        env:
+          DL_DIR: "/buildcache/downloads"
+          SSTATE_DIR: "/buildcache/sstate-cache"
+          META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
+          META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
+          RISCV_MACHINE: ${{ matrix.machine }}
+
+      - name: copy kernel and dtb to TFTP server
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+          BOARD="${RISCV_MACHINE%-mainline}"
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+        env:
+          RISCV_MACHINE: ${{ matrix.machine }}
+  test-board-boot:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: ['bananapi-f3', 'muse-pi-pro', 'orangepi-rv2-mainline']
+    container:
+      image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101
+    steps:
+      - name: set up keys
+        working-directory: /home/labgrid
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@ecogrid "echo SSH connection successful"
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@ecogrid "echo SSH connection successful"
+
+      - name: clone labgrid-power-up
+        working-directory: /home/labgrid
+        run: |
+          git clone https://github.com/threexc/labgrid-power-up.git
+
+      - name: install uv
+        working-directory: /home/labgrid
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: run uv sync
+        working-directory: /home/labgrid/labgrid-power-up
+        run: |
+          cd boardfarm
+          uv sync
+
+      - name: run labgrid-client
+        working-directory: /home/labgrid/labgrid-power-up/boardfarm
+        run: |
+          eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          BOARD="${RISCV_MACHINE%-mainline}"
+          LG_PLACE="bf-${BOARD}"
+          echo $LG_PLACE
+          echo $LG_TOKEN
+          uv run labgrid-client wait
+          uv run labgrid-client -p + lock
+          uv run labgrid-client -p + show
+          EXIT_CODE=0
+
+          if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
+            echo "Tests passed. Releasing reservation"
+          else
+            echo "All pytest attempts failed"
+            EXIT_CODE=1
+          fi
+
+          uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+          uv run labgrid-client -p + release
+          exit $EXIT_CODE
+        env:
+          LG_COORDINATOR: ecogrid
+          RISCV_MACHINE: ${{ matrix.machine }}
+          VERSION: 7.0

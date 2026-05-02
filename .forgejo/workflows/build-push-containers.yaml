@@ -1,0 +1,78 @@
+name: Build and Push Container Images
+on:
+  push:
+    paths:
+      - 'dockerfiles/**'
+  schedule:
+    - cron: '45 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-container-images:
+    name: Build and push image
+    runs-on: docker
+    container:
+      image: tgamblin/container-builder
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Docker CLI
+      run: |
+        apt-get update
+        apt-get install -y ca-certificates curl gnupg
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+        apt-get update
+        apt-get install -y docker-ce-cli
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: |
+          network=host
+        buildkitd-config-inline: |
+          [registry."forgejo.oryx-coho.ts.net"]
+            ca=["/etc/ssl/certs/ca-certificates.crt"]
+
+    - name: Login to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        registry: forgejo.oryx-coho.ts.net
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
+
+    - name: Build and push yocto-builder
+      uses: docker/build-push-action@v5
+      with:
+        context: ./dockerfiles
+        file: ./dockerfiles/yocto-builder/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: |
+          forgejo.oryx-coho.ts.net/tgamblin/yocto-builder:latest
+
+    - name: Build and push container-builder
+      uses: docker/build-push-action@v5
+      with:
+        context: ./dockerfiles
+        file: ./dockerfiles/container-builder/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: |
+          forgejo.oryx-coho.ts.net/tgamblin/container-builder:latest
+
+    - name: Build and push lg-operator
+      uses: docker/build-push-action@v5
+      with:
+        context: ./dockerfiles
+        file: ./dockerfiles/labgrid-operator/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: |
+          forgejo.oryx-coho.ts.net/tgamblin/lg-operator:latest
