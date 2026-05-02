@@ -18,7 +18,7 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git .
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-yocto.git
@@ -83,23 +83,23 @@ jobs:
       - name: Rename ext4 image
         run: |
           mv /home/labgrid/ext4_download/*.ext4 /home/labgrid/ptest_image.ext4
-      - name: clone labgrid-power-up
+      - name: clone boardgarden
         working-directory: /home/labgrid
         run: |
-          git clone https://github.com/threexc/labgrid-power-up.git
+          git clone https://github.com/threexc/boardgarden.git
 
       - name: set up virtualenv
-        working-directory: /home/labgrid/labgrid-power-up
+        working-directory: /home/labgrid/boardgarden
         run: |
           python3 -m venv venv && source venv/bin/activate
           pip install --upgrade pip
           pip install labgrid pytest pytest-html
 
       - name: run labgrid-client
-        working-directory: /home/labgrid/labgrid-power-up
+        working-directory: /home/labgrid/boardgarden
         run: |
           source venv/bin/activate
-          pytest -vvv --html=report.html --self-contained-html --lg-env boardfarm/qemuriscv64/env.yaml boardfarm/qemuriscv64/tests/test_ptests.py
+          pytest -vvv --html=report.html --self-contained-html --lg-env boards/qemuriscv64/env.yaml boards/qemuriscv64/tests/test_ptests.py
 
       - name: Setup SSH key
         working-directory: /home/labgrid
@@ -131,4 +131,4 @@ jobs:
         run: |
           REPORT_DIR="yocto/oe-core/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
           ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/$REPORT_DIR"
-          rsync -av /home/labgrid/labgrid-power-up/report.html reporter@ecovault:/testresults/$REPORT_DIR/
+          rsync -av /home/labgrid/boardgarden/report.html reporter@ecovault:/testresults/$REPORT_DIR/

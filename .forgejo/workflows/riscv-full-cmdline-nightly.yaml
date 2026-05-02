@@ -32,7 +32,7 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
 
       - name: configure bitbake and layers
@@ -41,7 +41,7 @@ jobs:
           --debug \
           init \
           --non-interactive \
-          workflows/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
+          boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
           nodistro \
           machine/${{ matrix.machine }}
 
@@ -101,10 +101,10 @@ jobs:
           echo "=== Testing SSH connection ==="
           ssh -v labgrid@ecogrid "echo SSH connection successful"
 
-      - name: clone labgrid-power-up
+      - name: clone boardgarden
         working-directory: /home/labgrid
         run: |
-          git clone https://github.com/threexc/labgrid-power-up.git
+          git clone https://github.com/threexc/boardgarden.git
 
       - name: install uv
         working-directory: /home/labgrid
@@ -112,13 +112,13 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: run uv sync
-        working-directory: /home/labgrid/labgrid-power-up
+        working-directory: /home/labgrid/boardgarden
         run: |
-          cd boardfarm
+          cd boards
           uv sync
 
       - name: run labgrid-client
-        working-directory: /home/labgrid/labgrid-power-up/boardfarm
+        working-directory: /home/labgrid/boardgarden/boards
         run: |
           eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
           BOARD="${RISCV_MACHINE%-mainline}"

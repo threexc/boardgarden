@@ -2,7 +2,7 @@ name: Build and Push Container Images
 on:
   push:
     paths:
-      - 'dockerfiles/**'
+      - '.forgejo/dockerfiles/**'
   schedule:
     - cron: '45 1 * * *'
   workflow_dispatch:
@@ -50,8 +50,8 @@ jobs:
     - name: Build and push yocto-builder
       uses: docker/build-push-action@v5
       with:
-        context: ./dockerfiles
-        file: ./dockerfiles/yocto-builder/Dockerfile
+        context: ./.forgejo/dockerfiles
+        file: ./.forgejo/dockerfiles/yocto-builder/Dockerfile
         push: true
         platforms: linux/amd64
         tags: |
@@ -60,8 +60,8 @@ jobs:
     - name: Build and push container-builder
       uses: docker/build-push-action@v5
       with:
-        context: ./dockerfiles
-        file: ./dockerfiles/container-builder/Dockerfile
+        context: ./.forgejo/dockerfiles
+        file: ./.forgejo/dockerfiles/container-builder/Dockerfile
         push: true
         platforms: linux/amd64
         tags: |
@@ -70,8 +70,8 @@ jobs:
     - name: Build and push lg-operator
       uses: docker/build-push-action@v5
       with:
-        context: ./dockerfiles
-        file: ./dockerfiles/labgrid-operator/Dockerfile
+        context: ./.forgejo/dockerfiles
+        file: ./.forgejo/dockerfiles/labgrid-operator/Dockerfile
         push: true
         platforms: linux/amd64
         tags: |

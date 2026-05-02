@@ -13,7 +13,7 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git .
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-openembedded.git

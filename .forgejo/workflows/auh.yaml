@@ -14,7 +14,7 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/workflows.git .
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git .
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/auto-upgrade-helper.git openembedded-core/build/auto-upgrade-helper
@@ -22,7 +22,7 @@ jobs:
           git config --global user.email "auh@forgejo.oryx-coho.ts.net"
           cd openembedded-core && source oe-init-build-env
           mkdir -p upgrade-helper
-          cp ../../auh/upgrade-helper.conf upgrade-helper
+          cp ../../.forgejo/auh/upgrade-helper.conf upgrade-helper
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
           echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
           echo "BB_HASHSERVE_DB_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
