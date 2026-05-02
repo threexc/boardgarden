@@ -1,0 +1,20 @@
+wb-setup:
+  location: outpost
+  wb-power-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'D30HF051'
+    pin: 0
+  wb-serial-port-1:
+    cls: 'USBSerialPort'
+    match:
+      '@ID_SERIAL_SHORT': 'E663AC91D35CA332'
+  wb-scope-1:
+    cls: 'USBTMC'
+    match:
+      '@ID_SERIAL_SHORT': 'DS1ZA170502437'
+  wb-generator-1:
+    cls: 'USBTMC'
+    match:
+      '@ID_SERIAL_SHORT': 'SDG1XDFQ6R5627'
