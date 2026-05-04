@@ -4,6 +4,47 @@ tgamblin's boardfarm repo, built for testing RISC-V development boards with [Lab
 
 ## Usage
 
+### .forgejo
+
+These should mostly just work on a sufficiently-resourced Forgejo instance with
+Actions enabled. Each pipeline is intended to be run automatically on a nightly
+or weekly schedule. Most of the workflows within are intended for testing some
+combination of:
+
+- Packages whose test suites are known to have intermittent failure issues when
+  run on `qemuriscv64` in the Yocto Project [Autobuilder](https://autobuilder.yoctoproject.org/valkyrie/)
+- Board support packages (BSPs) provided by the
+  [meta-riscv](https://github.com/riscv/meta-riscv) layer for various RISC-V
+  development boards
+- The meta-riscv layer's compliance against the
+  [yocto-check-layer-wrapper](https://git.openembedded.org/openembedded-core/tree/scripts/yocto-check-layer-wrapper)
+  script
+
+The `auh` and `bitbake-configs` directories contain
+templates for running Yocto-specific workflows, while the `dockerfiles`
+directory contains definitions for the `container-builder`, `labgrid-operator`,
+and `yocto-builder` container images stored in the registry.
+
+There are six secrets in use, which must be added for proper operation:
+
+For allowing runner access to the Labgrid exporter machine:
+
+1. `LG_EXPORTER_SSH_KEY`
+
+For pushing container images to the internal registry:
+
+3. `REGISTRY_TOKEN`
+4. `REGISTRY_USERNAME`
+
+For copying test reports to the web server:
+
+5. `REPORT_SSH_KEY`
+
+For copying build artifacts to the TFTP server:
+
+6. `SSH_KNOWN_HOSTS`
+7. `TFTP_SERVER_SSH_KEY`
+
 ### boards
 
 This entire subdirectory is meant to be used with
@@ -38,3 +79,31 @@ Or, if you want to run the test suite, you can do:
 These same general concepts are employed by the `riscv-full-cmdline-nightly` and
 `riscv-ptest-nightly` pipelines inside the `.forgejo/workflows` directory, so
 that should be considered a more complete reference.
+
+### systemd_services
+
+Examples of how to create systemd services for running the Labgrid coordinator
+and exporter processes on one or more systems.
+
+### udev
+
+udev rules for enabling the [BayLibre
+Copilot](https://github.com/BayLibre/Copilot) board on a system to perform
+remote power control to boards under test. These have only been deployed thus
+far on Debian-based systems, where the `/sys/class/gpio` path exists and the
+necessary Linux kernel configuration is enabled.
+
+
+### workbench
+
+Labgrid exporter and client configurations for use with the devices on my desk,
+namely:
+
+- BayLibre Copilot
+- USBSerialPort device (USB to UART adapter)
+- Rigol DS1054Z oscilloscope
+- Sigilent SDG1032X function/waveform generator
+
+Note that support for controlling the last two is still under development in
+labgrid. See upstream issue
+[#1835](https://github.com/labgrid-project/labgrid/pull/1835).
