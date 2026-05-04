@@ -33,6 +33,7 @@ jobs:
         META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
         META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
         RISCV_MACHINE: ${{ matrix.machine }}
+        YOCTO_IMAGES_PATH: ${{ github.workspace }}/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images
     steps:
       - name: set up bitbake, workflows
         run: |
@@ -63,16 +64,16 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
 
-      - name: copy rootfs to TFTP server
+      - name: copy image wic files to TFTP server
         if: matrix.machine == 'bananapi-f3'
         run: |
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
 
   test-board-boot:
     runs-on: docker
