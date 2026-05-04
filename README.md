@@ -69,7 +69,7 @@ for more details). Assuming that you have created a place called
 should be able to invoke the labgrid CLI using `uv run`, e.g.:
 
 1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
-2. `uv run labgrid-client -p bf-muse-pi-pro -s tftp con`
+2. `uv run labgrid-client -p bf-muse-pi-pro -c muse-pi-pro/client.yaml -s tftp con`
 
 Or, if you want to run the test suite, you can do:
 
