@@ -68,6 +68,15 @@ jobs:
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
         env:
           RISCV_MACHINE: ${{ matrix.machine }}
+
+      - name: copy rootfs to TFTP server
+        if: matrix.machine == 'bananapi-f3'
+        run: |
+          BOARD="${RISCV_MACHINE%-mainline}"
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+        env:
+          RISCV_MACHINE: ${{ matrix.machine }}
   test-board-boot:
     runs-on: docker
     strategy:
