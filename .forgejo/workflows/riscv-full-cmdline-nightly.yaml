@@ -55,6 +55,11 @@ jobs:
       - name: build core-image-full-cmdline
         run: |
           . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+
+          bitbake-config-build \
+          enable-fragment \
+          core/yocto/root-login-with-empty-password
+
           bitbake core-image-full-cmdline
 
       - name: copy kernel and dtb to TFTP server
