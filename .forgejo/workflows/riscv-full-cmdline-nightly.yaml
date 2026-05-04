@@ -27,6 +27,12 @@ jobs:
       image: tgamblin/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+        META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
+        META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
+        RISCV_MACHINE: ${{ matrix.machine }}
     steps:
       - name: set up bitbake, workflows
         run: |
@@ -49,12 +55,6 @@ jobs:
         run: |
           . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
           bitbake core-image-full-cmdline
-        env:
-          DL_DIR: "/buildcache/downloads"
-          SSTATE_DIR: "/buildcache/sstate-cache"
-          META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
-          META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
-          RISCV_MACHINE: ${{ matrix.machine }}
 
       - name: copy kernel and dtb to TFTP server
         run: |
@@ -66,8 +66,6 @@ jobs:
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-        env:
-          RISCV_MACHINE: ${{ matrix.machine }}
 
       - name: copy rootfs to TFTP server
         if: matrix.machine == 'bananapi-f3'
@@ -75,8 +73,7 @@ jobs:
           BOARD="${RISCV_MACHINE%-mainline}"
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
           rsync -avz --omit-link-times --ignore-missing-args "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-        env:
-          RISCV_MACHINE: ${{ matrix.machine }}
+
   test-board-boot:
     runs-on: docker
     strategy:
@@ -85,6 +82,10 @@ jobs:
     container:
       image: tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101
+      env:
+        LG_COORDINATOR: ecogrid
+        RISCV_MACHINE: ${{ matrix.machine }}
+        VERSION: 7.0
     steps:
       - name: set up keys
         working-directory: /home/labgrid
@@ -149,7 +150,3 @@ jobs:
           uv run labgrid-client -p + -c $BOARD/client.yaml pw off
           uv run labgrid-client -p + release
           exit $EXIT_CODE
-        env:
-          LG_COORDINATOR: ecogrid
-          RISCV_MACHINE: ${{ matrix.machine }}
-          VERSION: 7.0
