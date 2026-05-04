@@ -34,3 +34,7 @@ Or, if you want to run the test suite, you can do:
 
 1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
 2. `uv run pytest -vvv --html=report.html --self-contained-html muse-pi-pro/pytest/`
+
+These same general concepts are employed by the `riscv-full-cmdline-nightly` and
+`riscv-ptest-nightly` pipelines inside the `.forgejo/workflows` directory, so
+that should be considered a more complete reference.
