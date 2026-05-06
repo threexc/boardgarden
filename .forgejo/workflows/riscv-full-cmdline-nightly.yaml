@@ -3,6 +3,18 @@ on:
     - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
+      machines:
+        description: 'Machines to run against'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - bananapi-f3
+          - eswin-ebc77-mainline
+          - muse-pi-pro
+          - nezha-allwinner-d1
+          - orangepi-rv2-mainline
       meta_riscv_url:
         description: 'The URL to clone meta-riscv from'
         required: true
@@ -26,7 +38,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        machine: ['orangepi-rv2-mainline', 'bananapi-f3', 'nezha-allwinner-d1', 'eswin-ebc77-mainline', 'muse-pi-pro']
+        machine: ${{ inputs.machines == 'all' && fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]') || fromJSON(format('["{0}"]', inputs.machines)) }}
     container:
       image: tgamblin/yocto-builder
       volumes:
@@ -94,7 +106,7 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        machine: ['bananapi-f3', 'muse-pi-pro', 'orangepi-rv2-mainline']
+        machine: ${{ inputs.machines == 'all' && fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]') || fromJSON(format('["{0}"]', inputs.machines)) }}
     container:
       image: tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101
