@@ -120,7 +120,9 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa_tftp
           chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa_tftp
           ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
 
@@ -159,8 +161,9 @@ jobs:
         if: matrix.machine == 'bananapi-f3'
         working-directory: /home/labgrid
         run: |
-          tftp ${TFTP_SERVER} -c get core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.gz
-          tftp ${TFTP_SERVER} -c get core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.bmap
+          BOARD="${RISCV_MACHINE%-mainline}"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.gz .
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.bmap .
 
       - name: run labgrid-client
         working-directory: /home/labgrid/boardgarden/boards
