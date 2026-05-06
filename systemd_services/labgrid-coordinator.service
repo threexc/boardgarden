@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/home/tgamblin/boardgarden/.venv/bin/labgrid-coordinator
+ExecStart=/home/tgamblin/boardgarden/boards/.venv/bin/labgrid-coordinator
 Restart=on-failure
 
 [Install]
