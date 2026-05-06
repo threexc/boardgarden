@@ -57,8 +57,5 @@ RUN apt-get update && \
 
 RUN apt-get clean
 
-COPY caddy-local.crt /usr/local/share/ca-certificates/caddy-local.crt
-RUN update-ca-certificates
-
 USER yoctouser
 WORKDIR /home/yoctouser/yocto-build
