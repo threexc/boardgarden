@@ -144,7 +144,7 @@ jobs:
       - name: clone boardgarden
         working-directory: /home/labgrid
         run: |
-          git clone https://github.com/threexc/boardgarden.git
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
 
       - name: install uv
         working-directory: /home/labgrid
