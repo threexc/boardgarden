@@ -17,6 +17,10 @@ on:
         required: true
         default: 'master'
         type: string
+env:
+  TFTP_SERVER: "ecovault.oryx-coho.ts.net"
+  TFTP_USER: "auto"
+
 jobs:
   build-riscv-image:
     runs-on: docker
@@ -69,16 +73,22 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/Image* auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/*.dtb auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/extlinux.conf auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/Image* ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/*.dtb ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/extlinux.conf ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
 
       - name: copy image wic files to TFTP server
         if: matrix.machine == 'bananapi-f3'
         run: |
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap auto@ecovault.oryx-coho.ts.net:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+
+          ssh ${TFTP_USER}@${TFTP_SERVER} "
+            cd /srv/tftp/${BOARD} &&
+            ln -sf \$(ls -1t core-image-full-cmdline-${BOARD}.rootfs-*.wic.gz  | head -1) core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz &&
+            ln -sf \$(ls -1t core-image-full-cmdline-${BOARD}.rootfs-*.wic.bmap | head -1) core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap
+          "
 
   test-board-boot:
     runs-on: docker
@@ -132,6 +142,13 @@ jobs:
         run: |
           cd boards
           uv sync
+
+      - name: Fetch latest rootfs
+        if: matrix.machine == 'bananapi-f3'
+        working-directory: /home/labgrid
+        run: |
+          tftp ${TFTP_SERVER} -c get core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.gz
+          tftp ${TFTP_SERVER} -c get core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.bmap
 
       - name: run labgrid-client
         working-directory: /home/labgrid/boardgarden/boards
