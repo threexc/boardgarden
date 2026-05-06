@@ -36,8 +36,5 @@ ARG USER_UID=1500
 ARG USER_GID=1500
 RUN groupadd -g $USER_GID labgrid && useradd -m -u $USER_UID -g $USER_GID -s /bin/bash labgrid
 
-COPY caddy-local.crt /usr/local/share/ca-certificates/caddy-local.crt
-RUN update-ca-certificates
-
 USER labgrid
 WORKDIR /home/labgrid
