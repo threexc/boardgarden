@@ -16,28 +16,18 @@ targets:
           name: 'bananapi-f3-power-1'
           bindings:
             output: 'bananapi-f3-power-gpio-1'
-      - TFTPProviderDriver:
-          name: 'bananapi-f3-tftp-1'
+      - USBStorageDriver:
+          image: 'sdimage'
           bindings:
-            provider: 'bananapi-f3-tftp-1'
-      - UBootDriver:
-          prompt: '=> '
-          autoboot: 'Hit any key to stop autoboot:'
-          interrupt: ' '
-          name: 'bananapi-f3-uboot-1'
-          boot_commands:
-            emmc: 'boot'
-            tftp: 'booti $kernel_addr_r - $fdt_addr_r'
+            storage: 'bananapi-f3-sdmux-1'
+      - USBSDMuxDriver:
           bindings:
-            console: 'bananapi-f3-console-1'
-          login_timeout: 30
-          boot_timeout: 30
-          strip_timestamp: True
+            mux: 'bananapi-f3-sdmux-1'
       - ShellDriver:
-          prompt: '(\x1b\[\?2004h)?armbian@[\w-]+:[^ ]+[#$] '
-          login_prompt: '[-\w]+ login: '
-          username: 'armbian'
-          password: 'armbian'
+          prompt: '(\x1b\[\?2004h|\x1b\\)?root@[\w-]+:[^ ]+[#$] '
+          login_prompt: 'login: '
+          login_timeout: 300
+          username: 'root'
           name: 'bananapi-f3-shell-1'
           bindings:
             console: 'bananapi-f3-console-1'
@@ -46,9 +36,13 @@ targets:
           bindings:
             power: 'bananapi-f3-power-1'
             console: 'bananapi-f3-console-1'
-            uboot: 'bananapi-f3-uboot-1'
             shell: 'bananapi-f3-shell-1'
-            tftp: 'bananapi-f3-tftp-1'
+
+images:
+  sdimage: "/home/labgrid/core-image-full-cmdline-bananapi-f3.rootfs-latest.wic.gz"
+
+tools:
+  usbsdmux: '/home/labgrid/.local/bin/usbsdmux'
 
 imports:
   - strategy.py

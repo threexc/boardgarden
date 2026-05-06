@@ -15,3 +15,7 @@ bf-bananapi-f3:
     host: '192.168.40.134'
     internal: '/srv/tftp/bananapi-f3/'
     external: 'bananapi-f3/'
+  bananapi-f3-sdmux-1:
+    cls: 'USBSDMuxDevice'
+    match:
+      ID_SERIAL_SHORT: '000000001034'

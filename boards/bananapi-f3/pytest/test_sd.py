@@ -5,24 +5,24 @@ import os
 
 from labgrid.driver import ExecutionError
 
-def test_tools_available(tftp):
+def test_tools_available(sd):
     tools = ['/bin/bash', '/bin/ls']
     missing = []
 
     for tool in tools:
-        stdout, stderr, code = tftp.run(f"test -x {tool}")
+        stdout, stderr, code = sd.run(f"test -x {tool}")
 
         if code != 0:
             missing.append(tool)
 
     assert(missing == [])
 
-def test_uname_a(tftp):
+def test_uname_a(sd):
     version = os.environ.get("VERSION")
     try:
-        state = tftp.run_check('/bin/uname -a', timeout=60.0)
+        state = sd.run_check('/bin/uname -a', timeout=60.0)
 
         assert(version in state[0])
     except ExecutionError:
-        tftp.run('ls /bin/uname')
+        sd.run('ls /bin/uname')
         raise
