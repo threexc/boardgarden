@@ -12,6 +12,7 @@ dependencies = [
     "labgrid",
     "pytest",
     "pytest-html",
+    "usbsdmux",
 ]
 
 [tool.uv.sources]
