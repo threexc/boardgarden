@@ -46,9 +46,8 @@ def test_uname_a(sd):
 def test_busybox_tools_available(sd):
     missing = []
     for tool in BUSYBOX_TOOLS:
-        # Check both /bin and /usr/bin since the symlink location varies by distro
         stdout, stderr, code = sd.run(
-            f"test -x /bin/{tool} || test -x /usr/bin/{tool}"
+            f"test -x /bin/{tool} || test -x /usr/bin/{tool} || test -x /sbin/{tool} || test -x /usr/sbin/{tool}"
         )
         if code != 0:
             missing.append(tool)
