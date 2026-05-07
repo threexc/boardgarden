@@ -15,20 +15,14 @@ on:
           - muse-pi-pro
           - nezha-allwinner-d1
           - orangepi-rv2-mainline
-      meta_riscv_url:
-        description: 'The URL to clone meta-riscv from'
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
         required: true
-        default: 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git'
+        default: 'none'
         type: choice
         options:
-          - https://github.com/riscv/meta-riscv.git
-          - https://github.com/threexc/meta-riscv.git
-          - https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
-      meta_riscv_branch:
-        description: 'The branch to checkout for the meta-riscv repo'
-        required: true
-        default: 'master'
-        type: string
+          - none
+          - meta-riscv-tgamblin-k1-fixes
 env:
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
   TFTP_USER: "auto"
@@ -51,8 +45,7 @@ jobs:
       env:
         DL_DIR: "/buildcache/downloads"
         SSTATE_DIR: "/buildcache/sstate-cache"
-        META_RISCV_URL: ${{ inputs.meta_riscv_url || 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git' }}
-        META_RISCV_BRANCH: ${{ inputs.meta_riscv_branch || 'master' }}
+        BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
         RISCV_MACHINE: ${{ matrix.machine }}
         YOCTO_IMAGES_PATH: ${{ github.workspace }}/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images
     steps:
@@ -65,13 +58,19 @@ jobs:
 
       - name: configure bitbake and layers
         run: |
+          OVERRIDE_ARG=""
+          if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
+            OVERRIDE_ARG="--source-override boardgarden/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
+          fi
+
           ./bitbake/bin/bitbake-setup \
-          --debug \
-          init \
-          --non-interactive \
-          boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
-          nodistro \
-          machine/${{ matrix.machine }}
+            --debug \
+            init \
+            --non-interactive \
+            ${OVERRIDE_ARG} \
+            boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
+            nodistro \
+            machine/${{ matrix.machine }}
 
       - name: build core-image-full-cmdline
         run: |
