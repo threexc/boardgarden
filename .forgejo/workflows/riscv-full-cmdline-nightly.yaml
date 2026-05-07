@@ -24,6 +24,7 @@ on:
           - none
           - meta-riscv-tgamblin-k1-fixes
 env:
+  FORGEJO_URL: "https://forgejo.oryx-coho.ts.net"
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
   TFTP_USER: "auto"
 
