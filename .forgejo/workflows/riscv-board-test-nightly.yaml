@@ -17,20 +17,6 @@ on:
           - muse-pi-pro
           - nezha-allwinner-d1
           - orangepi-rv2-mainline
-      meta_riscv_url:
-        description: 'The URL to clone meta-riscv from'
-        required: true
-        default: 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git'
-        type: choice
-        options:
-          - https://github.com/riscv/meta-riscv.git
-          - https://github.com/threexc/meta-riscv.git
-          - https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
-      meta_riscv_branch:
-        description: 'The branch to checkout for the meta-riscv repo'
-        required: true
-        default: 'master'
-        type: string
 env:
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
   TFTP_USER: "auto"
