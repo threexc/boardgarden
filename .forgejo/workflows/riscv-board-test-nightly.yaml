@@ -137,3 +137,35 @@ jobs:
           uv run labgrid-client -p + -c $BOARD/client.yaml pw off
           uv run labgrid-client -p + release
           exit $EXIT_CODE
+
+      - name: Setup SSH key
+        working-directory: /home/labgrid
+        env:
+          SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" >> ~/.ssh/id_rsa
+          ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful" || true
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v reporter@ecovault "echo SSH connection successful"
+
+      - name: Deploy report
+        run: |
+          REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+          ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/$REPORT_DIR"
+          rsync -av /home/labgrid/boardgarden/boards/report.html reporter@ecovault:/testresults/$REPORT_DIR/
