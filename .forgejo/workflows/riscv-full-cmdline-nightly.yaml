@@ -117,12 +117,11 @@ jobs:
           HTTP_CODE=$(curl -s -o /tmp/dispatch_response.json -w "%{http_code}" -X POST \
             -H "Authorization: token ${{ secrets.ACTION_DISPATCH }}" \
             -H "Content-Type: application/json" \
-            "https://forgejo.oryx-coho.ts.net/api/v1/repos/${{ github.repository }}/dispatches" \
+            "https://forgejo.oryx-coho.ts.net/api/v1/repos/${{ github.repository }}/actions/workflows/riscv-board-test-nightly.yaml/dispatches" \
             --data '{
-              "event_type": "run-board-tests",
-              "client_payload": {
-                "machine": "${{ matrix.machine }}",
-                "sha": "${{ github.sha }}"
+              "ref": "${{ github.ref_name }}",
+              "inputs": {
+                "machine": "${{ matrix.machine }}"
               }
             }')
           echo "HTTP status: ${HTTP_CODE}"
