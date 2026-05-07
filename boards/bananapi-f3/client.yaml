@@ -26,7 +26,7 @@ targets:
       - ShellDriver:
           prompt: '(\x1b\[\?2004h|\x1b\\)?root@[\w-]+:[^ ]+[#$] '
           login_prompt: 'login: '
-          login_timeout: 300
+          login_timeout: 180
           username: 'root'
           name: 'bananapi-f3-shell-1'
           bindings:
