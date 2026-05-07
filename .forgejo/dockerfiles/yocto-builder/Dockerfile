@@ -10,6 +10,7 @@ RUN apt-get update && \
     build-essential \
     chrpath \
     cpio \
+    curl \
     debianutils \
     diffstat \
     file \
