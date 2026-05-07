@@ -38,7 +38,12 @@ jobs:
     runs-on: docker
     strategy:
       matrix:
-        machine: ${{ inputs.machines == 'all' && fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]') || fromJSON(format('["{0}"]', inputs.machines)) }}
+        machine: >-
+          ${{
+            inputs.machines == 'all' && fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]') ||
+            inputs.machines != 'all' && inputs.machines != '' && fromJSON(format('["{0}"]', inputs.machines)) ||
+            fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
+          }}
     container:
       image: tgamblin/yocto-builder
       volumes:
