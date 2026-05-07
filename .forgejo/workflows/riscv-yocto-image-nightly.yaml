@@ -3,6 +3,23 @@ on:
     - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - meta-riscv-tgamblin-k1-fixes
+      image:
+        description: 'Image to build'
+        required: true
+        default: 'core-image-minimal'
+        type: choice
+        options:
+          - core-image-minimal
+          - core-image-full-cmdline
+          - core-image-ptest-python3
       machines:
         description: 'Machines to run against'
         required: true
@@ -15,14 +32,6 @@ on:
           - muse-pi-pro
           - nezha-allwinner-d1
           - orangepi-rv2-mainline
-      bitbake_setup_override:
-        description: 'bitbake-setup source override to apply (none for default)'
-        required: true
-        default: 'none'
-        type: choice
-        options:
-          - none
-          - meta-riscv-tgamblin-k1-fixes
 env:
   FORGEJO_URL: "https://forgejo.oryx-coho.ts.net"
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
@@ -47,6 +56,7 @@ jobs:
         DL_DIR: "/buildcache/downloads"
         SSTATE_DIR: "/buildcache/sstate-cache"
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
+        RISCV_IMAGE: ${{ inputs.image || 'core-image-minimal' }}
         RISCV_MACHINE: ${{ matrix.machine }}
         YOCTO_IMAGES_PATH: ${{ github.workspace }}/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images
     steps:
@@ -73,7 +83,7 @@ jobs:
             nodistro \
             machine/${{ matrix.machine }}
 
-      - name: build core-image-full-cmdline
+      - name: build ${{ inputs.image || 'core-image-minimal' }}
         run: |
           . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
 
@@ -85,7 +95,10 @@ jobs:
           # labgrid detecting prompts when images are booted
           echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
 
-          bitbake core-image-full-cmdline
+          # Make sure we always build wic files
+          echo "IMAGE_FSTYPES:append = \" wic.gz wic.bmap\"" >> conf/local.conf
+
+          bitbake ${RISCV_IMAGE}
 
       - name: copy kernel and dtb to TFTP server
         run: |
@@ -102,13 +115,13 @@ jobs:
         if: matrix.machine == 'bananapi-f3'
         run: |
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.gz ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/core-image-full-cmdline-${RISCV_MACHINE}.rootfs-*.wic.bmap ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs-*.wic.gz ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs-*.wic.bmap ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
 
           ssh ${TFTP_USER}@${TFTP_SERVER} "
             cd /srv/tftp/${BOARD} &&
-            ln -sf \$(ls -1t core-image-full-cmdline-${BOARD}.rootfs-*.wic.gz  | head -1) core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz &&
-            ln -sf \$(ls -1t core-image-full-cmdline-${BOARD}.rootfs-*.wic.bmap | head -1) core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap
+            ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz &&
+            ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.bmap | head -1) ${BOARD}.rootfs-latest.wic.bmap
           "
 
       - name: trigger board tests
@@ -121,6 +134,7 @@ jobs:
             --data '{
               "ref": "${{ github.ref_name }}",
               "inputs": {
+                "image": "${{ env.RISCV_IMAGE }}",
                 "machine": "${{ matrix.machine }}"
               }
             }')

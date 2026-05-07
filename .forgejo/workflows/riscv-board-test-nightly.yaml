@@ -5,6 +5,15 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
+      image:
+        description: 'Image to test'
+        required: true
+        default: 'core-image-minimal'
+        type: choice
+        options:
+          - core-image-minimal
+          - core-image-full-cmdline
+          - core-image-ptest-python3
       machine:
         description: 'Machine to run against'
         required: true
@@ -38,6 +47,7 @@ jobs:
       options: --add-host ecogrid:192.168.40.101
       env:
         LG_COORDINATOR: ecogrid
+        RISCV_IMAGE: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.image || inputs.image || 'core-image-minimal' }}
         RISCV_MACHINE: ${{ matrix.machine }}
         VERSION: 7.0
     steps:
@@ -89,15 +99,15 @@ jobs:
         run: |
           BOARD="${RISCV_MACHINE%-mainline}"
           LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
-            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz")
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
           LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
-            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap")
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.bmap")
           rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
             ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC} .
           rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
             ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP} .
-          ln -sf ${LATEST_WIC} core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz
-          ln -sf ${LATEST_BMAP} core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap
+          ln -sf ${LATEST_WIC} ${BOARD}.rootfs-latest.wic.gz
+          ln -sf ${LATEST_BMAP} ${BOARD}.rootfs-latest.wic.bmap
 
       - name: run labgrid-client
         working-directory: /home/labgrid/boardgarden/boards
