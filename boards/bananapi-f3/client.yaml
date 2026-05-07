@@ -39,7 +39,7 @@ targets:
             shell: 'bananapi-f3-shell-1'
 
 images:
-  sdimage: "/home/labgrid/core-image-full-cmdline-bananapi-f3.rootfs-latest.wic.gz"
+  sdimage: "/home/labgrid/bananapi-f3.rootfs-latest.wic.gz"
 
 tools:
   usbsdmux: '/home/labgrid/.local/bin/usbsdmux'
