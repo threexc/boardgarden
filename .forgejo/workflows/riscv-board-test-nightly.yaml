@@ -1,0 +1,130 @@
+on:
+  repository_dispatch:
+    types: [run-board-tests]
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Machine to run against'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - bananapi-f3
+          - eswin-ebc77-mainline
+          - muse-pi-pro
+          - nezha-allwinner-d1
+          - orangepi-rv2-mainline
+      meta_riscv_url:
+        description: 'The URL to clone meta-riscv from'
+        required: true
+        default: 'https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git'
+        type: choice
+        options:
+          - https://github.com/riscv/meta-riscv.git
+          - https://github.com/threexc/meta-riscv.git
+          - https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
+      meta_riscv_branch:
+        description: 'The branch to checkout for the meta-riscv repo'
+        required: true
+        default: 'master'
+        type: string
+env:
+  TFTP_SERVER: "ecovault.oryx-coho.ts.net"
+  TFTP_USER: "auto"
+
+jobs:
+  test-board-boot:
+    runs-on: docker
+    strategy:
+      matrix:
+        machine: >-
+          ${{
+            github.event_name == 'repository_dispatch' && fromJSON(format('["{0}"]', github.event.client_payload.machine)) ||
+            inputs.machine == 'all' && fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]') ||
+            inputs.machine != 'all' && fromJSON(format('["{0}"]', inputs.machine)) ||
+            fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]')
+          }}
+    container:
+      image: tgamblin/lg-operator
+      options: --add-host ecogrid:192.168.40.101
+      env:
+        LG_COORDINATOR: ecogrid
+        RISCV_MACHINE: ${{ matrix.machine }}
+        VERSION: 7.0
+    steps:
+      - name: set up keys
+        working-directory: /home/labgrid
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa_tftp
+          chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa_tftp
+          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@ecogrid "echo SSH connection successful"
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@ecogrid "echo SSH connection successful"
+
+      - name: clone boardgarden
+        working-directory: /home/labgrid
+        run: |
+          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
+
+      - name: install uv
+        working-directory: /home/labgrid
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: run uv sync
+        working-directory: /home/labgrid/boardgarden
+        run: |
+          cd boards
+          uv sync
+
+      - name: Fetch latest rootfs
+        if: matrix.machine == 'bananapi-f3'
+        working-directory: /home/labgrid
+        run: |
+          BOARD="${RISCV_MACHINE%-mainline}"
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.gz .
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.bmap .
+
+      - name: run labgrid-client
+        working-directory: /home/labgrid/boardgarden/boards
+        run: |
+          eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          BOARD="${RISCV_MACHINE%-mainline}"
+          LG_PLACE="bf-${BOARD}"
+          echo $LG_PLACE
+          echo $LG_TOKEN
+          uv run labgrid-client wait
+          uv run labgrid-client -p + lock
+          uv run labgrid-client -p + show
+          EXIT_CODE=0
+
+          if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
+            echo "Tests passed. Releasing reservation"
+          else
+            echo "All pytest attempts failed"
+            EXIT_CODE=1
+          fi
+
+          uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+          uv run labgrid-client -p + release
+          exit $EXIT_CODE
