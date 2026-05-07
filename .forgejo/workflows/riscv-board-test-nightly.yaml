@@ -102,8 +102,16 @@ jobs:
         working-directory: /home/labgrid
         run: |
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.gz .
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/core-image-full-cmdline-${{ matrix.machine }}.rootfs-latest.wic.bmap .
+          LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz")
+          LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap")
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+            ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC} .
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+            ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP} .
+          ln -sf ${LATEST_WIC} core-image-full-cmdline-${BOARD}.rootfs-latest.wic.gz
+          ln -sf ${LATEST_BMAP} core-image-full-cmdline-${BOARD}.rootfs-latest.wic.bmap
 
       - name: run labgrid-client
         working-directory: /home/labgrid/boardgarden/boards
