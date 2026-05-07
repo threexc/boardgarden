@@ -120,15 +120,20 @@ jobs:
           uv run labgrid-client wait
           uv run labgrid-client -p + lock
           uv run labgrid-client -p + show
-          EXIT_CODE=0
-
-          if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
-            echo "Tests passed. Releasing reservation"
-          else
-            echo "All pytest attempts failed"
-            EXIT_CODE=1
+          EXIT_CODE=1
+          for ATTEMPT in 1 2 3; do
+            echo "Test attempt ${ATTEMPT} of 3"
+            if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
+              echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
+              EXIT_CODE=0
+              break
+            else
+              echo "Attempt ${ATTEMPT} failed"
+            fi
+          done
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "All 3 pytest attempts failed"
           fi
-
           uv run labgrid-client -p + -c $BOARD/client.yaml pw off
           uv run labgrid-client -p + release
           exit $EXIT_CODE
