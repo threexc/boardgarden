@@ -1,13 +1,20 @@
 # Helper functions for the boardfarm's test suites and strategies
 
 default_bootargs = (
-    "$bootargs "
-    "console=ttyS0,115200n8 "
-    "root=/dev/nfs "
+    "console=tty1 "
+    "console=ttyS0,115200 "
+    "consoleblank=0 "
+    "earlycon=sbi "
+    "fsck.fix=yes "
+    "fsck.repair=yes "
+    "loglevel=7 "
+    "net.ifnames=0 "
+    "no_console_suspend "
+    "plymouth.ignore-serial-consoles "
+    "rootwait "
     "rw "
-    "nfsroot=$serverip:/srv/nfs3/rv2_1,nfsvers=3,tcp "
-    "ip=dhcp "
-    "rootdelay=5"
+    "splash "
+    "systemd.journald.storage=volatile "
 )
 
 default_serverip = "192.168.40.134"
