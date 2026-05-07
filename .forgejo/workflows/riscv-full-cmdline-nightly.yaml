@@ -81,6 +81,10 @@ jobs:
           enable-fragment \
           core/yocto/root-login-with-empty-password
 
+          # We need to disable osc-context for systemd to avoid issues with
+          # labgrid detecting prompts when images are booted
+          echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
+
           bitbake core-image-full-cmdline
 
       - name: copy kernel and dtb to TFTP server
