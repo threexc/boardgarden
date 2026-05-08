@@ -30,6 +30,16 @@ class MusePiProBootStrategy(Strategy):
     }
 
     status = attr.ib(default=Status.unknown)
+    bootargs = (
+        "console=ttyS0,115200n8 "
+        "earlyprintk "
+        "loglevel=7 "
+        "root=/dev/mmcblk0p6 "
+        "rootfstype=ext4 "
+        "rootwait "
+        "swiotlb=65536 "
+        "workqueue.default_affinity_scope=system "
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -67,7 +77,7 @@ class MusePiProBootStrategy(Strategy):
             # transition to uboot
             self.transition(Status.uboot)
             helpers.uboot_set_server_ip(self)
-            helpers.uboot_set_bootargs(self)
+            helpers.uboot_set_bootargs(self, self.bootargs)
             helpers.uboot_tftpboot_file(self, "$kernel_addr_r", "muse-pi-pro", "Image")
             helpers.uboot_tftpboot_file(self, "$dtb_addr", "muse-pi-pro", "k1-musepi-pro.dtb")
             self.uboot.boot("tftp")
