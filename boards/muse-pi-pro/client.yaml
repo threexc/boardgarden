@@ -37,6 +37,7 @@ targets:
           prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
           login_prompt: '[-\w]+ login: '
           username: 'root'
+          password: 'bianbu'
           name: 'muse-pi-pro-shell-1'
           bindings:
             console: 'muse-pi-pro-console-1'
