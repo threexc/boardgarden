@@ -25,25 +25,12 @@ templates for running Yocto-specific workflows, while the `dockerfiles`
 directory contains definitions for the `container-builder`, `labgrid-operator`,
 and `yocto-builder` container images stored in the registry.
 
-There are six secrets in use, which must be added for proper operation:
+The following secrets are in use:
 
-For allowing runner access to the Labgrid exporter machine:
-
-1. `LG_EXPORTER_SSH_KEY`
-
-For pushing container images to the internal registry:
-
-3. `REGISTRY_TOKEN`
-4. `REGISTRY_USERNAME`
-
-For copying test reports to the web server:
-
-5. `REPORT_SSH_KEY`
-
-For copying build artifacts to the TFTP server:
-
-6. `SSH_KNOWN_HOSTS`
-7. `TFTP_SERVER_SSH_KEY`
+- `LG_EXPORTER_SSH_KEY` for allowing runner access to the Labgrid exporter machine
+- `REGISTRY_TOKEN` and `REGISTRY_USERNAME` for pushing container images to the internal registry
+- `REPORT_SSH_KEY` for copying test reports to the web server
+- `TFTP_SERVER_SSH_KEY` for copying build artifacts to the TFTP server
 
 ### boards
 
