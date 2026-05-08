@@ -32,6 +32,7 @@ on:
           - muse-pi-pro
           - nezha-allwinner-d1
           - orangepi-rv2-mainline
+
 env:
   FORGEJO_URL: "https://forgejo.oryx-coho.ts.net"
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
@@ -44,9 +45,9 @@ jobs:
       matrix:
         machine: >-
           ${{
-            inputs.machines == 'all' && fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]') ||
-            inputs.machines != 'all' && inputs.machines != '' && fromJSON(format('["{0}"]', inputs.machines)) ||
-            fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
+            inputs.machines != 'all' && inputs.machines != ''
+              && fromJSON(format('["{0}"]', inputs.machines))
+              || fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
           }}
     container:
       image: tgamblin/yocto-builder
@@ -58,8 +59,11 @@ jobs:
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
         RISCV_IMAGE: ${{ inputs.image || 'core-image-minimal' }}
         RISCV_MACHINE: ${{ matrix.machine }}
-        YOCTO_IMAGES_PATH: ${{ github.workspace }}/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images
+
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
       - name: set up bitbake, workflows
         run: |
           locale-gen en_US.UTF-8
@@ -88,56 +92,60 @@ jobs:
           . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
 
           bitbake-config-build \
-          enable-fragment \
-          core/yocto/root-login-with-empty-password
+            enable-fragment \
+            core/yocto/root-login-with-empty-password
 
-          # We need to disable osc-context for systemd to avoid issues with
-          # labgrid detecting prompts when images are booted
+          # Disable osc-context for systemd to avoid labgrid prompt-detection issues
+          # when images are booted during board tests
           echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
 
-          # Make sure we always build wic files
+          # Always produce wic images so the deploy step can flash boards
           echo "IMAGE_FSTYPES:append = \" wic.gz wic.bmap\"" >> conf/local.conf
 
           bitbake ${RISCV_IMAGE}
 
-      - name: copy kernel and dtb to TFTP server
+      - name: locate and verify images deploy directory
+        id: locate-images
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_rsa
+          IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images"
+          if [ ! -d "${IMAGES_PATH}/${RISCV_MACHINE}" ]; then
+            echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
+            exit 1
+          fi
+          # Strip -mainline suffix for TFTP directory name
           BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/Image* ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/*.dtb ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/extlinux.conf ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+          # Flag wic deployment for boards that support it
+          DEPLOY_WIC="false"
+          if [ "${RISCV_MACHINE}" = "bananapi-f3" ]; then
+            DEPLOY_WIC="true"
+          fi
+          echo "IMAGES_PATH=${IMAGES_PATH}" >> "$GITHUB_ENV"
+          echo "BOARD=${BOARD}"             >> "$GITHUB_ENV"
+          echo "DEPLOY_WIC=${DEPLOY_WIC}"   >> "$GITHUB_ENV"
 
-      - name: copy image wic files to TFTP server
-        if: matrix.machine == 'bananapi-f3'
-        run: |
-          BOARD="${RISCV_MACHINE%-mainline}"
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs-*.wic.gz ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
-          rsync -avz --omit-link-times --ignore-missing-args ${YOCTO_IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs-*.wic.bmap ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/
+      - name: set up SSH access to TFTP server
+        uses: ./.forgejo/actions/setup-tftp-ssh
+        with:
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
-          ssh ${TFTP_USER}@${TFTP_SERVER} "
-            cd /srv/tftp/${BOARD} &&
-            ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz &&
-            ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.bmap | head -1) ${BOARD}.rootfs-latest.wic.bmap
-          "
+      - name: deploy kernel, DTB, extlinux.conf and wic images
+        uses: ./.forgejo/actions/deploy-tftp-artifacts
+        with:
+          tftp_user: ${{ env.TFTP_USER }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          board: ${{ env.BOARD }}
+          machine: ${{ matrix.machine }}
+          image: ${{ env.RISCV_IMAGE }}
+          images_path: ${{ env.IMAGES_PATH }}
+          deploy_wic: ${{ env.DEPLOY_WIC }}
 
       - name: trigger board tests
-        if: success()
-        run: |
-          HTTP_CODE=$(curl -s -o /tmp/dispatch_response.json -w "%{http_code}" -X POST \
-            -H "Authorization: token ${{ secrets.ACTION_DISPATCH }}" \
-            -H "Content-Type: application/json" \
-            "https://forgejo.oryx-coho.ts.net/api/v1/repos/${{ github.repository }}/actions/workflows/riscv-board-test-nightly.yaml/dispatches" \
-            --data '{
-              "ref": "${{ github.ref_name }}",
-              "inputs": {
-                "image": "${{ env.RISCV_IMAGE }}",
-                "machine": "${{ matrix.machine }}"
-              }
-            }')
-          echo "HTTP status: ${HTTP_CODE}"
-          echo "Response body: $(cat /tmp/dispatch_response.json)"
-          [ "${HTTP_CODE}" = "204" ] || exit 1
+        uses: ./.forgejo/actions/dispatch-board-test
+        with:
+          forgejo_url: ${{ env.FORGEJO_URL }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
+          dispatch_token: ${{ secrets.ACTION_DISPATCH }}
+          machine: ${{ matrix.machine }}
+          image: ${{ env.RISCV_IMAGE }}
