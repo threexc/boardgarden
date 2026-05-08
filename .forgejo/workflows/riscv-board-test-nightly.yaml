@@ -22,9 +22,7 @@ on:
         options:
           - all
           - bananapi-f3
-          - eswin-ebc77-mainline
           - muse-pi-pro
-          - nezha-allwinner-d1
           - orangepi-rv2-mainline
 env:
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"

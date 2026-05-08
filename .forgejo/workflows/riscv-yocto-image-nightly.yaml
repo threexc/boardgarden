@@ -141,6 +141,7 @@ jobs:
           tftp_user: ${{ env.TFTP_USER }}
 
       - name: trigger board tests
+        if: contains(fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]'), matrix.machine)
         uses: ./.forgejo/actions/dispatch-board-test
         with:
           dispatch_token: ${{ secrets.ACTION_DISPATCH }}
