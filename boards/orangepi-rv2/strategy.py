@@ -30,6 +30,17 @@ class OrangePiRV2BootStrategy(Strategy):
     }
 
     status = attr.ib(default=Status.unknown)
+    bootargs = (
+        "console=ttyS0,115200n8 "
+        "earlyprintk "
+        "ip=dhcp "
+        "loglevel=7 "
+        "nfsroot=$serverip:/srv/nfs3/rv2_1,nfsvers=3,tcp "
+        "root=/dev/nfs "
+        "rootdelay=5 "
+        "rw "
+        "swiotlb=65536 "
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -67,7 +78,7 @@ class OrangePiRV2BootStrategy(Strategy):
             # transition to uboot
             self.transition(Status.uboot)
             helpers.uboot_set_server_ip(self)
-            helpers.uboot_set_bootargs(self)
+            helpers.uboot_set_bootargs(self, self.bootargs)
             helpers.uboot_tftpboot_file(self, "$kernel_addr_r", "orangepi-rv2", "Image")
             helpers.uboot_tftpboot_file(self, "$fdt_addr_r", "orangepi-rv2", "k1-orangepi-rv2.dtb")
             self.uboot.boot("tftp")
