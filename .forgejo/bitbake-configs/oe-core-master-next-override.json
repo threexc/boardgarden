@@ -1,0 +1,17 @@
+{
+    "description": "Source override file for using master-next branch of openembedded-core",
+    "sources": {
+        "openembedded-core": {
+            "git-remote": {
+                "branch": "master-next",
+                "remotes": {
+                    "origin": {
+                        "uri": "https://git.openembedded.org/openembedded-core"
+                    }
+                },
+                "rev": "master-next"
+            }
+        }
+    },
+    "version": "1.0"
+}
