@@ -1,0 +1,29 @@
+name: 'git clone'
+description: 'Clones a git repository to a given path, with an optional ref'
+
+inputs:
+  url:
+    description: 'Repository URL'
+    required: true
+  path:
+    description: 'Destination path'
+    required: true
+  ref:
+    description: 'Branch, tag, or commit to check out after cloning (default: repository default branch)'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: clone repository
+      shell: bash
+      env:
+        CLONE_URL: ${{ inputs.url }}
+        CLONE_PATH: ${{ inputs.path }}
+        CLONE_REF: ${{ inputs.ref }}
+      run: |
+        git clone "${CLONE_URL}" "${CLONE_PATH}"
+        if [ -n "${CLONE_REF}" ]; then
+          git -C "${CLONE_PATH}" checkout "${CLONE_REF}"
+        fi
