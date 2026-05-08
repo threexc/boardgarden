@@ -1,0 +1,24 @@
+name: 'Setup TFTP SSH Access'
+description: 'Installs SSH credentials for rsync/ssh access to the TFTP server'
+
+inputs:
+  ssh_private_key:
+    description: 'Private key for the TFTP server user'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts content covering the TFTP server'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: install SSH credentials
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh_private_key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh_known_hosts }}
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+        printf '%s\n' "${SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa
