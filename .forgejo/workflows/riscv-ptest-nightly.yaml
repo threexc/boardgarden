@@ -2,62 +2,125 @@ on:
   schedule:
     - cron: '0 7 * * *'
   workflow_dispatch:
+    inputs:
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - oe-core-master-next
+      package:
+        description: 'Package to build and test'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - bzip2
+          - coreutils
+          - gnutls
+          - gzip
+          - parted
+          - python3-cryptography
+          - tar
+          - xz
 jobs:
   build-riscv-image:
     runs-on: docker
     strategy:
       matrix:
-        package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
+        package: >-
+          ${{
+            inputs.package != 'all' && inputs.package != '' && fromJSON(format('["{0}"]', inputs.package)) ||
+            fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
+          }}
     container:
       image: tgamblin/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
+      env:
+        BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
+        DL_DIR: "/buildcache/downloads"
+        RISCV_MACHINE: "qemuriscv64"
+        PTEST_PACKAGE: ${{ matrix.package }}
+        SSTATE_DIR: "/buildcache/sstate-cache"
     steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: clone boardgarden
+        uses: ./.forgejo/actions/git-clone
+        with:
+          url: https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
+          path: boardgarden
+
+      - name: clone bitbake
+        uses: ./.forgejo/actions/git-clone
+        with:
+          url: https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
+          path: bitbake
+
+      - name: configure bitbake and layers
+        run: |
+          OVERRIDE_ARG=""
+          if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
+            OVERRIDE_ARG="--source-override boardgarden/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
+          fi
+
+          ./bitbake/bin/bitbake-setup \
+            --debug \
+            init \
+            --non-interactive \
+            ${OVERRIDE_ARG} \
+            ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json \
+            poky \
+            distro/poky \
+            machine/${RISCV_MACHINE}
+
       - name: build core-image-ptest image
         working-directory: /home/yoctouser/yocto-build
         run: |
-          locale-gen en_US.UTF-8
-          export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git .
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-yocto.git
-          cd openembedded-core && source oe-init-build-env
-          bitbake-layers add-layer ../../meta-yocto/meta-poky
-          bitbake-layers add-layer ../../meta-yocto/meta-yocto-bsp
-          echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf
-          echo "SSTATE_DIR = \"/buildcache/sstate-cache\"" >> conf/local.conf
-          echo "BB_HASHSERVE_DB_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
+          . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
           echo "IMAGE_FSTYPES += \" ext4\"" >> conf/local.conf
-          echo "DISTRO = \"poky\"" >> conf/local.conf
-          echo "EXTRA_IMAGE_FEATURES ?= \"allow-empty-password empty-root-password allow-root-login\"" >> conf/local.conf
-          MACHINE=qemuriscv64 bitbake core-image-ptest-${PTEST_PACKAGE}
+
+          bitbake-config-build \
+            enable-fragment \
+            core/yocto/root-login-with-empty-password
+          
+          bitbake core-image-ptest-${PTEST_PACKAGE}
         env:
           PTEST_PACKAGE: ${{ matrix.package }}
       - name: Archive qemuriscv64 bios
         uses: actions/upload-artifact@v3
         with:
           name: ptest_image_bios_${{ matrix.package }}
-          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
+          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
       - name: Archive qemuriscv64 kernel
         uses: actions/upload-artifact@v3
         with:
           name: ptest_image_kernel_${{ matrix.package }}
-          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/Image
+          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/Image
       - name: Archive qemuriscv64 ext4 rootfs
         uses: actions/upload-artifact@v3
         with:
           name: ptest_image_ext4_${{ matrix.package }}
-          path: /home/yoctouser/yocto-build/openembedded-core/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
+          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
 
   run-ptests:
     runs-on: docker
+    needs: build-riscv-image
     strategy:
       matrix:
-        package: ['bzip2', 'coreutils', 'gnutls', 'gzip', 'parted', 'python3-cryptography', 'tar', 'xz']
+        package: >-
+          ${{
+            inputs.package != 'all' && inputs.package != '' && fromJSON(format('["{0}"]', inputs.package)) ||
+            fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
+          }}
     container:
       image: tgamblin/lg-operator
-      options: --add-host ecogrid:192.168.40.101 ecovault:192.168.40.134
+      options: --add-host ecogrid:192.168.40.101 --add-host ecovault:192.168.40.134
     steps:
       - name: Download qemuriscv64 bios
         uses: actions/download-artifact@v3
