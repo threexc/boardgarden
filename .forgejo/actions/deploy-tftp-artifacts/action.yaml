@@ -1,0 +1,77 @@
+name: 'Deploy Artifacts to TFTP Server'
+description: >
+  Rsyncs kernel, DTB, extlinux.conf, and (optionally) wic flash images
+  to the TFTP server for a given board.
+
+inputs:
+  tftp_user:
+    description: 'SSH user on the TFTP server'
+    required: true
+  tftp_server:
+    description: 'Hostname of the TFTP server'
+    required: true
+  board:
+    description: >
+      Short board name used as the TFTP subdirectory
+      (e.g. bananapi-f3, not bananapi-f3-mainline)
+    required: true
+  machine:
+    description: 'Full Yocto MACHINE value (may include -mainline suffix)'
+    required: true
+  image:
+    description: 'Yocto image name (e.g. core-image-minimal)'
+    required: true
+  images_path:
+    description: 'Absolute path to tmp/deploy/images on the builder'
+    required: true
+  deploy_wic:
+    description: 'Whether to also rsync wic flash images and update latest symlinks'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: rsync kernel, DTB and extlinux.conf
+      shell: bash
+      env:
+        TFTP_USER: ${{ inputs.tftp_user }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+        BOARD: ${{ inputs.board }}
+        MACHINE: ${{ inputs.machine }}
+        IMAGES_PATH: ${{ inputs.images_path }}
+      run: |
+        SRC="${IMAGES_PATH}/${MACHINE}"
+        DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+        rsync -avz --omit-link-times --ignore-missing-args \
+          "${SRC}"/Image* \
+          "${SRC}"/*.dtb \
+          "${SRC}"/extlinux.conf \
+          "${DST}/"
+
+    - name: rsync wic flash images and update latest symlinks
+      if: inputs.deploy_wic == 'true'
+      shell: bash
+      env:
+        TFTP_USER: ${{ inputs.tftp_user }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+        BOARD: ${{ inputs.board }}
+        MACHINE: ${{ inputs.machine }}
+        IMAGE: ${{ inputs.image }}
+        IMAGES_PATH: ${{ inputs.images_path }}
+      run: |
+        SRC="${IMAGES_PATH}/${MACHINE}"
+        DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+        rsync -avz --omit-link-times --ignore-missing-args \
+          "${SRC}/${IMAGE}-${MACHINE}.rootfs-"*.wic.gz \
+          "${DST}/"
+        rsync -avz --omit-link-times --ignore-missing-args \
+          "${SRC}/${IMAGE}-${MACHINE}.rootfs-"*.wic.bmap \
+          "${DST}/"
+
+        ssh "${TFTP_USER}@${TFTP_SERVER}" "
+          set -e
+          cd /srv/tftp/${BOARD}
+          ln -sf \$(ls -1t ${IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz
+          ln -sf \$(ls -1t ${IMAGE}-${BOARD}.rootfs-*.wic.bmap | head -1) ${BOARD}.rootfs-latest.wic.bmap
+        "
