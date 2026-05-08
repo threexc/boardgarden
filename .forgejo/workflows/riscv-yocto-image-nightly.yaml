@@ -54,11 +54,11 @@ jobs:
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
-        DL_DIR: "/buildcache/downloads"
-        SSTATE_DIR: "/buildcache/sstate-cache"
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
+        DL_DIR: "/buildcache/downloads"
         RISCV_IMAGE: ${{ inputs.image || 'core-image-minimal' }}
         RISCV_MACHINE: ${{ matrix.machine }}
+        SSTATE_DIR: "/buildcache/sstate-cache"
 
     steps:
       - name: checkout
@@ -126,26 +126,26 @@ jobs:
       - name: set up SSH access to TFTP server
         uses: ./.forgejo/actions/setup-tftp-ssh
         with:
-          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
 
       - name: deploy kernel, DTB, extlinux.conf and wic images
         uses: ./.forgejo/actions/deploy-tftp-artifacts
         with:
-          tftp_user: ${{ env.TFTP_USER }}
-          tftp_server: ${{ env.TFTP_SERVER }}
           board: ${{ env.BOARD }}
-          machine: ${{ matrix.machine }}
+          deploy_wic: ${{ env.DEPLOY_WIC }}
           image: ${{ env.RISCV_IMAGE }}
           images_path: ${{ env.IMAGES_PATH }}
-          deploy_wic: ${{ env.DEPLOY_WIC }}
+          machine: ${{ matrix.machine }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          tftp_user: ${{ env.TFTP_USER }}
 
       - name: trigger board tests
         uses: ./.forgejo/actions/dispatch-board-test
         with:
-          forgejo_url: ${{ env.FORGEJO_URL }}
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
           dispatch_token: ${{ secrets.ACTION_DISPATCH }}
-          machine: ${{ matrix.machine }}
+          forgejo_url: ${{ env.FORGEJO_URL }}
           image: ${{ env.RISCV_IMAGE }}
+          machine: ${{ matrix.machine }}
+          ref: ${{ github.ref_name }}
+          repository: ${{ github.repository }}
