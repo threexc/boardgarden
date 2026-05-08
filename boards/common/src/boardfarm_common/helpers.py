@@ -47,5 +47,3 @@ def uboot_set_bootargs(strategy, bootargs=default_bootargs):
 
 def uboot_tftpboot_file(strategy, loadaddr, board_name, file_name):
     strategy.uboot.run(f"tftpboot {loadaddr} {board_name}/{file_name}")
-    strategy.uboot.run(f"tftpboot $kernel_addr_r orangepi-rv2/Image")
-    strategy.uboot.run(f"tftpboot $fdt_addr_r orangepi-rv2/k1-orangepi-rv2.dtb")
