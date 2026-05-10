@@ -1,7 +1,6 @@
 import enum
 
 import attr
-import time
 
 import boardfarm_common.helpers as helpers
 
