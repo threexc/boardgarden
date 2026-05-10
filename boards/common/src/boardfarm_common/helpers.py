@@ -32,18 +32,12 @@ def uboot_stage(strategy):
     strategy.staged = True
 
 def uboot_set_server_ip(strategy, serverip=default_serverip):
-    tftpdir = strategy.tftp.get_export_vars()['internal']
-    strategy.uboot.run(f"setenv autoload no")
-    try:
-        strategy.uboot.run(f"dhcp", timeout=10)
-    except Exception as e:
-        strategy.uboot.run(f"dhcp")
-    
+    strategy.uboot.run("setenv autoload no")
+    strategy.uboot.run("dhcp", timeout=10)
     strategy.uboot.run(f"setenv serverip {serverip}")
 
 def uboot_set_bootargs(strategy, bootargs=default_bootargs):
     strategy.uboot.run(f"setenv bootargs {bootargs}")
-    strategy.uboot.run(f" echo $bootargs")
 
 def uboot_tftpboot_file(strategy, loadaddr, board_name, file_name):
     strategy.uboot.run(f"tftpboot {loadaddr} {board_name}/{file_name}")
