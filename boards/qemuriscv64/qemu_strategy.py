@@ -1,4 +1,3 @@
-import shutil
 import enum
 import attr
 from labgrid.step import step
