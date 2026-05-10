@@ -148,5 +148,5 @@ jobs:
           forgejo_url: ${{ env.FORGEJO_URL }}
           image: ${{ env.RISCV_IMAGE }}
           machine: ${{ matrix.machine }}
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.ref_name || 'main' }}
           repository: ${{ github.repository }}
