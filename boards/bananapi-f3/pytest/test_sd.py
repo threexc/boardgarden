@@ -1,6 +1,3 @@
-import json
-import pytest
-import re
 import os
 
 from labgrid.driver import ExecutionError
