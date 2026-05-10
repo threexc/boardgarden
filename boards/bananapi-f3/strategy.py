@@ -1,8 +1,6 @@
 import attr
 import enum
 
-import boardfarm_common.helpers as helpers
-
 from labgrid.factory import target_factory
 from labgrid.strategy.common import Strategy, StrategyError
 from labgrid.driver.usbstoragedriver import Mode
