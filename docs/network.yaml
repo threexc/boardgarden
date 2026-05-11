@@ -12,6 +12,12 @@ machines:
     label: "ecogrid"
     tailscale_name: ecogrid
     os: Debian 13 ("Trixie")
+    hardware:
+      model: ThinkCentre M75q-1
+      specs:
+        - AMD Ryzen 5 PRO 3400GE
+        - 16 GB DDR4 RAM
+
     software:
       - name: Labgrid Coordinator
         package: labgrid
@@ -37,17 +43,33 @@ machines:
     label: "ecovault"
     tailscale_name: ecovault
     os: Debian 13 ("Trixie")
+    hardware:
+      model: ThinkCentre M715q
+      specs:
+        - AMD Ryzen 3 PRO 2200GE
+        - 16 GB DDR4 RAM
 
   - id: runner1
     label: "megalith"
     tailscale_name: megalith
     os: Fedora 44
+    hardware:
+      model: Custom Build
+      url: https://www.asrock.com/MB/AMD/B650E%20Taichi/index.asp
+      specs:
+        - AMD Ryzen 9 7900
+        - 64 GB DDR5 RAM
 
   - id: runner2
     label: "microlith"
     tailscale_name: microlith
     os: Fedora 44
     status: planned
+    hardware:
+      model: ThinkCentre M75q-1
+      specs:
+        - AMD Ryzen 5 PRO 3400GE
+        - 16 GB DDR4 RAM
 
   - id: github
     label: "GitHub"
@@ -92,6 +114,7 @@ boards:
     label: bananapi-f3
     vendor: BananaPi
     model: BPI-F3
+    url: https://wiki.banana-pi.org/Banana_Pi_BPI-F3
     arch: riscv64 (RVA22 + RVV 1.0)
     connection: serial + power + sd mux
 
@@ -99,6 +122,7 @@ boards:
     label: muse-pi-pro
     vendor: SpacemiT
     model: Muse Pi Pro
+    url: https://www.spacemit.com/muse-pi-pro/
     arch: riscv64 (RVA22 + RVV 1.0)
     connection: serial + power
 
@@ -106,6 +130,7 @@ boards:
     label: orangepi-rv2
     vendor: OrangePi
     model: OrangePi RV2
+    url: http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html
     arch: riscv64 (RVA22 + RVV 1.0)
     connection: serial + power
 
@@ -130,16 +155,19 @@ links:
         hardware:
           - part: BayLibre CoPilot
             pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: Power control
       - label: serial
         hardware:
           - part: Raspberry Pi Debug Probe
             pn: Debug_Probe__CMSIS-DAP_0101
+            url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
       - label: SD mux
         hardware:
           - part: USB SD Mux
             pn: usb-sd-mux_rev4.0
+            url: https://linux-automation.com/en/products/usb-sd-mux.html
             role: USB SD Mux controller
 
   - from: ecogrid
@@ -150,11 +178,13 @@ links:
         hardware:
           - part: BayLibre CoPilot
             pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: Power control
       - label: serial
         hardware:
           - part: Raspberry Pi Debug Probe
             pn: Debug_Probe__CMSIS-DAP_0101
+            url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
 
   - from: ecogrid
@@ -165,11 +195,13 @@ links:
         hardware:
           - part: BayLibre CoPilot
             pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: Power control
       - label: serial
         hardware:
           - part: Raspberry Pi Debug Probe
             pn: Debug_Probe__CMSIS-DAP_0101
+            url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
 
   # Logical: mirror
