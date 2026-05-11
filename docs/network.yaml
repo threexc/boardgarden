@@ -1,0 +1,219 @@
+# network.yaml — Infrastructure Bill of Materials
+# Two tiers: machines (hosts) and services (Tailnet endpoints).
+# All nodes are on the Tailnet — only physical and meaningful logical links are drawn.
+
+network:
+  name: boardgarden
+  tailnet_domain: oryx-coho.ts.net
+
+machines:
+
+  - id: ecogrid
+    label: "ecogrid"
+    tailscale_name: ecogrid
+    os: Debian 13 ("Trixie")
+    software:
+      - name: Labgrid Coordinator
+        package: labgrid
+        version: "25.1.dev273"
+        role: Board resource coordinator
+        protocol: gRPC
+        port: 20408
+        note: Co-located with exporter for now; may separate
+      - name: BananaPi F3 Exporter
+        package: labgrid
+        version: "25.1.dev273"
+        role: Exposes USB-to-UART, power, and SD mux to coordinator
+      - name: Muse Pi Pro Exporter
+        package: labgrid
+        version: "25.1.dev273"
+        role: Exposes USB-to-UART and power to coordinator
+      - name: OrangePi RV2 Exporter
+        package: labgrid
+        version: "25.1.dev273"
+        role: Exposes USB-to-UART and power to coordinator
+
+  - id: ecovault
+    label: "ecovault"
+    tailscale_name: ecovault
+    os: Debian 13 ("Trixie")
+
+  - id: runner1
+    label: "megalith"
+    tailscale_name: megalith
+    os: Fedora 44
+
+  - id: runner2
+    label: "microlith"
+    tailscale_name: microlith
+    os: Fedora 44
+    status: planned
+
+  - id: github
+    label: "GitHub"
+    type: external
+    note: Passive push mirror only
+
+
+# Services — discrete Tailnet endpoints; clients connect to these, not directly to machines
+services:
+
+  - id: svc_forgejo
+    label: "tgamblin's Forgejo"
+    tailscale_name: forgejo
+    host: ecogrid
+    software:
+      - name: Forgejo
+        version: "15.0.1"
+    role: Git hosting + CI (Actions)
+
+  - id: svc_tftp
+    label: "TFTP server"
+    host: ecovault
+    software:
+      - name: tftpd-hpa
+        version: "5.2+20240610-3"
+    role: Serves bootable images to test targets
+
+  - id: svc_reports
+    label: "Test reports server"
+    tailscale_name: testreports
+    host: ecovault
+    software:
+      - name: nginx
+        version: "1.26.3-3+deb13u2"
+    role: Receives and displays test results
+
+
+# Physical boards — connected to ecogrid via serial/USB/power through Labgrid exporter
+boards:
+
+  - id: board_1
+    label: bananapi-f3
+    vendor: BananaPi
+    model: BPI-F3
+    arch: riscv64 (RVA22 + RVV 1.0)
+    connection: serial + power + sd mux
+
+  - id: board_2
+    label: muse-pi-pro
+    vendor: SpacemiT
+    model: Muse Pi Pro
+    arch: riscv64 (RVA22 + RVV 1.0)
+    connection: serial + power
+
+  - id: board_3
+    label: orangepi-rv2
+    vendor: OrangePi
+    model: OrangePi RV2
+    arch: riscv64 (RVA22 + RVV 1.0)
+    connection: serial + power
+
+  - id: board_4
+    label: qemuriscv64
+    vendor: QEMU
+    model: RVA23U64
+    arch: riscv64 (RVA23U64)
+    connection: virtual
+
+# Explicit logical links (beyond implicit Tailnet connectivity)
+# type: physical | logical
+# Only draw links that are meaningful to show — e.g. what talks to what, not "everything on Tailnet"
+links:
+
+  # Physical board connections (real cables)
+  - from: ecogrid
+    to: board_1
+    type: physical
+    interfaces:
+      - label: power
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            role: Power control
+      - label: serial
+        hardware:
+          - part: Raspberry Pi Debug Probe
+            pn: Debug_Probe__CMSIS-DAP_0101
+            role: USB-to-UART bridge
+      - label: SD mux
+        hardware:
+          - part: USB SD Mux
+            pn: usb-sd-mux_rev4.0
+            role: USB SD Mux controller
+
+  - from: ecogrid
+    to: board_2
+    type: physical
+    interfaces:
+      - label: power
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            role: Power control
+      - label: serial
+        hardware:
+          - part: Raspberry Pi Debug Probe
+            pn: Debug_Probe__CMSIS-DAP_0101
+            role: USB-to-UART bridge
+
+  - from: ecogrid
+    to: board_3
+    type: physical
+    interfaces:
+      - label: power
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            role: Power control
+      - label: serial
+        hardware:
+          - part: Raspberry Pi Debug Probe
+            pn: Debug_Probe__CMSIS-DAP_0101
+            role: USB-to-UART bridge
+
+  # Logical: mirror
+  - from: svc_forgejo
+    to: github
+    label: push mirror
+    type: logical
+    style: dashed
+
+  # Logical: test harness interactions (what the runners/boards actually call)
+  - from: runner1
+    to: ecogrid
+    label: acquire board, test
+    type: logical
+
+  - from: runner1
+    to: svc_tftp
+    label: upload image
+    type: logical
+
+  - from: runner1
+    to: svc_reports
+    label: upload results
+    type: logical
+
+  - from: runner1
+    to: board_4
+    label: boot QEMU via Labgrid and run tests
+    type: logical
+
+  - from: board_1
+    to: svc_tftp
+    label: Yocto .wic image
+    type: logical
+    reverse: true
+
+  - from: board_2
+    to: svc_tftp
+    label: kernel + dtb + eMMC rootfs (Armbian)
+    type: logical
+    reverse: true
+
+  - from: board_3
+    to: svc_tftp
+    label: kernel + dtb + Yocto nfsroot
+    type: logical
+    reverse: true
