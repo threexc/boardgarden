@@ -137,8 +137,8 @@ boards:
   - id: board_4
     label: qemuriscv64
     vendor: QEMU
-    model: RVA23U64
-    arch: riscv64 (RVA23U64)
+    model: RVA23S64
+    arch: riscv64 (RVA23S64)
     connection: virtual
 
 # Explicit logical links (beyond implicit Tailnet connectivity)
