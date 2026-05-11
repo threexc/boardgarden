@@ -214,7 +214,7 @@ links:
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
     to: ecogrid
-    label: acquire board, test
+    label: acquire board, run tests
     type: logical
 
   - from: runner1
@@ -229,7 +229,7 @@ links:
 
   - from: runner1
     to: board_4
-    label: boot QEMU via Labgrid and run tests
+    label: boot QEMU, run tests
     type: logical
 
   - from: board_1
