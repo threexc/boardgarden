@@ -327,13 +327,17 @@ def generate_bom(data):
                 for hw in lnk.get("hardware", []):
                     board_hw.append((lnk.get("label", "—"), hw))
             if board_hw:
-                ...
+                label = clean(board.get("label")) or board["id"]
+                out.append(f"### {label}\n")
+                out.append("| Interface | Part | Part Number | Role |")
+                out.append("|-----------|------|-------------|------|")
                 for iface_label, hw in board_hw:
                     pn   = clean(hw.get("pn"))  or "—"
                     part = hw["part"]
                     url  = clean(hw.get("url"))
                     part_cell = f"[{part}]({url})" if url else part
                     out.append(f'| {iface_label} | {part_cell} | {pn} | {hw.get("role","—")} |')
+                out.append("")
 
     return "\n".join(out)
 
