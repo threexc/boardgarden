@@ -1,0 +1,74 @@
+# Pipeline variables (set in schedule or manual run):
+#   MACHINES              — specific machine name, or empty for all
+#   RISCV_IMAGE           — image to build (default: core-image-minimal)
+#   BITBAKE_SETUP_OVERRIDE — none (default) or meta-riscv-tgamblin-k1-fixes
+#
+# Runner requirements:
+#   - Volume mount: /auto/runner/buildcache:/buildcache
+#   - CI variable PIPELINE_TRIGGER_TOKEN for board-test dispatch
+#     (GitLab → Settings → CI/CD → Pipeline triggers)
+#
+# boardgarden IS this repo — $CI_PROJECT_DIR has the bitbake-configs directly.
+
+build-riscv-image:
+  stage: build
+  image: $YOCTO_BUILDER_IMAGE
+  variables:
+    DL_DIR: /buildcache/downloads
+    SSTATE_DIR: /buildcache/sstate-cache
+    BITBAKE_SETUP_OVERRIDE: none
+    RISCV_IMAGE: core-image-minimal
+  parallel:
+    matrix:
+      - MATRIX_MACHINE:
+          - bananapi-f3
+          - eswin-ebc77-mainline
+          - muse-pi-pro
+          - nezha-allwinner-d1
+          - orangepi-rv2-mainline
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "yocto-image-nightly"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "yocto-image-nightly" && $MACHINES == ""'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "yocto-image-nightly" && $MACHINES == $MATRIX_MACHINE'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $SCHEDULE_NAME == "yocto-image-nightly" && $MACHINES == $MATRIX_MACHINE'
+      when: always
+    - when: never
+  script:
+    - locale-gen en_US.UTF-8
+    - export LANG=en_US.UTF-8
+    - git clone "$BITBAKE_URL" bitbake
+    - |
+      OVERRIDE_ARG=""
+      if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
+        OVERRIDE_ARG="--source-override ${CI_PROJECT_DIR}/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
+      fi
+      ./bitbake/bin/bitbake-setup \
+        --debug init --non-interactive \
+        ${OVERRIDE_ARG} \
+        "${CI_PROJECT_DIR}/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json" \
+        nodistro machine/${MATRIX_MACHINE}
+    - |
+      . "${CI_PROJECT_DIR}/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env"
+      bitbake-config-build enable-fragment core/yocto/root-login-with-empty-password
+      echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
+      echo "IMAGE_FSTYPES:append = \" wic.gz wic.bmap\"" >> conf/local.conf
+      bitbake "${RISCV_IMAGE}"
+    - |
+      IMAGES_PATH="${CI_PROJECT_DIR}/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images"
+      if [ ! -d "${IMAGES_PATH}/${MATRIX_MACHINE}" ]; then
+        echo "Expected images directory not found: ${IMAGES_PATH}/${MATRIX_MACHINE}"
+        exit 1
+      fi
+      export IMAGES_PATH
+      export MACHINE="${MATRIX_MACHINE}"
+      export RISCV_MACHINE="${MATRIX_MACHINE}"
+      export BOARD="${MATRIX_MACHINE%-mainline}"
+      export DEPLOY_WIC=false
+      [ "${MATRIX_MACHINE}" = "bananapi-f3" ] && export DEPLOY_WIC=true
+    - !reference [.ssh-setup-tftp, script]
+    - !reference [.deploy-tftp-kernel-dtb, script]
+    - !reference [.deploy-tftp-wic, script]
+    - !reference [.dispatch-board-test, script]

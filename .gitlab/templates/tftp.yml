@@ -1,0 +1,33 @@
+# TFTP artifact deploy snippets.
+# Use via !reference in a job's script list.
+# Required env vars: BOARD, MACHINE, RISCV_IMAGE, IMAGES_PATH, TFTP_USER, TFTP_SERVER
+
+.deploy-tftp-kernel-dtb:
+  script:
+    - |
+      SRC="${IMAGES_PATH}/${MACHINE}"
+      DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+      rsync -avz --omit-link-times --ignore-missing-args \
+        "${SRC}"/Image* \
+        "${SRC}"/*.dtb \
+        "${SRC}"/extlinux.conf \
+        "${DST}/"
+
+# Only runs when DEPLOY_WIC=true; safe to reference unconditionally.
+.deploy-tftp-wic:
+  script:
+    - |
+      if [ "${DEPLOY_WIC}" = "true" ]; then
+        SRC="${IMAGES_PATH}/${MACHINE}"
+        DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+        rsync -avz --omit-link-times --ignore-missing-args \
+          "${SRC}/${RISCV_IMAGE}-${MACHINE}.rootfs-"*.wic.gz "${DST}/"
+        rsync -avz --omit-link-times --ignore-missing-args \
+          "${SRC}/${RISCV_IMAGE}-${MACHINE}.rootfs-"*.wic.bmap "${DST}/"
+        ssh "${TFTP_USER}@${TFTP_SERVER}" "
+          set -e
+          cd /srv/tftp/${BOARD}
+          ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz
+          ln -sf \$(ls -1t ${RISCV_IMAGE}-${BOARD}.rootfs-*.wic.bmap | head -1) ${BOARD}.rootfs-latest.wic.bmap
+        "
+      fi

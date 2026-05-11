@@ -1,0 +1,52 @@
+build-container-images:
+  stage: build
+  image: $CONTAINER_BUILDER_IMAGE
+  services:
+    - name: docker:dind
+      command: ["--host=tcp://0.0.0.0:2375"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq ca-certificates curl gnupg
+    - install -m 0755 -d /etc/apt/keyrings
+    - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    - |
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+        https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        > /etc/apt/sources.list.d/docker.list
+    - apt-get update -qq && apt-get install -y -qq docker-ce-cli
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - |
+      cat > /tmp/buildkitd.toml << 'EOF'
+      [registry."forgejo.oryx-coho.ts.net"]
+        ca=["/etc/ssl/certs/ca-certificates.crt"]
+      EOF
+      docker buildx create --use --driver docker-container \
+        --driver-opt network=host \
+        --config /tmp/buildkitd.toml
+    - echo "$REGISTRY_TOKEN" | docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
+  script:
+    - >
+      docker buildx build --push --platform linux/amd64
+      --tag "${REGISTRY}/tgamblin/yocto-builder:latest"
+      --file .forgejo/dockerfiles/yocto-builder/Dockerfile
+      .forgejo/dockerfiles
+    - >
+      docker buildx build --push --platform linux/amd64
+      --tag "${REGISTRY}/tgamblin/container-builder:latest"
+      --file .forgejo/dockerfiles/container-builder/Dockerfile
+      .forgejo/dockerfiles
+    - >
+      docker buildx build --push --platform linux/amd64
+      --tag "${REGISTRY}/tgamblin/lg-operator:latest"
+      --file .forgejo/dockerfiles/labgrid-operator/Dockerfile
+      .forgejo/dockerfiles
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "build-containers"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "build-containers"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - .forgejo/dockerfiles/**/*

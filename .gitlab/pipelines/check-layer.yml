@@ -1,0 +1,26 @@
+# This job runs in the project's own checkout (boardgarden IS this repo).
+# No boardgarden clone needed — $CI_PROJECT_DIR already has the files.
+#
+# Runner requirements:
+#   - Volume mount: /auto/runner/buildcache:/buildcache
+
+check-meta-riscv:
+  stage: build
+  image: $YOCTO_BUILDER_IMAGE
+  variables:
+    DL_DIR: /buildcache/downloads
+    SSTATE_DIR: /buildcache/sstate-cache
+  script:
+    - locale-gen en_US.UTF-8
+    - export LANG=en_US.UTF-8
+    - git clone "$OE_CORE_URL" openembedded-core
+    - git clone "$BITBAKE_URL" openembedded-core/bitbake
+    - git clone "$META_RISCV_URL" meta-riscv
+    - cd openembedded-core && source oe-init-build-env
+    - bitbake-layers add-layer ../../meta-riscv
+    - echo "DL_DIR = \"${DL_DIR}\"" >> conf/local.conf
+    - echo "SSTATE_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
+    - yocto-check-layer-wrapper ../../meta-riscv
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "check-layer"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "check-layer"'

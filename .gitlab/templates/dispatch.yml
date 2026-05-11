@@ -1,0 +1,27 @@
+# Trigger board-test-nightly pipeline via GitLab API.
+# Only dispatches for machines in the supported set; safe to reference unconditionally.
+# Required env vars: RISCV_MACHINE, RISCV_IMAGE
+# Required CI variable: PIPELINE_TRIGGER_TOKEN
+#   (GitLab → Settings → CI/CD → Pipeline triggers)
+
+.dispatch-board-test:
+  script:
+    - |
+      case "${RISCV_MACHINE}" in
+        bananapi-f3|muse-pi-pro|orangepi-rv2-mainline)
+          HTTP_CODE=$(curl -s -o /tmp/trigger_response.json -w "%{http_code}" \
+            -X POST \
+            "${CI_SERVER_URL}/api/v4/projects/${CI_PROJECT_ID}/trigger/pipeline" \
+            --form "token=${PIPELINE_TRIGGER_TOKEN}" \
+            --form "ref=${CI_COMMIT_REF_NAME}" \
+            --form "variables[SCHEDULE_NAME]=board-test-nightly" \
+            --form "variables[RISCV_MACHINE]=${RISCV_MACHINE}" \
+            --form "variables[RISCV_IMAGE]=${RISCV_IMAGE}")
+          echo "HTTP status: ${HTTP_CODE}"
+          cat /tmp/trigger_response.json
+          [ "${HTTP_CODE}" = "201" ] || { echo "Pipeline trigger failed"; exit 1; }
+          ;;
+        *)
+          echo "No board test dispatch for machine: ${RISCV_MACHINE}"
+          ;;
+      esac

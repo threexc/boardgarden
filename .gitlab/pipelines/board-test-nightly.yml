@@ -1,0 +1,94 @@
+# Triggered by:
+#   - yocto-image-nightly via pipeline trigger API (sets SCHEDULE_NAME, RISCV_MACHINE, RISCV_IMAGE)
+#   - Manual web run (set SCHEDULE_NAME=board-test-nightly, optionally MACHINES and RISCV_IMAGE)
+#
+# Pipeline variables:
+#   MACHINES    — specific machine, or empty for all
+#   RISCV_IMAGE — image to test (default: core-image-minimal)
+
+test-board-boot:
+  stage: test
+  image: $LG_OPERATOR_IMAGE
+  variables:
+    LG_COORDINATOR: ecogrid
+    RISCV_IMAGE: core-image-minimal
+    VERSION: "7.0"
+  parallel:
+    matrix:
+      - MATRIX_MACHINE: [bananapi-f3, muse-pi-pro, orangepi-rv2-mainline]
+  rules:
+    # Triggered by yocto-image-nightly for a specific machine
+    - if: >-
+        $CI_PIPELINE_SOURCE == "trigger" &&
+        $SCHEDULE_NAME == "board-test-nightly" &&
+        $RISCV_MACHINE == $MATRIX_MACHINE
+      when: always
+    # Manual run: all machines
+    - if: >-
+        $CI_PIPELINE_SOURCE == "web" &&
+        $SCHEDULE_NAME == "board-test-nightly" &&
+        $MACHINES == ""
+      when: always
+    # Manual run: specific machine
+    - if: >-
+        $CI_PIPELINE_SOURCE == "web" &&
+        $SCHEDULE_NAME == "board-test-nightly" &&
+        $MACHINES == $MATRIX_MACHINE
+      when: always
+    # Scheduled run: all machines
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "board-test-nightly"'
+      when: always
+    - when: never
+  before_script:
+    # ecogrid is on a private subnet; add it to /etc/hosts
+    - echo "${ECOGRID_IP} ecogrid" >> /etc/hosts
+    - echo "${ECOVAULT_IP} ecovault" >> /etc/hosts
+  script:
+    - export RISCV_MACHINE="${RISCV_MACHINE:-$MATRIX_MACHINE}"
+    - !reference [.ssh-setup-labgrid, script]
+    - !reference [.ssh-test-labgrid, script]
+    - git clone "$BOARDGARDEN_URL" /home/labgrid/boardgarden
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - cd /home/labgrid/boardgarden/boards && uv sync
+    - |
+      # Fetch latest wic images from TFTP for bare-metal flash boards
+      if [ "${RISCV_MACHINE}" = "bananapi-f3" ]; then
+        BOARD="${RISCV_MACHINE%-mainline}"
+        LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
+        LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.bmap")
+        cd /home/labgrid
+        rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+          "${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC}" .
+        rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+          "${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP}" .
+        ln -sf "${LATEST_WIC}" "${BOARD}.rootfs-latest.wic.gz"
+        ln -sf "${LATEST_BMAP}" "${BOARD}.rootfs-latest.wic.bmap"
+      fi
+    - |
+      cd /home/labgrid/boardgarden/boards
+      BOARD="${RISCV_MACHINE%-mainline}"
+      eval $(uv run labgrid-client reserve --shell machine=${RISCV_MACHINE})
+      uv run labgrid-client wait
+      uv run labgrid-client -p + lock
+      uv run labgrid-client -p + show
+      EXIT_CODE=1
+      for ATTEMPT in 1 2 3; do
+        echo "Test attempt ${ATTEMPT} of 3"
+        if uv run pytest -vvv --html=report.html --self-contained-html ${BOARD}/pytest; then
+          EXIT_CODE=0
+          break
+        fi
+        echo "Attempt ${ATTEMPT} failed"
+      done
+      [ $EXIT_CODE -ne 0 ] && echo "All 3 pytest attempts failed"
+      uv run labgrid-client -p + -c ${BOARD}/client.yaml pw off
+      uv run labgrid-client -p + release
+      exit $EXIT_CODE
+    - !reference [.ssh-setup-report, script]
+    - !reference [.ssh-test-report, script]
+    - |
+      REPORT_DIR="yocto/meta-riscv/${RISCV_MACHINE}/$(date +%Y%m%d)/${CI_PIPELINE_ID}"
+      ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/${REPORT_DIR}"
+      rsync -av /home/labgrid/boardgarden/boards/report.html "reporter@ecovault:/testresults/${REPORT_DIR}/"

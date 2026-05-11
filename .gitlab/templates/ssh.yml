@@ -1,0 +1,39 @@
+# SSH credential setup snippets.
+# Use via !reference in a job's before_script or script:
+#   before_script:
+#     - !reference [.ssh-setup-tftp, script]
+
+.ssh-setup-tftp:
+  script:
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+.ssh-setup-labgrid:
+  script:
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
+    - printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
+    - chmod 600 ~/.ssh/id_rsa ~/.ssh/id_rsa_tftp
+    - ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+    - ssh-keyscan "$ECOGRID_IP" >> ~/.ssh/known_hosts 2>/dev/null
+
+.ssh-setup-report:
+  script:
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
+    - ssh-keyscan "$ECOVAULT_IP" >> ~/.ssh/known_hosts 2>/dev/null
+
+.ssh-test-labgrid:
+  script:
+    - grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+    - ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@ecogrid "echo SSH connection successful"
+
+.ssh-test-report:
+  script:
+    - grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+    - ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful" || true
+    - ssh -v reporter@ecovault "echo SSH connection successful"

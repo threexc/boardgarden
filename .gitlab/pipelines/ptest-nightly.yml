@@ -1,0 +1,107 @@
+# Pipeline variables (set in schedule or manual run):
+#   PACKAGE               — specific package, or empty for all
+#   BITBAKE_SETUP_OVERRIDE — none (default) or oe-core-master-next
+#
+# Runner requirements:
+#   - Volume mount: /auto/runner/buildcache:/buildcache
+#
+# Requires GitLab 16.3+ for parallel matrix needs.
+#
+# boardgarden IS this repo — build jobs use $CI_PROJECT_DIR directly.
+# The run-ptests job clones a separate fork from github for the test harness.
+
+build-ptest-image:
+  stage: build
+  image: $YOCTO_BUILDER_IMAGE
+  variables:
+    DL_DIR: /buildcache/downloads
+    SSTATE_DIR: /buildcache/sstate-cache
+    BITBAKE_SETUP_OVERRIDE: none
+    RISCV_MACHINE: qemuriscv64
+  parallel:
+    matrix:
+      - MATRIX_PACKAGE: [bzip2, coreutils, gnutls, gzip, parted, python3-cryptography, tar, xz]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "ptest-nightly"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "ptest-nightly" && $PACKAGE == ""'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "ptest-nightly" && $PACKAGE == $MATRIX_PACKAGE'
+      when: always
+    - when: never
+  script:
+    - locale-gen en_US.UTF-8
+    - export LANG=en_US.UTF-8
+    - git clone "$BITBAKE_URL" bitbake
+    - |
+      OVERRIDE_ARG=""
+      if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
+        OVERRIDE_ARG="--source-override ${CI_PROJECT_DIR}/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
+      fi
+      ./bitbake/bin/bitbake-setup \
+        --debug init --non-interactive \
+        ${OVERRIDE_ARG} \
+        "${CI_PROJECT_DIR}/.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json" \
+        poky distro/poky machine/${RISCV_MACHINE}
+    - |
+      cd /home/yoctouser/yocto-build
+      . "${CI_PROJECT_DIR}/bitbake-builds/poky-master/build/init-build-env"
+      echo "IMAGE_FSTYPES += \" ext4\"" >> conf/local.conf
+      bitbake-config-build enable-fragment core/yocto/root-login-with-empty-password
+      bitbake core-image-ptest-${MATRIX_PACKAGE}
+  artifacts:
+    name: "ptest-${MATRIX_PACKAGE}"
+    expire_in: 1 day
+    paths:
+      - bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
+      - bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/Image
+      - bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
+
+run-ptests:
+  stage: test
+  image: $LG_OPERATOR_IMAGE
+  variables:
+    LG_COORDINATOR: ecogrid
+  # Each matrix instance only downloads artifacts from its matching build instance.
+  # Requires GitLab 16.3+.
+  needs:
+    - job: build-ptest-image
+      parallel:
+        matrix:
+          - MATRIX_PACKAGE: $MATRIX_PACKAGE
+      artifacts: true
+  parallel:
+    matrix:
+      - MATRIX_PACKAGE: [bzip2, coreutils, gnutls, gzip, parted, python3-cryptography, tar, xz]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULE_NAME == "ptest-nightly"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "ptest-nightly" && $PACKAGE == ""'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $SCHEDULE_NAME == "ptest-nightly" && $PACKAGE == $MATRIX_PACKAGE'
+      when: always
+    - when: never
+  before_script:
+    - echo "${ECOGRID_IP} ecogrid" >> /etc/hosts
+    - echo "${ECOVAULT_IP} ecovault" >> /etc/hosts
+    - apt-get update -qq && apt-get install -y -qq openssh-client rsync
+  script:
+    - |
+      IMAGES_DIR="${CI_PROJECT_DIR}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64"
+      cp "${IMAGES_DIR}/fw_jump.elf" /home/labgrid/fw_jump.elf
+      cp "${IMAGES_DIR}/Image" /home/labgrid/Image
+      cp "${IMAGES_DIR}"/core-image-ptest-${MATRIX_PACKAGE}-qemuriscv64.rootfs-*.ext4 /home/labgrid/ptest_image.ext4
+    - git clone https://github.com/threexc/boardgarden.git /home/labgrid/boardgarden
+    - |
+      cd /home/labgrid/boardgarden
+      python3 -m venv venv && source venv/bin/activate
+      pip install --upgrade pip labgrid pytest pytest-html
+      pytest -vvv --html=report.html --self-contained-html \
+        --lg-env boards/qemuriscv64/env.yaml \
+        boards/qemuriscv64/tests/test_ptests.py
+    - !reference [.ssh-setup-report, script]
+    - !reference [.ssh-test-report, script]
+    - |
+      REPORT_DIR="yocto/oe-core/${MATRIX_PACKAGE}/$(date +%Y%m%d)/${CI_PIPELINE_ID}"
+      ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/${REPORT_DIR}"
+      rsync -av /home/labgrid/boardgarden/report.html "reporter@ecovault:/testresults/${REPORT_DIR}/"
