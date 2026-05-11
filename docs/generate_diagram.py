@@ -66,9 +66,24 @@ def svc_label(svc):
 def machine_label(m):
     ts_domain = m.get("_tailnet_domain", "")
     label = m["label"]
+
+    parts = []
     if ts_domain and m.get("status") != "planned":
-        return f"<i>{m['tailscale_name']}.{ts_domain}</i>"
-    return label
+        parts.append(f"<i>{m['tailscale_name']}.{ts_domain}</i>")
+    else:
+        parts.append(label)
+
+    hw = m.get("hardware", {})
+    if hw:
+        model = clean(hw.get("model"))
+        if model:
+            parts.append(model)
+        for spec in hw.get("specs", []):
+            s = clean(spec)
+            if s:
+                parts.append(s)
+
+    return "<br/>".join(parts)
 
 
 def link_arrow(lnk):
@@ -229,14 +244,25 @@ def generate_bom(data):
 
     # Machines
     out.append("## Machines\n")
-    out.append("| ID | Hostname | Tailscale FQDN | OS | Status |")
-    out.append("|----|----------|----------------|----|--------|")
+    out.append("| ID | Hostname | Tailscale FQDN | OS | Model | Specs | Status |")
+    out.append("|----|----------|----------------|----|-------|-------|--------|")
     for m in machines:
         ts = clean(m.get("tailscale_name"))
         fqdn = f"{ts}.{tailnet_domain}" if ts and tailnet_domain else (ts or "—")
         os_  = clean(m.get("os")) or "—"
         status = m.get("status", "active")
-        out.append(f'| `{m["id"]}` | {m["label"]} | {fqdn} | {os_} | {status} |')
+        hw = m.get("hardware", {})
+        model = clean(hw.get("model")) if hw else None
+        url   = clean(hw.get("url"))   if hw else None
+        if model and url:
+            model_cell = f"[{model}]({url})"
+        elif model:
+            model_cell = model
+        else:
+            model_cell = "—"
+        specs_list = [clean(s) for s in hw.get("specs", [])] if hw else []
+        specs_cell = "<br/>".join(s for s in specs_list if s) or "—"
+        out.append(f'| `{m["id"]}` | {m["label"]} | {fqdn} | {os_} | {model_cell} | {specs_cell} | {status} |')
     out.append("")
 
     # Services
@@ -279,8 +305,10 @@ def generate_bom(data):
             label  = clean(b.get("label"))  or "—"
             vendor = clean(b.get("vendor")) or "—"
             model  = clean(b.get("model"))  or "—"
+            url    = clean(b.get("url"))
+            model_cell = f"[{model}]({url})" if url and model != "—" else model
             out.append(
-                f'| `{b["id"]}` | {label} | {vendor} | {model} '
+                f'| `{b["id"]}` | {label} | {vendor} | {model_cell} '
                 f'| {b.get("arch","—")} | {b.get("connection","—")} |'
             )
         out.append("")
@@ -301,8 +329,11 @@ def generate_bom(data):
             if board_hw:
                 ...
                 for iface_label, hw in board_hw:
-                    pn = clean(hw.get("pn")) or "—"
-                    out.append(f'| {iface_label} | {hw["part"]} | {pn} | {hw.get("role","—")} |')
+                    pn   = clean(hw.get("pn"))  or "—"
+                    part = hw["part"]
+                    url  = clean(hw.get("url"))
+                    part_cell = f"[{part}]({url})" if url else part
+                    out.append(f'| {iface_label} | {part_cell} | {pn} | {hw.get("role","—")} |')
 
     return "\n".join(out)
 
