@@ -6,7 +6,7 @@ jobs:
   check-meta-riscv:
     runs-on: docker-small
     container:
-      image: tgamblin/yocto-builder
+      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
     steps:
       - name: run yocto-check-layer-wrapper
         run: |

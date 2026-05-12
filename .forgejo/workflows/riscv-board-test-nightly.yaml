@@ -39,7 +39,7 @@ jobs:
             fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]')
           }}
     container:
-      image: tgamblin/lg-operator
+      image: forgejo.oryx-coho.ts.net/tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101
       env:
         LG_COORDINATOR: ecogrid

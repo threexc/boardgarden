@@ -37,7 +37,7 @@ jobs:
             fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
-      image: tgamblin/yocto-builder
+      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -119,7 +119,7 @@ jobs:
             fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
-      image: tgamblin/lg-operator
+      image: forgejo.oryx-coho.ts.net/tgamblin/lg-operator
       options: --add-host ecogrid:192.168.40.101 --add-host ecovault:192.168.40.134
     steps:
       - name: Download qemuriscv64 bios

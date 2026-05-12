@@ -50,7 +50,7 @@ jobs:
               || fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
           }}
     container:
-      image: tgamblin/yocto-builder
+      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
