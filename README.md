@@ -2,6 +2,45 @@
 
 tgamblin's boardfarm repo, built for testing RISC-V development boards with [Labgrid](https://github.com/labgrid-project/labgrid) and [Forgejo](https://forgejo.org/) Actions
 
+## Motivation
+
+As part of the [RISE Project](https://riseproject.dev/),
+[BayLibre](https://baylibre.com/) is improving support for RISC-V hardware and
+software within the [Yocto Project](https://www.yoctoproject.org/). This
+manifests in two main categories:
+
+1. Triaging issues discovered while building and performing runtime testing of
+   RISC-V systems using the
+   [openembedded-core](https://git.openembedded.org/openembedded-core/) layer
+   (which supports RISC-V via QEMU-based `qemuriscv32` and `qemuriscv64`
+   `MACHINE` options)
+2. Improving the [meta-riscv](https://github.com/riscv/meta-riscv) layer's
+   support for widely-available RISC-V development boards, and ensuring it
+   remains compliant with Yocto Project compatibility standards
+
+`boardgarden` was built to address these challenges in an automated fashion, and
+to serve as a useful reference to others who may want to build out their own
+automated testing infrastructure.
+
+### Why Forgejo?
+
+1. Broadly compatible with GitHub Actions (therefore familiar to many users)
+2. Convenient features for a forge (repository mirroring and sync, container
+   registry, issue tracking, statistics, wiki)
+3. Lightweight
+
+### Why Labgrid?
+
+1. Mature project with existing support for automated remote control of many
+   devices, including USB-to-UART bridges, power switches, and [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html)
+2. Hardware details abstracted away from user
+3. Simple YAML configuration files
+4. Uses `pytest` for test suites
+
+## Network Diagram
+
+![tgamblin's boardfarm](docs/network.png)
+
 ## Usage
 
 ### .forgejo
@@ -20,10 +59,10 @@ combination of:
   [yocto-check-layer-wrapper](https://git.openembedded.org/openembedded-core/tree/scripts/yocto-check-layer-wrapper)
   script
 
-The `auh` and `bitbake-configs` directories contain
-templates for running Yocto-specific workflows, while the `dockerfiles`
-directory contains definitions for the `container-builder`, `labgrid-operator`,
-and `yocto-builder` container images stored in the registry.
+The `bitbake-configs` directory contains templates for running Yocto-specific
+workflows, while the `dockerfiles` directory contains definitions for the
+`container-builder`, `labgrid-operator`, and `yocto-builder` container images
+stored in the registry.
 
 The following secrets are in use:
 
@@ -61,11 +100,11 @@ should be able to invoke the labgrid CLI using `uv run`, e.g.:
 Or, if you want to run the test suite, you can do:
 
 1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
-2. `uv run pytest -vvv --html=report.html --self-contained-html muse-pi-pro/pytest/`
+2. `uv run pytest -vvv --html=report.html --self-contained-html muse-pi-pro`
 
-These same general concepts are employed by the `riscv-full-cmdline-nightly` and
-`riscv-ptest-nightly` pipelines inside the `.forgejo/workflows` directory, so
-that should be considered a more complete reference.
+These same general concepts are employed by the pipelines inside the
+`.forgejo/workflows` directory, so that should be considered a more complete
+reference.
 
 ### systemd_services
 
