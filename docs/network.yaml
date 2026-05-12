@@ -64,7 +64,6 @@ machines:
     label: "microlith"
     tailscale_name: microlith
     os: Fedora 44
-    status: planned
     hardware:
       model: ThinkCentre M75q-1
       specs:
@@ -213,11 +212,6 @@ links:
 
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
-    to: ecogrid
-    label: acquire board, run tests
-    type: logical
-
-  - from: runner1
     to: svc_tftp
     label: upload image
     type: logical
@@ -230,6 +224,16 @@ links:
   - from: runner1
     to: board_4
     label: boot QEMU, run tests
+    type: logical
+
+  - from: runner2
+    to: ecogrid
+    label: acquire board, run tests
+    type: logical
+
+  - from: runner2
+    to: svc_reports
+    label: upload results
     type: logical
 
   - from: board_1

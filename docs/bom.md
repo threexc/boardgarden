@@ -12,7 +12,7 @@
 | `ecogrid` | ecogrid | ecogrid.oryx-coho.ts.net | Debian 13 ("Trixie") | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
 | `ecovault` | ecovault | ecovault.oryx-coho.ts.net | Debian 13 ("Trixie") | ThinkCentre M715q | AMD Ryzen 3 PRO 2200GE<br/>16 GB DDR4 RAM | active |
 | `runner1` | megalith | megalith.oryx-coho.ts.net | Fedora 44 | [Custom Build](https://www.asrock.com/MB/AMD/B650E%20Taichi/index.asp) | AMD Ryzen 9 7900<br/>64 GB DDR5 RAM | active |
-| `runner2` | microlith | microlith.oryx-coho.ts.net | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | planned |
+| `runner2` | microlith | microlith.oryx-coho.ts.net | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
 | `github` | GitHub | — | — | — | — | active |
 
 ## Services
