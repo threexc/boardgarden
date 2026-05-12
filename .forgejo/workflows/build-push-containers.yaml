@@ -10,7 +10,7 @@ on:
 jobs:
   build-container-images:
     name: Build and push image
-    runs-on: docker
+    runs-on: docker-small
     container:
       image: tgamblin/container-builder
 
