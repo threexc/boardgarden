@@ -28,7 +28,7 @@ env:
 
 jobs:
   test-board-boot:
-    runs-on: docker
+    runs-on: docker-small
     strategy:
       matrix:
         machine: >-
