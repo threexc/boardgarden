@@ -35,12 +35,12 @@
 
 | ID | Label | Vendor | Model | Arch | Connection |
 |----|-------|--------|-------|------|------------|
-| `board_1` | bananapi-f3 | BananaPi | [BPI-F3](https://wiki.banana-pi.org/Banana_Pi_BPI-F3) | riscv64 (RVA22 + RVV 1.0) | serial + power + sd mux |
-| `board_2` | muse-pi-pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power |
-| `board_3` | orangepi-rv2 | OrangePi | [OrangePi RV2](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html) | riscv64 (RVA22 + RVV 1.0) | serial + power |
+| `board_1` | BananaPi F3 | BananaPi | [BPI-F3](https://wiki.banana-pi.org/Banana_Pi_BPI-F3) | riscv64 (RVA22 + RVV 1.0) | serial + power + sd mux |
+| `board_2` | Muse Pi Pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power |
+| `board_3` | OrangePi RV2 | OrangePi | [OrangePi RV2](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html) | riscv64 (RVA22 + RVV 1.0) | serial + power |
 | `board_4` | qemuriscv64 | QEMU | RVA23S64 | riscv64 (RVA23S64) | virtual |
 
-### bananapi-f3
+### BananaPi F3
 
 | Interface | Part | Part Number | Role |
 |-----------|------|-------------|------|
@@ -48,14 +48,14 @@
 | serial | [Raspberry Pi Debug Probe](https://www.raspberrypi.com/products/debug-probe/) | Debug_Probe__CMSIS-DAP_0101 | USB-to-UART bridge |
 | SD mux | [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html) | usb-sd-mux_rev4.0 | USB SD Mux controller |
 
-### muse-pi-pro
+### Muse Pi Pro
 
 | Interface | Part | Part Number | Role |
 |-----------|------|-------------|------|
 | power | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | Power control |
 | serial | [Raspberry Pi Debug Probe](https://www.raspberrypi.com/products/debug-probe/) | Debug_Probe__CMSIS-DAP_0101 | USB-to-UART bridge |
 
-### orangepi-rv2
+### OrangePi RV2
 
 | Interface | Part | Part Number | Role |
 |-----------|------|-------------|------|

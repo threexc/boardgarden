@@ -110,7 +110,7 @@ services:
 boards:
 
   - id: board_1
-    label: bananapi-f3
+    label: BananaPi F3
     vendor: BananaPi
     model: BPI-F3
     url: https://wiki.banana-pi.org/Banana_Pi_BPI-F3
@@ -118,7 +118,7 @@ boards:
     connection: serial + power + sd mux
 
   - id: board_2
-    label: muse-pi-pro
+    label: Muse Pi Pro
     vendor: SpacemiT
     model: Muse Pi Pro
     url: https://www.spacemit.com/muse-pi-pro/
@@ -126,7 +126,7 @@ boards:
     connection: serial + power
 
   - id: board_3
-    label: orangepi-rv2
+    label: OrangePi RV2
     vendor: OrangePi
     model: OrangePi RV2
     url: http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html
