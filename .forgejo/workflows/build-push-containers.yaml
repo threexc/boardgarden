@@ -12,7 +12,7 @@ jobs:
     name: Build and push image
     runs-on: docker-small
     container:
-      image: tgamblin/container-builder
+      image: forgejo.oryx-coho.ts.net/tgamblin/container-builder
 
     steps:
     - name: Checkout
