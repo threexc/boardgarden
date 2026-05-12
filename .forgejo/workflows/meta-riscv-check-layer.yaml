@@ -4,11 +4,9 @@ on:
   workflow_dispatch:
 jobs:
   check-meta-riscv:
-    runs-on: docker
+    runs-on: docker-small
     container:
       image: tgamblin/yocto-builder
-      volumes:
-        - /auto/runner/buildcache:/buildcache
     steps:
       - name: run yocto-check-layer-wrapper
         run: |
