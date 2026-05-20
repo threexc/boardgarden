@@ -128,8 +128,7 @@ def generate_mermaid(data):
         svc["_tailnet_domain"] = tailnet_domain
 
     lines = [
-        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "16px"}} }%%'
-        "flowchart LR",
+        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "20px", "fontFamily": "New Computer Modern"}} }%%' "flowchart LR",
     ]
 
     # ── Tailnet boundary ──────────────────────────────────────────────
