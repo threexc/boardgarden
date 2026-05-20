@@ -92,16 +92,19 @@ jobs:
           bitbake core-image-ptest-${PTEST_PACKAGE}
         env:
           PTEST_PACKAGE: ${{ matrix.package }}
+
       - name: Archive qemuriscv64 bios
         uses: actions/upload-artifact@v3
         with:
           name: ptest_image_bios_${{ matrix.package }}
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
+
       - name: Archive qemuriscv64 kernel
         uses: actions/upload-artifact@v3
         with:
           name: ptest_image_kernel_${{ matrix.package }}
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/Image
+
       - name: Archive qemuriscv64 ext4 rootfs
         uses: actions/upload-artifact@v3
         with:
