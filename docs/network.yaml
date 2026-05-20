@@ -198,7 +198,7 @@ links:
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
     to: ecovault
-    label: upload image
+    label: upload Yocto artifacts
     type: logical
 
   - from: runner1
