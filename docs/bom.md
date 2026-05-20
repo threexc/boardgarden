@@ -19,17 +19,11 @@
 
 | ID | Service | Tailscale FQDN | Host | Protocol | Port | Role |
 |----|---------|----------------|------|----------|------|------|
-| `svc_forgejo` | tgamblin's Forgejo | forgejo.oryx-coho.ts.net | `ecogrid` | — | — | Git hosting + CI (Actions) |
-| `svc_tftp` | TFTP server | — | `ecovault` | — | — | Serves bootable images to test targets |
-| `svc_reports` | Test reports server | testreports.oryx-coho.ts.net | `ecovault` | — | — | Receives and displays test results |
 
 ## Software
 
 | Host | Service | Package | Version | Role |
 |------|---------|---------|---------|------|
-| `ecogrid` | tgamblin's Forgejo | Forgejo | 15.0.1 | Git hosting + CI (Actions) |
-| `ecovault` | TFTP server | tftpd-hpa | 5.2+20240610-3 | Serves bootable images to test targets |
-| `ecovault` | Test reports server | nginx | 1.26.3-3+deb13u2 | Receives and displays test results |
 
 ## Target Boards
 

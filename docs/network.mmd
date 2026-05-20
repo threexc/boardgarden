@@ -1,13 +1,10 @@
 %%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "20px", "fontFamily": "New Computer Modern"}} }%%flowchart LR
   subgraph tailnet["🔒 Tailnet"]
-    ecogrid["<i>ecogrid.oryx-coho.ts.net</i><br/>ThinkCentre M75q-1<br/>AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM"]
-    ecovault["<i>ecovault.oryx-coho.ts.net</i><br/>ThinkCentre M715q<br/>AMD Ryzen 3 PRO 2200GE<br/>16 GB DDR4 RAM"]
-    runner1["<i>megalith.oryx-coho.ts.net</i><br/>Custom Build<br/>AMD Ryzen 9 7900<br/>64 GB DDR5 RAM"]
-    runner2["<i>microlith.oryx-coho.ts.net</i><br/>ThinkCentre M75q-1<br/>AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM"]
+    ecogrid["<b>Labgrid Coordinator</b><br/><b>Labgrid Exporters</b><br/><b>Forgejo</b><br/><i>ecogrid.oryx-coho.ts.net</i>"]
+    ecovault["<b>TFTP Server</b><br/><b>Test Results</b><br/><i>ecovault.oryx-coho.ts.net</i>"]
+    runner1["<b>Forgejo Runner (Large)</b><br/><i>megalith.oryx-coho.ts.net</i>"]
+    runner2["<b>Forgejo Runner (Small)</b><br/><i>microlith.oryx-coho.ts.net</i>"]
     github{{"GitHub"}}
-    svc_forgejo(("<i>forgejo.oryx-coho.ts.net</i>"))
-    svc_tftp(("TFTP server"))
-    svc_reports(("<i>testreports.oryx-coho.ts.net</i>"))
     subgraph boards["Test Targets"]
       direction TB
       board_1["BananaPi F3<br/>RVA22 + RVV 1.0"]
@@ -18,30 +15,25 @@
   end
 
   %% ── Hosted-on relationships ──
-  svc_forgejo -.-|hosted on| ecogrid
-  svc_tftp -.-|hosted on| ecovault
-  svc_reports -.-|hosted on| ecovault
 
   %% ── Links ──
   ecogrid ==>|"power / serial / SD mux"| board_1
   ecogrid ==>|"power / serial"| board_2
   ecogrid ==>|"power / serial"| board_3
-  svc_forgejo -..->|"push mirror"| github
-  runner1 -->|"upload image"| svc_tftp
-  runner1 -->|"upload results"| svc_reports
+  ecogrid -..->|"push mirror"| github
+  runner1 -->|"upload image"| ecovault
+  runner1 -->|"upload QEMU test results"| ecovault
   runner1 -->|"boot QEMU, run tests"| board_4
   runner2 -->|"acquire board, run tests"| ecogrid
-  runner2 -->|"upload results"| svc_reports
-  svc_tftp -->|"Yocto .wic image"| board_1
-  svc_tftp -->|"kernel + dtb + eMMC rootfs (Armbian)"| board_2
-  svc_tftp -->|"kernel + dtb + Yocto nfsroot"| board_3
+  runner2 -->|"upload hardware test results"| ecovault
+  ecovault -->|"Yocto .wic image"| board_1
+  ecovault -->|"kernel + dtb + eMMC rootfs (Armbian)"| board_2
+  ecovault -->|"kernel + dtb + Yocto nfsroot"| board_3
 
   %% ── Styles ──
   classDef machine fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
   class ecogrid,ecovault,runner1,runner2 machine
   classDef external fill:#f3f4f6,stroke:#9ca3af,color:#374151
   class github external
-  classDef service fill:#fef9c3,stroke:#d97706,color:#713f12
-  class svc_forgejo,svc_tftp,svc_reports service
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
   class board_1,board_2,board_3,board_4 board
