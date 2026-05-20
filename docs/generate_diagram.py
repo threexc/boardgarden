@@ -68,13 +68,23 @@ def machine_label(m):
     label = m["label"]
 
     parts = []
+
+    role = m.get("role")
+    if isinstance(role, list):
+        joined = "<br/>".join(f"<b>{clean(r)}</b>" for r in role if clean(r))
+        if joined:
+            parts.append(joined)
+    elif clean(role):
+        parts.append(f"<b>{clean(role)}</b>")
+
     if ts_domain and m.get("status") != "planned":
         parts.append(f"<i>{m['tailscale_name']}.{ts_domain}</i>")
     else:
         parts.append(label)
 
     hw = m.get("hardware", {})
-    if hw:
+    hide = str(hw.get("hide_details", "false")).lower() == "true"
+    if hw and not hide:      # ← skip hardware block if hide_details is true
         model = clean(hw.get("model"))
         if model:
             parts.append(model)
