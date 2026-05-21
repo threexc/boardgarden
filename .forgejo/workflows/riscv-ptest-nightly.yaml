@@ -165,7 +165,7 @@ jobs:
         working-directory: /home/labgrid/boardgarden
         run: |
           source venv/bin/activate
-          pytest -vvv --html=report.html --self-contained-html --lg-env boards/qemuriscv64/env.yaml boards/qemuriscv64/tests/test_ptests.py
+          pytest -vv --html=report.html --self-contained-html --lg-env boards/qemuriscv64/env.yaml boards/qemuriscv64/tests/test_ptests.py
 
       - name: Setup SSH key
         working-directory: /home/labgrid
