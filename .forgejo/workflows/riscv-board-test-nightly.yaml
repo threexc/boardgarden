@@ -160,8 +160,22 @@ jobs:
           echo "=== Testing SSH connection ==="
           ssh -v reporter@ecovault "echo SSH connection successful"
 
-      - name: Deploy report
+      - name: Deploy internal reports
         run: |
           REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
           ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/$REPORT_DIR"
           rsync -av /home/labgrid/boardgarden/boards/report.html reporter@ecovault:/testresults/$REPORT_DIR/
+
+      - name: Deploy external reports
+        env:
+          SSH_KEY: ${{ secrets.PUB_LOG_DEPLOY_KEY }}
+        run: |
+          REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 178.105.181.249 >> ~/.ssh/known_hosts
+          rsync -avz --mkpath \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            /home/labgrid/boardgarden/boards/report.html \
+            logdeploy@178.105.181.249:/var/www/logs/${REPORT_DIR}/
