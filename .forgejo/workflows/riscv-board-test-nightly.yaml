@@ -119,7 +119,7 @@ jobs:
           EXIT_CODE=1
           for ATTEMPT in 1 2 3; do
             echo "Test attempt ${ATTEMPT} of 3"
-            if uv run pytest -vv --html=report.html --self-contained-html $BOARD/pytest; then
+            if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
               echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
               EXIT_CODE=0
               break
