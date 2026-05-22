@@ -1,4 +1,5 @@
-%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "New Computer Modern"}} }%%flowchart LR
+%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "New Computer Modern"}} }%%
+flowchart LR
   subgraph tailnet["🔒 Tailnet"]
     ecogrid["<b>Labgrid Coordinator</b><br/><b>Labgrid Exporters</b><br/><b>Forgejo</b><br/>ecogrid"]
     ecovault["<b>TFTP Server</b><br/><b>Test Results</b><br/>ecovault"]
@@ -7,11 +8,11 @@
     github{{"GitHub"}}
     subgraph boards["Test Targets"]
       direction TB
-      board_1["BananaPi F3<br/>RVA22 + RVV 1.0"]
-      board_2["Muse Pi Pro<br/>RVA22 + RVV 1.0"]
-      board_3["OrangePi RV2<br/>RVA22 + RVV 1.0"]
-      board_4["qemuriscv64<br/>RVA23"]
-      board_5["K3 Pico-ITX<br/>RVA23"]
+      board_1["BananaPi F3"]
+      board_2["Muse Pi Pro"]
+      board_3["OrangePi RV2"]
+      board_4["qemuriscv64"]
+      board_5["K3 Pico-ITX<br/><i>(planned)</i>"]
     end
   end
 
@@ -39,4 +40,6 @@
   classDef external fill:#f3f4f6,stroke:#9ca3af,color:#374151
   class github external
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
-  class board_1,board_2,board_3,board_4,board_5 board
+  class board_1,board_2,board_3,board_4 board
+  classDef board_planned fill:#f0fdf4,stroke:#86efac,color:#14532d
+  class board_5 board_planned
