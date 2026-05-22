@@ -133,6 +133,7 @@ boards:
     label: K3 Pico-ITX
     vendor: Sipeed
     model: K3 Pico-ITX
+    url: https://sipeed.com/k3
     arch: riscv64 (RVA23)
     connection: serial + power + sd mux
     status: planned
