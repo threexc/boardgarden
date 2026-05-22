@@ -31,6 +31,7 @@ STYLES = {
     "external": "fill:#f3f4f6,stroke:#9ca3af,color:#374151",
     "service":  "fill:#fef9c3,stroke:#d97706,color:#713f12",
     "board":    "fill:#fce7f3,stroke:#ec4899,color:#831843",
+    "board_planned": "fill:#f0fdf4,stroke:#86efac,color:#14532d",
 }
 
 
@@ -61,8 +62,7 @@ def svc_label(svc):
     elif proto:
         parts.append(proto)
 
-    # fallback when no Tailscale name is present
-    return "<br/>".join(parts) if parts else svc["label"]  # fallback when no Tailscale name is present
+    return "<br/>".join(parts) if parts else svc["label"]
 
 
 def machine_label(m):
@@ -87,7 +87,7 @@ def machine_label(m):
 
     hw = m.get("hardware", {})
     hide = str(hw.get("hide_details", "false")).lower() == "true"
-    if hw and not hide:      # ← skip hardware block if hide_details is true
+    if hw and not hide:
         model = clean(hw.get("model"))
         if model:
             parts.append(model)
@@ -99,11 +99,18 @@ def machine_label(m):
     return "<br/>".join(parts)
 
 
+def board_arch_short(arch):
+    """Extract extension profile from parentheses, e.g. 'riscv64 (RVA22 + RVV 1.0)' → 'RVA22 + RVV 1.0'."""
+    if arch and "(" in arch:
+        return arch[arch.index("(") + 1 : arch.rindex(")")].strip()
+    return arch
+
+
 def link_arrow(lnk):
     style = lnk.get("style", "solid")
     ltype = lnk.get("type", "logical")
     if ltype == "physical":
-        return "==>"           # thick solid — physical cable
+        return "==>"
     if style == "dashed":
         return "-..->"
     return "-->"
@@ -123,6 +130,22 @@ def link_label(lnk):
     return label
 
 
+# ── Board label helpers ───────────────────────────────────────────────────────
+
+def build_board_label(b: dict) -> str:
+    """Return the label string for a board node. Planned boards get an extra italic '(planned)' line."""
+    label  = clean(b.get("label")) or clean(b.get("model")) or b["id"]
+    arch   = clean(b.get("arch"))
+    arch   = board_arch_short(arch) if arch else None
+    status = b.get("status", "")
+
+    parts = [label]
+    if status == "planned":
+        parts.append("<i>(planned)</i>")
+
+    return "<br/>".join(parts)
+
+
 # ── Mermaid ───────────────────────────────────────────────────────────────────
 
 def generate_mermaid(data):
@@ -134,14 +157,14 @@ def generate_mermaid(data):
 
     tailnet_domain = clean(net.get("tailnet_domain", ""))
 
-    # Annotate machines and services with tailnet domain for label rendering
     for m in machines:
         m["_tailnet_domain"] = tailnet_domain if clean(m.get("tailscale_name")) else ""
     for svc in services:
         svc["_tailnet_domain"] = tailnet_domain
 
     lines = [
-        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "New Computer Modern"}} }%%' "flowchart LR",
+        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "New Computer Modern"}} }%%',
+        "flowchart LR",
     ]
 
     # ── Tailnet boundary ──────────────────────────────────────────────
@@ -170,30 +193,30 @@ def generate_mermaid(data):
     for svc in services:
         sid   = svc["id"]
         label = svc_label(svc)
-        lines.append(f'    {sid}(("{label}"))')   # double-circle = service endpoint
+        lines.append(f'    {sid}(("{label}"))')
         svc_ids.append(sid)
 
     # ── Board subgraph ────────────────────────────────────────────────
-    board_ids = []
+    board_ids         = []
+    board_planned_ids = []
+
     if boards:
         lines.append('    subgraph boards["Test Targets"]')
         lines.append("      direction TB")
         for b in boards:
-            bid   = b["id"]
-            label = clean(b.get("label")) or clean(b.get("model")) or bid
-            arch  = clean(b.get("arch"))
-            # Extract extension profile from inside parentheses if present,
-            # e.g. "riscv64 (RVA22 + RVV 1.0)" → "RVA22 + RVV 1.0"; else use as-is.
-            if arch and "(" in arch:
-                arch = arch[arch.index("(") + 1 : arch.rindex(")")].strip()
-            full  = f"{label}<br/>{arch}" if arch else label
-            lines.append(f'      {bid}["{full}"]')
-            board_ids.append(bid)
+            bid    = b["id"]
+            status = b.get("status", "")
+            label  = build_board_label(b)
+            lines.append(f'      {bid}["{label}"]')
+            if status == "planned":
+                board_planned_ids.append(bid)
+            else:
+                board_ids.append(bid)
         lines.append("    end")
 
     lines.append("  end")  # end tailnet
 
-    # ── hosted-on edges (service → machine) ──────────────────────────
+    # ── hosted-on edges ───────────────────────────────────────────────
     lines.append("")
     lines.append("  %% ── Hosted-on relationships ──")
     for svc in services:
@@ -219,11 +242,12 @@ def generate_mermaid(data):
     lines.append("  %% ── Styles ──")
 
     for cls, ids in [
-        ("machine",  machine_ids),
-        ("planned",  planned_ids),
-        ("external", external_ids),
-        ("service",  svc_ids),
-        ("board",    board_ids),
+        ("machine",        machine_ids),
+        ("planned",        planned_ids),
+        ("external",       external_ids),
+        ("service",        svc_ids),
+        ("board",          board_ids),
+        ("board_planned",  board_planned_ids),
     ]:
         if ids:
             lines.append(f'  classDef {cls} {STYLES[cls]}')
@@ -311,17 +335,18 @@ def generate_bom(data):
     # Boards
     if boards:
         out.append("## Target Boards\n")
-        out.append("| ID | Label | Vendor | Model | Arch | Connection |")
-        out.append("|----|-------|--------|-------|------|------------|")
+        out.append("| ID | Label | Vendor | Model | Arch | Connection | Status |")
+        out.append("|----|-------|--------|-------|------|------------|--------|")
         for b in boards:
             label  = clean(b.get("label"))  or "—"
             vendor = clean(b.get("vendor")) or "—"
             model  = clean(b.get("model"))  or "—"
             url    = clean(b.get("url"))
             model_cell = f"[{model}]({url})" if url and model != "—" else model
+            status = b.get("status", "active")
             out.append(
                 f'| `{b["id"]}` | {label} | {vendor} | {model_cell} '
-                f'| {b.get("arch","—")} | {b.get("connection","—")} |'
+                f'| {b.get("arch","—")} | {b.get("connection","—")} | {status} |'
             )
         out.append("")
 
