@@ -102,6 +102,9 @@ jobs:
           # Always produce wic images so the deploy step can flash boards
           echo "IMAGE_FSTYPES:append = \" wic.gz wic.bmap\"" >> conf/local.conf
 
+          # add buildinfo to the image
+          echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
+
           bitbake ${RISCV_IMAGE}
 
       - name: locate and verify images deploy directory
