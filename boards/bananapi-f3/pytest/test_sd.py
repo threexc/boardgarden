@@ -30,6 +30,16 @@ BUSYBOX_TOOLS = [
     "which", "who", "whoami", "xargs", "xzcat", "yes", "zcat",
 ]
 
+def test_busybox_tools_available(sd):
+    missing = []
+    for tool in BUSYBOX_TOOLS:
+        stdout, stderr, code = sd.run(
+            f"test -x /bin/{tool} || test -x /usr/bin/{tool} || test -x /sbin/{tool} || test -x /usr/sbin/{tool}"
+        )
+        if code != 0:
+            missing.append(tool)
+    assert missing == [], f"Missing busybox tools: {missing}"
+
 def test_uname_a(sd):
     version = os.environ.get("VERSION")
     try:
@@ -40,12 +50,10 @@ def test_uname_a(sd):
         sd.run('ls /bin/uname')
         raise
 
-def test_busybox_tools_available(sd):
-    missing = []
-    for tool in BUSYBOX_TOOLS:
-        stdout, stderr, code = sd.run(
-            f"test -x /bin/{tool} || test -x /usr/bin/{tool} || test -x /sbin/{tool} || test -x /usr/sbin/{tool}"
-        )
-        if code != 0:
-            missing.append(tool)
-    assert missing == [], f"Missing busybox tools: {missing}"
+def test_buildinfo(sd):
+    try:
+        state = sd.run_check('cat /etc/buildinfo', timeout=60.0)
+
+    except ExecutionError:
+        sd.run('ls /etc/')
+        raise
