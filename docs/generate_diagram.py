@@ -48,10 +48,12 @@ def svc_label(svc):
     parts = []
     ts     = clean(svc.get("tailscale_name"))
     domain = svc.get("_tailnet_domain", "")
-    if ts and domain:
-        parts.append(f"<i>{ts}.{domain}</i>")
-    elif ts:
-        parts.append(f"<i>{ts}</i>")
+    hide_tailnet = str(svc.get("hide_tailnet", "false")).lower() == "true"
+    if not hide_tailnet:
+        if ts and domain:
+            parts.append(f"<i>{ts}.{domain}</i>")
+        elif ts:
+            parts.append(f"<i>{ts}</i>")
     proto = clean(svc.get("protocol"))
     port  = clean(svc.get("port"))
     if proto and port:
@@ -77,7 +79,8 @@ def machine_label(m):
     elif clean(role):
         parts.append(f"<b>{clean(role)}</b>")
 
-    if ts_domain and m.get("status") != "planned":
+    hide_tailnet = str(m.get("hide_tailnet", "false")).lower() == "true"
+    if ts_domain and m.get("status") != "planned" and not hide_tailnet:
         parts.append(f"<i>{m['tailscale_name']}.{ts_domain}</i>")
     else:
         parts.append(label)
