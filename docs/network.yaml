@@ -10,6 +10,7 @@ machines:
 
   - id: ecogrid
     label: "ecogrid"
+    hide_tailnet: true
     role:
       - "Labgrid Coordinator"
       - "Labgrid Exporters"
@@ -46,6 +47,7 @@ machines:
 
   - id: ecovault
     label: "ecovault"
+    hide_tailnet: true
     role:
       - "TFTP Server"
       - "Test Results"
@@ -60,6 +62,7 @@ machines:
 
   - id: runner1
     label: "megalith"
+    hide_tailnet: true
     role:
       - "Forgejo Runner (Large)"
     tailscale_name: megalith
@@ -74,6 +77,7 @@ machines:
 
   - id: runner2
     label: "microlith"
+    hide_tailnet: true
     role:
       - "Forgejo Runner (Small)"
     tailscale_name: microlith
@@ -122,8 +126,16 @@ boards:
     label: qemuriscv64
     vendor: QEMU
     model: RVA23S64
-    arch: riscv64 (RVA23S64)
+    arch: riscv64 (RVA23)
     connection: virtual
+
+  - id: board_5
+    label: K3 Pico-ITX
+    vendor: Sipeed
+    model: K3 Pico-ITX
+    arch: riscv64 (RVA23)
+    connection: serial + power + sd mux
+    status: planned
 
 # Explicit logical links (beyond implicit Tailnet connectivity)
 # type: physical | logical
@@ -188,6 +200,29 @@ links:
             url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
 
+  - from: ecogrid
+    to: board_5
+    type: physical
+    interfaces:
+      - label: power
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
+            role: Power control
+      - label: serial
+        hardware:
+          - part: Raspberry Pi Debug Probe
+            pn: Debug_Probe__CMSIS-DAP_0101
+            url: https://www.raspberrypi.com/products/debug-probe/
+            role: USB-to-UART bridge
+      - label: SD mux
+        hardware:
+          - part: USB SD Mux
+            pn: usb-sd-mux_rev4.0
+            url: https://linux-automation.com/en/products/usb-sd-mux.html
+            role: USB SD Mux controller
+
   # Logical: mirror
   - from: ecogrid
     to: github
@@ -236,5 +271,11 @@ links:
   - from: board_3
     to: ecovault
     label: kernel + dtb + Yocto nfsroot
+    type: logical
+    reverse: true
+
+  - from: board_5
+    to: ecovault
+    label: Yocto .wic image
     type: logical
     reverse: true
