@@ -163,7 +163,7 @@ def generate_mermaid(data):
         svc["_tailnet_domain"] = tailnet_domain
 
     lines = [
-        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "New Computer Modern"}} }%%',
+        '%%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "Liberation Sans"}} }%%',
         "flowchart LR",
     ]
 
