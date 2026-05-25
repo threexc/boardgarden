@@ -1,0 +1,17 @@
+bf-k3-pico-itx:
+  location: ecoforge
+  k3-pico-itx-serial-port-1:
+    cls: 'USBSerialPort'
+    match:
+      '@ID_SERIAL_SHORT': 'E6647C740371802F'
+  k3-pico-itx-power-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'D30HF051'
+    pin: 0
+  k3-pico-itx-tftp-1:
+    cls: 'RemoteTFTPProvider'
+    host: '192.168.40.134'
+    internal: '/srv/tftp/k3-pico-itx/'
+    external: 'k3-pico-itx/'
