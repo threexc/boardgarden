@@ -1,5 +1,5 @@
 [Unit]
-Description=Labgrid Muse Pi Pro Exporter
+Description=Labgrid BananaPi F3 Exporter
 After=labgrid-coordinator.service
 Requires=labgrid-coordinator.service
 Wants=network-online.target
