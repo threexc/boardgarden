@@ -32,6 +32,7 @@ STYLES = {
     "service":  "fill:#fef9c3,stroke:#d97706,color:#713f12",
     "board":    "fill:#fce7f3,stroke:#ec4899,color:#831843",
     "board_planned": "fill:#f0fdf4,stroke:#86efac,color:#14532d",
+    "board_in_progress": "fill:#e0f2fe,stroke:#38bdf8,color:#0c4a6e",
 }
 
 
@@ -142,6 +143,8 @@ def build_board_label(b: dict) -> str:
     parts = [label]
     if status == "planned":
         parts.append("<i>(planned)</i>")
+    elif status == "in progress":
+        parts.append("<i>(in progress)</i>")
 
     return "<br/>".join(parts)
 
@@ -171,7 +174,7 @@ def generate_mermaid(data):
     lines.append('  subgraph tailnet["🔒 Tailnet"]')
 
     # ── Machine nodes ─────────────────────────────────────────────────
-    machine_ids, planned_ids, external_ids = [], [], []
+    machine_ids, planned_ids, in_progress_ids, external_ids = [], [], [], []
     for m in machines:
         mid    = m["id"]
         label  = machine_label(m)
@@ -184,6 +187,9 @@ def generate_mermaid(data):
         elif status == "planned":
             lines.append(f'    {mid}["{label}<br/><i>(planned)</i>"]')
             planned_ids.append(mid)
+        elif status == "in progress":
+            lines.append(f'    {mid}["{label}<br/><i>(in progress)</i>"]')
+            in_progress_ids.append(mid)
         else:
             lines.append(f'    {mid}["{label}"]')
             machine_ids.append(mid)
@@ -199,6 +205,7 @@ def generate_mermaid(data):
     # ── Board subgraph ────────────────────────────────────────────────
     board_ids         = []
     board_planned_ids = []
+    board_in_progress_ids = []
 
     if boards:
         lines.append('    subgraph boards["Test Targets"]')
@@ -210,6 +217,8 @@ def generate_mermaid(data):
             lines.append(f'      {bid}["{label}"]')
             if status == "planned":
                 board_planned_ids.append(bid)
+            if status == "in progress":
+                board_in_progress_ids.append(bid)
             else:
                 board_ids.append(bid)
         lines.append("    end")
@@ -244,10 +253,12 @@ def generate_mermaid(data):
     for cls, ids in [
         ("machine",        machine_ids),
         ("planned",        planned_ids),
+        ("in progress",    in_progress_ids),
         ("external",       external_ids),
         ("service",        svc_ids),
         ("board",          board_ids),
         ("board_planned",  board_planned_ids),
+        ("board_in_progress",  board_in_progress_ids),
     ]:
         if ids:
             lines.append(f'  classDef {cls} {STYLES[cls]}')
