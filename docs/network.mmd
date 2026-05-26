@@ -12,7 +12,7 @@ flowchart LR
       board_2["Muse Pi Pro"]
       board_3["OrangePi RV2"]
       board_4["qemuriscv64"]
-      board_5["K3 Pico-ITX<br/><i>(planned)</i>"]
+      board_5["K3 Pico-ITX<br/><i>(in progress)</i>"]
     end
   end
 
@@ -22,7 +22,7 @@ flowchart LR
   ecogrid ==>|"power / serial / SD mux"| board_1
   ecogrid ==>|"power / serial"| board_2
   ecogrid ==>|"power / serial"| board_3
-  ecogrid ==>|"power / serial / SD mux"| board_5
+  ecogrid ==>|"power / serial"| board_5
   ecogrid -..->|"push mirror"| github
   runner1 -->|"upload Yocto artifacts"| ecovault
   runner1 -->|"upload QEMU test results"| ecovault
@@ -32,7 +32,7 @@ flowchart LR
   ecovault -->|"Yocto .wic image"| board_1
   ecovault -->|"kernel + dtb + eMMC rootfs (Armbian)"| board_2
   ecovault -->|"kernel + dtb + Yocto nfsroot"| board_3
-  ecovault -->|"Yocto .wic image"| board_5
+  ecovault -->|"kernel + dtb + onboard rootfs (Bianbu)"| board_5
 
   %% ── Styles ──
   classDef machine fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
@@ -41,5 +41,5 @@ flowchart LR
   class github external
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
   class board_1,board_2,board_3,board_4 board
-  classDef board_planned fill:#f0fdf4,stroke:#86efac,color:#14532d
-  class board_5 board_planned
+  classDef board_in_progress fill:#e0f2fe,stroke:#38bdf8,color:#0c4a6e
+  class board_5 board_in_progress

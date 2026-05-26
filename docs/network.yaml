@@ -135,8 +135,8 @@ boards:
     model: K3 Pico-ITX
     url: https://sipeed.com/k3
     arch: riscv64 (RVA23)
-    connection: serial + power + sd mux
-    status: planned
+    connection: serial + power
+    status: in progress
 
 # Explicit logical links (beyond implicit Tailnet connectivity)
 # type: physical | logical
@@ -217,12 +217,6 @@ links:
             pn: Debug_Probe__CMSIS-DAP_0101
             url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
-      - label: SD mux
-        hardware:
-          - part: USB SD Mux
-            pn: usb-sd-mux_rev4.0
-            url: https://linux-automation.com/en/products/usb-sd-mux.html
-            role: USB SD Mux controller
 
   # Logical: mirror
   - from: ecogrid
@@ -277,6 +271,6 @@ links:
 
   - from: board_5
     to: ecovault
-    label: Yocto .wic image
+    label: kernel + dtb + onboard rootfs (Bianbu)
     type: logical
     reverse: true
