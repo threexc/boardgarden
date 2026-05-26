@@ -2,6 +2,19 @@
 
 tgamblin's boardfarm repo, built for testing RISC-V development boards with [Labgrid](https://github.com/labgrid-project/labgrid) and [Forgejo](https://forgejo.org/) Actions
 
+## Table of Contents
+
+- [Motivation](#motivation)
+  - [Why Forgejo?](#why-forgejo)
+  - [Why Labgrid?](#why-labgrid)
+- [Network Diagram](#network-diagram)
+- [Usage](#usage)
+  - [.forgejo](#forgejo)
+  - [boards](#boards)
+  - [systemd_services](#systemd-services)
+  - [udev](#udev)
+  - [workbench](#workbench)
+
 ## Motivation
 
 As part of the [RISE Project](https://riseproject.dev/),
