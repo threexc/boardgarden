@@ -134,18 +134,3 @@ Copilot](https://github.com/BayLibre/Copilot) board on a system to perform
 remote power control to boards under test. These have only been deployed thus
 far on Debian-based systems, where the `/sys/class/gpio` path exists and the
 necessary Linux kernel configuration is enabled.
-
-
-### workbench
-
-Labgrid exporter and client configurations for use with the devices on my desk,
-namely:
-
-- BayLibre Copilot
-- USBSerialPort device (USB to UART adapter)
-- Rigol DS1054Z oscilloscope
-- Sigilent SDG1032X function/waveform generator
-
-Note that support for controlling the last two is still under development in
-labgrid. See upstream issue
-[#1835](https://github.com/labgrid-project/labgrid/pull/1835).
