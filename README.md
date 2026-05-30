@@ -105,7 +105,17 @@ with all of the necessary modules by doing:
 
 Using the board configurations will depend on how you have structured your
 Labgrid deployment (see the [docs](https://labgrid.readthedocs.io/en/latest/)
-for more details). Assuming that you have created a place called
+for more details). **In addition, you may need to make some basic changes to the
+default bootloaders and operating systems in place** before beginning to use the
+Labgrid configurations for automation. The boards supported in `boardgarden`
+thus far all make use of an [Armbian](https://armbian.com/boards) or
+[Bianbu](https://gitee.com/bianbu/docs-en) installation to eMMC storage (even
+for targets utilizing an SD Mux) as a fallback, and to provide flexibility
+should per-board testing goals change. These U-Boot environments include default
+settings (such as autoboot wait times) that you may want to change before
+deployment - please ensure that you review them.
+
+As an example, once you have created a place called
 `bf-muse-pi-pro` and exported the corresponding resources in
 `boards/muse-pi-pro/exporter.yaml` with an appropriate matching pattern, you
 should be able to invoke the labgrid CLI using `uv run`, e.g.:
