@@ -3,7 +3,7 @@ bf-k3-pico-itx:
   k3-pico-itx-serial-port-1:
     cls: 'USBSerialPort'
     match:
-      '@ID_PATH': 'pci-0000:02:00.3-usb-0:3.2.2:1.0'
+      '@ID_SERIAL_SHORT': 'E6647C740371802F'
   k3-pico-itx-power-gpio-1:
     cls: 'MatchedSysfsGPIO'
     match:
