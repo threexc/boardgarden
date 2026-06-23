@@ -29,6 +29,7 @@ on:
           - all
           - bananapi-f3
           - eswin-ebc77-mainline
+          - k3-pico-itx
           - muse-pi-pro
           - nezha-allwinner-d1
           - orangepi-rv2-mainline
@@ -47,7 +48,7 @@ jobs:
           ${{
             inputs.machines != 'all' && inputs.machines != ''
               && fromJSON(format('["{0}"]', inputs.machines))
-              || fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
+              || fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "k3-pico-itx", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
           }}
     container:
       image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
