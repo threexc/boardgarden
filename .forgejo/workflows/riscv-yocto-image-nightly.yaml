@@ -11,6 +11,7 @@ on:
         options:
           - none
           - meta-riscv-tgamblin-k1-fixes
+          - meta-riscv-tgamblin-k3-fixes
       image:
         description: 'Image to build'
         required: true
