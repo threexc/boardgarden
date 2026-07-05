@@ -1,0 +1,21 @@
+name: bananapi-f3
+arch: riscv64
+description: BananaPi F3 (SpacemiT K1). Boots from microSD via USB SD-Mux
+remote_place: bf-bananapi-f3
+image_source: yocto
+
+boot:
+  method: sdmux
+
+image:
+  label: sdimage
+  path: /home/labgrid/bananapi-f3.rootfs-latest.wic.gz
+
+tools:
+  usbsdmux: /home/labgrid/.local/bin/usbsdmux
+
+shell:
+  username: root
+  password: null
+
+strategy_class: BananaPiF3BootStrategy
