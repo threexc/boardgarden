@@ -1,0 +1,26 @@
+name: qemuriscv64
+arch: riscv64
+description: QEMU RISC-V 64 virt machine. Yocto image, no physical hardware
+
+boot:
+  method: qemu
+  bootargs: root=/dev/vda rw console=ttyS0 earlycon
+
+qemu:
+  binary: qemu-system-riscv64
+  machine: virt
+  cpu: rva23s64
+  memory: 8192
+  ssh_port: 2222
+  telnet_port: 2323
+
+images:
+  bios: /home/labgrid/fw_jump.elf
+  kernel: /home/labgrid/Image
+  ext4: /home/labgrid/ptest_image.ext4
+
+shell:
+  username: root
+  password: null
+
+strategy_class: QEMUYoctoStrategy
