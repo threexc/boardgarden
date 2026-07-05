@@ -41,7 +41,7 @@ targets:
           name: 'k3-pico-itx-shell-1'
           bindings:
             console: 'k3-pico-itx-console-1'
-      - MusePiProBootStrategy:
+      - K3PicoItxBootStrategy:
           name: 'k3-pico-itx-strategy-1'
           bindings:
             power: 'k3-pico-itx-power-1'
