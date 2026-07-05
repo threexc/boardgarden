@@ -1,0 +1,40 @@
+name: k3-pico-itx
+arch: riscv64
+description: K3 Pico-ITX (SpacemiT K1) RISC-V SBC
+remote_place: bf-k3-pico-itx
+image_source: bianbu
+
+boot:
+  method: tftp
+  # Copied from muse-pi-pro; adjust if K3 rootfs partition differs.
+  bootargs: >
+    console=ttyS0,115200n8
+    earlyprintk
+    loglevel=7
+    root=/dev/mmcblk0p6
+    rootfstype=ext4
+    rootwait
+    swiotlb=65536
+    workqueue.default_affinity_scope=system
+  kernel_addr: $kernel_addr_r
+  dtb_addr: $dtb_addr
+
+tftp:
+  # TODO: verify subdir + dtb filename. strategy.py currently points at
+  # "muse-pi-pro" / "k1-musepi-pro.dtb" (bug from copy-paste).
+  subdir: k3-pico-itx
+  kernel: Image
+  dtb: k1-k3-pico-itx.dtb
+
+uboot:
+  emmc_cmd: boot
+  tftp_cmd: booti $kernel_addr_r - $dtb_addr
+  prompt: '=> '
+  autoboot: 'Autoboot in 5 seconds'
+  interrupt: s
+
+shell:
+  username: root
+  password: bianbu
+
+strategy_class: K3PicoItxBootStrategy
