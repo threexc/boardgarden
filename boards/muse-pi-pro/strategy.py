@@ -1,11 +1,16 @@
 import enum
+from pathlib import Path
 
 import attr
 
 import boardfarm_common.helpers as helpers
+from boardfarm_common.manifest import load_board
 
 from labgrid.factory import target_factory
 from labgrid.strategy.common import Strategy, StrategyError
+
+
+_MANIFEST = load_board(Path(__file__).parent)
 
 
 class Status(enum.Enum):
@@ -29,16 +34,7 @@ class MusePiProBootStrategy(Strategy):
     }
 
     status = attr.ib(default=Status.unknown)
-    bootargs = (
-        "console=ttyS0,115200n8 "
-        "earlyprintk "
-        "loglevel=7 "
-        "root=/dev/mmcblk0p6 "
-        "rootfstype=ext4 "
-        "rootwait "
-        "swiotlb=65536 "
-        "workqueue.default_affinity_scope=system "
-    )
+    bootargs = _MANIFEST["boot"]["bootargs"].strip()
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -77,8 +73,18 @@ class MusePiProBootStrategy(Strategy):
             self.transition(Status.uboot)
             helpers.uboot_set_server_ip(self)
             helpers.uboot_set_bootargs(self, self.bootargs)
-            helpers.uboot_tftpboot_file(self, "$kernel_addr_r", "muse-pi-pro", "Image")
-            helpers.uboot_tftpboot_file(self, "$dtb_addr", "muse-pi-pro", "k1-musepi-pro.dtb")
+            helpers.uboot_tftpboot_file(
+                self,
+                _MANIFEST["boot"]["kernel_addr"],
+                _MANIFEST["tftp"]["subdir"],
+                _MANIFEST["tftp"]["kernel"],
+            )
+            helpers.uboot_tftpboot_file(
+                self,
+                _MANIFEST["boot"]["dtb_addr"],
+                _MANIFEST["tftp"]["subdir"],
+                _MANIFEST["tftp"]["dtb"],
+            )
             self.uboot.boot("tftp")
             self.uboot.await_boot()
             self.target.activate(self.shell)

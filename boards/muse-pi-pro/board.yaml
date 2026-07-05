@@ -1,0 +1,37 @@
+name: muse-pi-pro
+arch: riscv64
+description: Muse Pi Pro (SpacemiT K1) RISC-V SBC
+remote_place: bf-muse-pi-pro
+image_source: bianbu
+
+boot:
+  method: tftp
+  bootargs: >
+    console=ttyS0,115200n8
+    earlyprintk
+    loglevel=7
+    root=/dev/mmcblk0p6
+    rootfstype=ext4
+    rootwait
+    swiotlb=65536
+    workqueue.default_affinity_scope=system
+  kernel_addr: $kernel_addr_r
+  dtb_addr: $dtb_addr
+
+tftp:
+  subdir: muse-pi-pro
+  kernel: Image
+  dtb: k1-musepi-pro.dtb
+
+uboot:
+  emmc_cmd: boot
+  tftp_cmd: booti $kernel_addr_r - $dtb_addr
+  prompt: '=> '
+  autoboot: 'Autoboot in 5 seconds'
+  interrupt: s
+
+shell:
+  username: root
+  password: bianbu
+
+strategy_class: MusePiProBootStrategy
