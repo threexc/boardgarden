@@ -74,7 +74,7 @@ jobs:
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
 
       - name: configure bitbake and layers
-        uses: ./boardgarden/.forgejo/actions/bitbake-setup
+        uses: ./.forgejo/actions/bitbake-setup
         with:
           config_json: boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
           positions: |
@@ -118,30 +118,20 @@ jobs:
           echo "BOARD=${BOARD}"             >> "$GITHUB_ENV"
           echo "DEPLOY_WIC=${DEPLOY_WIC}"   >> "$GITHUB_ENV"
 
-      - name: set up SSH access to TFTP server
-        uses: ./.forgejo/actions/setup-tftp-ssh
+      - name: run on board (deploy + optional dispatch)
+        uses: ./.forgejo/actions/run-on-board
         with:
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
           ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
-
-      - name: deploy kernel, DTB, extlinux.conf and wic images
-        uses: ./.forgejo/actions/deploy-tftp-artifacts
-        with:
-          board: ${{ env.BOARD }}
-          deploy_wic: ${{ env.DEPLOY_WIC }}
-          image: ${{ env.RISCV_IMAGE }}
-          images_path: ${{ env.IMAGES_PATH }}
-          machine: ${{ matrix.machine }}
           tftp_server: ${{ env.TFTP_SERVER }}
           tftp_user: ${{ env.TFTP_USER }}
-
-      - name: trigger board tests
-        if: contains(fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]'), matrix.machine)
-        uses: ./.forgejo/actions/dispatch-board-test
-        with:
+          board: ${{ env.BOARD }}
+          machine: ${{ matrix.machine }}
+          image: ${{ env.RISCV_IMAGE }}
+          images_path: ${{ env.IMAGES_PATH }}
+          deploy_wic: ${{ env.DEPLOY_WIC }}
+          dispatch: ${{ contains(fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]'), matrix.machine) }}
           dispatch_token: ${{ secrets.ACTION_DISPATCH }}
           forgejo_url: ${{ env.FORGEJO_URL }}
-          image: ${{ env.RISCV_IMAGE }}
-          machine: ${{ matrix.machine }}
           ref: ${{ github.ref_name || 'main' }}
           repository: ${{ github.repository }}
