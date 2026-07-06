@@ -1,4 +1,5 @@
 name: qemuriscv64
+strategy: qemu
 arch: riscv64
 description: QEMU RISC-V 64 virt machine. Yocto image, no physical hardware
 
