@@ -20,7 +20,6 @@ on:
           - all
           - bzip2
           - coreutils
-          - gnutls
           - gzip
           - parted
           - python3-cryptography
@@ -34,7 +33,7 @@ jobs:
         package: >-
           ${{
             inputs.package != 'all' && inputs.package != '' && fromJSON(format('["{0}"]', inputs.package)) ||
-            fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
+            fromJSON('["bzip2", "coreutils", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
       image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
@@ -112,7 +111,7 @@ jobs:
         package: >-
           ${{
             inputs.package != 'all' && inputs.package != '' && fromJSON(format('["{0}"]', inputs.package)) ||
-            fromJSON('["bzip2", "coreutils", "gnutls", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
+            fromJSON('["bzip2", "coreutils", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
       image: forgejo.oryx-coho.ts.net/tgamblin/lg-operator
