@@ -1,0 +1,29 @@
+on:
+  push:
+    paths:
+      - 'boards/**/*.py'
+      - 'boards/**/pyproject.toml'
+      - '.pre-commit-config.yaml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ruff:
+    runs-on: docker-small
+    container:
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    steps:
+      - name: clone boardgarden at test SHA
+        shell: bash
+        run: |
+          mkdir repo && cd repo
+          git init -q
+          git remote add origin "${GITHUB_SERVER_URL:-https://forgejo.oryx-coho.ts.net}/${GITHUB_REPOSITORY:-tgamblin/boardgarden}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q FETCH_HEAD
+      - name: ruff check
+        working-directory: repo/boards
+        run: uvx ruff@0.14 check --no-cache
+      - name: ruff format --check
+        working-directory: repo/boards
+        run: uvx ruff@0.14 format --no-cache --check
