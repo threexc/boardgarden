@@ -1,4 +1,5 @@
 name: bananapi-f3
+strategy: sdmux
 arch: riscv64
 description: BananaPi F3 (SpacemiT K1). Boots from microSD via USB SD-Mux
 remote_place: bf-bananapi-f3
