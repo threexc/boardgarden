@@ -40,7 +40,6 @@ targets:
 
 images:
   sdimage: "/home/labgrid/bananapi-f3.rootfs-latest.wic.gz"
-
 tools:
   usbsdmux: '/home/labgrid/.local/bin/usbsdmux'
 
