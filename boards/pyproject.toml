@@ -22,7 +22,15 @@ boardfarm-common = { workspace = true }
 
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
-testpaths = ["bananapi-f3/pytest", "muse-pi-pro/pytest", "orangepi-rv2/pytest"]
+testpaths = [
+    "bananapi-f3/pytest",
+    "k3-pico-itx/pytest",
+    "muse-pi-pro/pytest",
+    "orangepi-rv2/pytest",
+    "qemuriscv64/tests",
+]
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
 
 [dependency-groups]
 dev = [
