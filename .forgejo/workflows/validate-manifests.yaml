@@ -1,0 +1,38 @@
+on:
+  push:
+    paths:
+      - 'boards/**/board.yaml'
+      - 'boards/families/**'
+      - 'boards/common/src/boardfarm_common/schema/**'
+      - 'boards/common/src/boardfarm_common/templates/**'
+      - 'boards/common/src/boardfarm_common/validate.py'
+      - 'boards/common/src/boardfarm_common/render.py'
+      - 'boards/common/src/boardfarm_common/loader.py'
+      - 'boards/common/src/boardfarm_common/manifest.py'
+      - 'boards/common/pyproject.toml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: docker-small
+    container:
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    steps:
+      - name: clone boardgarden at test SHA
+        shell: bash
+        run: |
+          mkdir repo && cd repo
+          git init -q
+          git remote add origin "${GITHUB_SERVER_URL:-https://forgejo.oryx-coho.ts.net}/${GITHUB_REPOSITORY:-tgamblin/boardgarden}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q FETCH_HEAD
+      - name: sync uv workspace
+        working-directory: repo/boards
+        run: uv sync
+      - name: validate all board.yaml
+        working-directory: repo/boards
+        run: uv run boardfarm-validate
+      - name: check rendered client.yaml is in sync with manifests
+        working-directory: repo/boards
+        run: uv run boardfarm-render --check
