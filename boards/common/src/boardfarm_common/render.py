@@ -14,7 +14,6 @@ from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from boardfarm_common.manifest import load_board
 
-
 _STRATEGY_TO_TEMPLATE = {
     "tftp": ("client-tftp.yaml.j2", "client.yaml"),
     "sdmux": ("client-sdmux.yaml.j2", "client.yaml"),
@@ -50,7 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Render labgrid client.yaml from board.yaml")
     parser.add_argument("board_dirs", nargs="*", type=Path)
     parser.add_argument(
-        "--check", action="store_true",
+        "--check",
+        action="store_true",
         help="Exit non-zero if any rendered output differs from the on-disk file.",
     )
     args = parser.parse_args(argv)

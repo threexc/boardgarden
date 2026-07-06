@@ -1,7 +1,6 @@
 import enum
 
 import attr
-
 from labgrid.strategy.common import StrategyError
 
 from boardfarm_common import helpers

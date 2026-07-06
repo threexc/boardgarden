@@ -1,11 +1,9 @@
 from pathlib import Path
 
 import attr
-
-from labgrid.factory import target_factory
-
 from boardfarm_common.manifest import load_board
 from boardfarm_common.strategies import QemuBootStrategy
+from labgrid.factory import target_factory
 
 
 @target_factory.reg_driver

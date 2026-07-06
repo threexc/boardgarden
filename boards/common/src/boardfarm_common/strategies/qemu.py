@@ -1,7 +1,6 @@
 import enum
 
 import attr
-
 from labgrid.step import step
 from labgrid.strategy.common import StrategyError
 
@@ -41,9 +40,7 @@ class QemuBootStrategy(BoardStrategy):
             if self.status == QemuStatus.shell:
                 return
             if self.status == QemuStatus.booting:
-                raise StrategyError(
-                    "Cannot go to shell directly from booting; turn off first."
-                )
+                raise StrategyError("Cannot go to shell directly from booting; turn off first.")
             self.target.activate(self.qemu_driver)
             self.qemu_driver.on()
             self.status = QemuStatus.booting

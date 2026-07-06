@@ -20,12 +20,8 @@ def strategy_for(manifest: dict):
     """Look up a strategy class by ``manifest['strategy']``."""
     name = manifest.get("strategy")
     if not name:
-        raise UnknownStrategy(
-            "board.yaml is missing top-level 'strategy: <family>' key"
-        )
+        raise UnknownStrategy("board.yaml is missing top-level 'strategy: <family>' key")
     eps = {ep.name: ep for ep in entry_points(group="boardfarm.strategies")}
     if name not in eps:
-        raise UnknownStrategy(
-            f"strategy {name!r} not registered (available: {sorted(eps)})"
-        )
+        raise UnknownStrategy(f"strategy {name!r} not registered (available: {sorted(eps)})")
     return eps[name].load()

@@ -1,7 +1,6 @@
 import enum
 
 import attr
-
 from labgrid.driver.usbstoragedriver import Mode
 from labgrid.strategy.common import StrategyError
 

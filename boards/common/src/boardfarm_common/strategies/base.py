@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import attr
-
 from labgrid.strategy.common import Strategy
 
 from boardfarm_common.manifest import load_board
