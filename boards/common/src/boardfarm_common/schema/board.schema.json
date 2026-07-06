@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boardgarden/board.schema.json",
+  "title": "Boardfarm board manifest",
+  "type": "object",
+  "required": ["name", "strategy", "arch"],
+  "additionalProperties": true,
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "arch": { "type": "string" },
+    "description": { "type": "string" },
+    "strategy": { "enum": ["tftp", "sdmux", "qemu"] },
+    "remote_place": { "type": "string" },
+    "image_source": { "type": "string" },
+    "inherits": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths to defaults.yaml files, merged in order (later overrides earlier). board.yaml wins."
+    },
+    "boot": {
+      "type": "object",
+      "properties": {
+        "method": { "type": "string" },
+        "bootargs": { "type": "string" },
+        "kernel_addr": { "type": "string" },
+        "dtb_addr": { "type": "string" }
+      }
+    },
+    "tftp": {
+      "type": "object",
+      "properties": {
+        "subdir": { "type": "string" },
+        "kernel": { "type": "string" },
+        "dtb": { "type": "string" }
+      }
+    },
+    "uboot": { "type": "object" },
+    "shell": {
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": ["string", "null"] }
+      }
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    },
+    "tools": { "type": "object" },
+    "qemu": {
+      "type": "object",
+      "properties": {
+        "binary": { "type": "string" },
+        "machine": { "type": "string" },
+        "cpu": { "type": "string" },
+        "memory": { "type": ["integer", "string"] },
+        "ssh_port": { "type": "integer" },
+        "telnet_port": { "type": "integer" }
+      }
+    },
+    "images": { "type": "object" },
+    "strategy_class": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "strategy": { "const": "tftp" } }, "required": ["strategy"] },
+      "then": {
+        "required": ["boot", "tftp"],
+        "properties": {
+          "boot": {
+            "required": ["bootargs", "kernel_addr", "dtb_addr"]
+          },
+          "tftp": {
+            "required": ["subdir", "kernel", "dtb"]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "strategy": { "const": "sdmux" } }, "required": ["strategy"] },
+      "then": {
+        "required": ["image"],
+        "properties": {
+          "image": { "required": ["label", "path"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "strategy": { "const": "qemu" } }, "required": ["strategy"] },
+      "then": {
+        "required": ["qemu", "images"],
+        "properties": {
+          "qemu": { "required": ["binary", "machine"] }
+        }
+      }
+    }
+  ]
+}
