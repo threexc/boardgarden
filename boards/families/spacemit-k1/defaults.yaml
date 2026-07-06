@@ -1,0 +1,16 @@
+# Shared defaults for SpacemiT K1 SoC boards. Merged into board.yaml when the
+# board opts in via `inherits: [../../families/spacemit-k1/defaults.yaml]`.
+arch: riscv64
+
+uboot:
+  emmc_cmd: boot
+  prompt: '=> '
+  autoboot: 'Autoboot in 5 seconds'
+  interrupt: s
+
+boot:
+  kernel_addr: $kernel_addr_r
+  dtb_addr: $dtb_addr
+
+tftp:
+  kernel: Image
