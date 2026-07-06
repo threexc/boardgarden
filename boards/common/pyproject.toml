@@ -9,6 +9,8 @@ description = "Shared helpers and fixtures for boardfarm pytest suites"
 requires-python = ">=3.11"
 dependencies = [
     "ansicolors",
+    "jinja2",
+    "jsonschema",
     "labgrid",
     "pytest",
     "pytest-html",
@@ -16,6 +18,17 @@ dependencies = [
     "usbsdmux",
 ]
 
+[project.scripts]
+boardfarm-validate = "boardfarm_common.validate:main"
+boardfarm-render = "boardfarm_common.render:main"
+
 # Auto-loaded into any pytest run inside this venv:
 [project.entry-points.pytest11]
 boardfarm_common = "boardfarm_common.fixtures"
+
+# Strategy family registry. Add a line here to expose a new family; third-party
+# packages register in the same group.
+[project.entry-points."boardfarm.strategies"]
+tftp = "boardfarm_common.strategies.tftp:TftpBootStrategy"
+sdmux = "boardfarm_common.strategies.sdmux:SdMuxBootStrategy"
+qemu = "boardfarm_common.strategies.qemu:QemuBootStrategy"
