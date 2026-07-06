@@ -74,20 +74,13 @@ jobs:
           git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
 
       - name: configure bitbake and layers
-        run: |
-          OVERRIDE_ARG=""
-          if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
-            OVERRIDE_ARG="--source-override boardgarden/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
-          fi
-
-          ./bitbake/bin/bitbake-setup \
-            --debug \
-            init \
-            --non-interactive \
-            ${OVERRIDE_ARG} \
-            boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json \
-            nodistro \
+        uses: ./boardgarden/.forgejo/actions/bitbake-setup
+        with:
+          config_json: boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+          positions: |
+            nodistro
             machine/${{ matrix.machine }}
+          source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
 
       - name: build ${{ inputs.image || 'core-image-minimal' }}
         run: |
