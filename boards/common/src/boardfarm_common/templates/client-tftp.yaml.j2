@@ -1,0 +1,59 @@
+{#- Jinja2 template for a TFTP-boot labgrid client.yaml. -#}
+{%- set n = manifest.name -%}
+{%- set strategy_class = manifest.strategy_class | default("TftpBootStrategy") -%}
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: {{ manifest.remote_place }}
+    drivers:
+      - SerialDriver:
+          name: '{{ n }}-console-1'
+          bindings:
+            port: '{{ n }}-serial-port-1'
+      - GpioDigitalOutputDriver:
+          name: '{{ n }}-power-gpio-1'
+          bindings:
+            gpio: '{{ n }}-power-gpio-1'
+      - DigitalOutputPowerDriver:
+          name: '{{ n }}-power-1'
+          bindings:
+            output: '{{ n }}-power-gpio-1'
+      - TFTPProviderDriver:
+          name: '{{ n }}-tftp-1'
+          bindings:
+            provider: '{{ n }}-tftp-1'
+      - UBootDriver:
+          prompt: '{{ manifest.uboot.prompt }}'
+          autoboot: '{{ manifest.uboot.autoboot }}'
+          interrupt: '{{ manifest.uboot.interrupt }}'
+          name: '{{ n }}-uboot-1'
+          boot_commands:
+            emmc: '{{ manifest.uboot.emmc_cmd }}'
+            tftp: '{{ manifest.uboot.tftp_cmd }}'
+          bindings:
+            console: '{{ n }}-console-1'
+          login_timeout: 30
+          boot_timeout: 30
+          strip_timestamp: True
+      - ShellDriver:
+          prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
+          login_prompt: '[-\w]+ login: '
+          username: '{{ manifest.shell.username }}'
+          {%- if manifest.shell.password %}
+          password: '{{ manifest.shell.password }}'
+          {%- endif %}
+          name: '{{ n }}-shell-1'
+          bindings:
+            console: '{{ n }}-console-1'
+      - {{ strategy_class }}:
+          name: '{{ n }}-strategy-1'
+          bindings:
+            power: '{{ n }}-power-1'
+            console: '{{ n }}-console-1'
+            uboot: '{{ n }}-uboot-1'
+            shell: '{{ n }}-shell-1'
+            tftp: '{{ n }}-tftp-1'
+
+imports:
+  - strategy.py

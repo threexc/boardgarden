@@ -1,0 +1,58 @@
+{#- Jinja2 template for an SD-Mux labgrid client.yaml. -#}
+{%- set n = manifest.name -%}
+{%- set strategy_class = manifest.strategy_class | default("SdMuxBootStrategy") -%}
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: {{ manifest.remote_place }}
+    drivers:
+      - SerialDriver:
+          name: '{{ n }}-console-1'
+          bindings:
+            port: '{{ n }}-serial-port-1'
+      - GpioDigitalOutputDriver:
+          name: '{{ n }}-power-gpio-1'
+          bindings:
+            gpio: '{{ n }}-power-gpio-1'
+      - DigitalOutputPowerDriver:
+          name: '{{ n }}-power-1'
+          bindings:
+            output: '{{ n }}-power-gpio-1'
+      - USBStorageDriver:
+          image: '{{ manifest.image.label }}'
+          bindings:
+            storage: '{{ n }}-sdmux-1'
+      - USBSDMuxDriver:
+          bindings:
+            mux: '{{ n }}-sdmux-1'
+      - ShellDriver:
+          prompt: '(\x1b\[\?2004h|\x1b\\)?root@[\w-]+:[^ ]+[#$] '
+          login_prompt: 'login: '
+          login_timeout: 120
+          username: '{{ manifest.shell.username }}'
+          {%- if manifest.shell.password %}
+          password: '{{ manifest.shell.password }}'
+          {%- endif %}
+          name: '{{ n }}-shell-1'
+          bindings:
+            console: '{{ n }}-console-1'
+      - {{ strategy_class }}:
+          name: '{{ n }}-strategy-1'
+          bindings:
+            power: '{{ n }}-power-1'
+            console: '{{ n }}-console-1'
+            shell: '{{ n }}-shell-1'
+
+images:
+  {{ manifest.image.label }}: "{{ manifest.image.path }}"
+
+{%- if manifest.tools %}
+tools:
+{%- for k, v in manifest.tools.items() %}
+  {{ k }}: '{{ v }}'
+{%- endfor %}
+{%- endif %}
+
+imports:
+  - strategy.py

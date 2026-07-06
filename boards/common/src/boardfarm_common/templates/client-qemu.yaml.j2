@@ -1,0 +1,35 @@
+{#- Jinja2 template for a QEMU labgrid env.yaml. -#}
+{%- set n = manifest.name -%}
+{%- set strategy_class = manifest.strategy_class | default("QemuBootStrategy") -%}
+imports:
+  - qemu_strategy.py
+
+targets:
+  main:
+    drivers:
+      QEMUDriver:
+        qemu_bin: {{ manifest.qemu.binary }}
+        bios: {{ manifest.name }}_bios
+        kernel: {{ manifest.name }}_kernel
+        cpu: '{{ manifest.qemu.cpu }}'
+        memory: "{{ manifest.qemu.memory }}"
+        machine: '{{ manifest.qemu.machine }}'
+        disk: {{ manifest.name }}_ext4
+        boot_args: '{{ manifest.boot.bootargs }}'
+        extra_args: >-
+          -display none
+          -device virtio-net-device,netdev=net0,mac=52:54:00:12:35:02
+          -netdev user,id=net0,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.ssh_port }}-:22,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.telnet_port }}-:23
+          -object rng-random,filename=/dev/urandom,id=rng0
+          -device virtio-rng-device,rng=rng0
+      ShellDriver:
+        prompt: 'root@[a-zA-Z0-9]+:~#\s'
+        login_prompt: ' login: '
+        username: '{{ manifest.shell.username }}'
+        login_timeout: 300
+      {{ strategy_class }}: {}
+
+images:
+  {{ manifest.name }}_bios: '{{ manifest.images.bios }}'
+  {{ manifest.name }}_ext4: '{{ manifest.images.ext4 }}'
+  {{ manifest.name }}_kernel: '{{ manifest.images.kernel }}'
