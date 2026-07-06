@@ -1,0 +1,59 @@
+name: 'bitbake-setup'
+description: 'Initialise a bitbake build tree via ./bitbake/bin/bitbake-setup, with optional source override.'
+
+inputs:
+  config_json:
+    description: 'Path to the bitbake-setup config.json (e.g. boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json)'
+    required: true
+  positions:
+    description: >-
+      Positional selectors passed to bitbake-setup after config_json, one per line
+      (e.g. "nodistro\nmachine/muse-pi-pro" or "poky\ndistro/poky\nmachine/qemuriscv64").
+    required: true
+  source_override:
+    description: 'Source override name (looked up in overrides_dir). Use "none" or leave empty to skip.'
+    required: false
+    default: 'none'
+  overrides_dir:
+    description: 'Directory holding *-override.json files.'
+    required: false
+    default: 'boardgarden/.forgejo/bitbake-configs'
+  bitbake_setup_bin:
+    description: 'Path to the bitbake-setup binary.'
+    required: false
+    default: './bitbake/bin/bitbake-setup'
+
+runs:
+  using: composite
+  steps:
+    - name: bitbake-setup init
+      shell: bash
+      env:
+        CONFIG_JSON: ${{ inputs.config_json }}
+        POSITIONS: ${{ inputs.positions }}
+        SOURCE_OVERRIDE: ${{ inputs.source_override }}
+        OVERRIDES_DIR: ${{ inputs.overrides_dir }}
+        BITBAKE_SETUP_BIN: ${{ inputs.bitbake_setup_bin }}
+      run: |
+        set -euo pipefail
+
+        override_arg=()
+        if [ "${SOURCE_OVERRIDE}" != "none" ] && [ -n "${SOURCE_OVERRIDE}" ]; then
+          override_arg=(--source-override "${OVERRIDES_DIR}/${SOURCE_OVERRIDE}-override.json")
+        fi
+
+        positions=()
+        while IFS= read -r line; do
+          line="${line#"${line%%[![:space:]]*}"}"   # ltrim
+          line="${line%"${line##*[![:space:]]}"}"   # rtrim
+          [ -z "$line" ] && continue
+          positions+=("$line")
+        done <<< "${POSITIONS}"
+
+        "${BITBAKE_SETUP_BIN}" \
+          --debug \
+          init \
+          --non-interactive \
+          "${override_arg[@]}" \
+          "${CONFIG_JSON}" \
+          "${positions[@]}"
