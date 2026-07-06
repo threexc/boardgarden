@@ -1,8 +1,10 @@
 name: k3-pico-itx
-arch: riscv64
+strategy: tftp
 description: K3 Pico-ITX (SpacemiT K1) RISC-V SBC
 remote_place: bf-k3-pico-itx
 image_source: bianbu
+inherits:
+  - ../families/spacemit-k1/defaults.yaml
 
 boot:
   method: tftp
@@ -16,22 +18,15 @@ boot:
     rootwait
     swiotlb=65536
     workqueue.default_affinity_scope=system
-  kernel_addr: $kernel_addr_r
-  dtb_addr: $dtb_addr
 
 tftp:
-  # TODO: verify subdir + dtb filename. strategy.py currently points at
+  # TODO: verify subdir + dtb filename. strategy.py previously pointed at
   # "muse-pi-pro" / "k1-musepi-pro.dtb" (bug from copy-paste).
   subdir: k3-pico-itx
-  kernel: Image
   dtb: k1-k3-pico-itx.dtb
 
 uboot:
-  emmc_cmd: boot
   tftp_cmd: booti $kernel_addr_r - $dtb_addr
-  prompt: '=> '
-  autoboot: 'Autoboot in 5 seconds'
-  interrupt: s
 
 shell:
   username: root
