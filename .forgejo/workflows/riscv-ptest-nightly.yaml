@@ -63,21 +63,14 @@ jobs:
           path: bitbake
 
       - name: configure bitbake and layers
-        run: |
-          OVERRIDE_ARG=""
-          if [ "${BITBAKE_SETUP_OVERRIDE}" != "none" ]; then
-            OVERRIDE_ARG="--source-override boardgarden/.forgejo/bitbake-configs/${BITBAKE_SETUP_OVERRIDE}-override.json"
-          fi
-
-          ./bitbake/bin/bitbake-setup \
-            --debug \
-            init \
-            --non-interactive \
-            ${OVERRIDE_ARG} \
-            ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json \
-            poky \
-            distro/poky \
-            machine/${RISCV_MACHINE}
+        uses: ./.forgejo/actions/bitbake-setup
+        with:
+          config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
+          positions: |
+            poky
+            distro/poky
+            machine/${{ env.RISCV_MACHINE }}
+          source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
 
       - name: build core-image-ptest image
         working-directory: /home/yoctouser/yocto-build
