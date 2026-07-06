@@ -12,7 +12,6 @@ from importlib.resources import files
 from pathlib import Path
 
 import jsonschema
-import yaml
 
 from boardfarm_common.loader import strategy_for
 from boardfarm_common.manifest import load_board
@@ -48,27 +47,24 @@ def main(argv: list[str] | None = None) -> int:
     targets: list[Path] = []
     if args.paths:
         for p in args.paths:
-            if p.is_dir():
-                targets.append(p / "board.yaml")
-            else:
-                targets.append(p)
+            targets.append(p if p.is_dir() else p.parent)
     else:
-        targets = list(_iter_board_yamls(Path.cwd()))
+        targets = [p.parent for p in _iter_board_yamls(Path.cwd())]
 
     if not targets:
         print("no board.yaml files found", file=sys.stderr)
         return 2
 
     failures = 0
-    for path in targets:
+    for board_dir in targets:
         try:
-            manifest = yaml.safe_load(path.read_text())
+            manifest = load_board(board_dir)
             validate_manifest(manifest)
         except Exception as exc:  # noqa: BLE001
             failures += 1
-            print(f"FAIL  {path}: {exc}", file=sys.stderr)
+            print(f"FAIL  {board_dir}/board.yaml: {exc}", file=sys.stderr)
         else:
-            print(f"ok    {path}")
+            print(f"ok    {board_dir}/board.yaml")
     return 0 if failures == 0 else 1
 
 
