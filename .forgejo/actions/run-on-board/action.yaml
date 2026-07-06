@@ -1,0 +1,91 @@
+name: 'Run on board'
+description: >
+  End-to-end board deployment: install TFTP SSH creds, rsync kernel/DTB/wic
+  artifacts to the TFTP server, then optionally dispatch the board-test
+  workflow. Wraps setup-tftp-ssh + deploy-tftp-artifacts + dispatch-board-test.
+
+inputs:
+  # SSH / TFTP server
+  tftp_server:
+    description: 'Hostname of the TFTP server'
+    required: true
+  tftp_user:
+    description: 'SSH user on the TFTP server'
+    required: true
+  ssh_private_key:
+    description: 'Private key for the TFTP server user'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts content covering the TFTP server'
+    required: true
+
+  # Artifact deployment
+  board:
+    description: 'Short board name (TFTP subdirectory), e.g. bananapi-f3'
+    required: true
+  machine:
+    description: 'Full Yocto MACHINE value (may include -mainline suffix)'
+    required: true
+  image:
+    description: 'Yocto image name (e.g. core-image-minimal)'
+    required: true
+  images_path:
+    description: 'Absolute path to tmp/deploy/images on the builder'
+    required: true
+  deploy_wic:
+    description: 'Rsync wic flash images and update latest symlinks'
+    required: false
+    default: 'false'
+
+  # Board-test dispatch (optional)
+  dispatch:
+    description: 'Trigger the board-test workflow after deploying. Set to "false" to skip.'
+    required: false
+    default: 'true'
+  forgejo_url:
+    description: 'Base URL of the Forgejo instance (required when dispatch=true)'
+    required: false
+    default: ''
+  repository:
+    description: 'Repository in owner/name format (required when dispatch=true)'
+    required: false
+    default: ''
+  ref:
+    description: 'Branch or tag to dispatch against (required when dispatch=true)'
+    required: false
+    default: 'main'
+  dispatch_token:
+    description: 'API token with actions:write permission (required when dispatch=true)'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: install TFTP SSH credentials
+      uses: ./.forgejo/actions/setup-tftp-ssh
+      with:
+        ssh_private_key: ${{ inputs.ssh_private_key }}
+        ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
+
+    - name: deploy artifacts to TFTP server
+      uses: ./.forgejo/actions/deploy-tftp-artifacts
+      with:
+        tftp_user: ${{ inputs.tftp_user }}
+        tftp_server: ${{ inputs.tftp_server }}
+        board: ${{ inputs.board }}
+        machine: ${{ inputs.machine }}
+        image: ${{ inputs.image }}
+        images_path: ${{ inputs.images_path }}
+        deploy_wic: ${{ inputs.deploy_wic }}
+
+    - name: dispatch board-test workflow
+      if: inputs.dispatch == 'true'
+      uses: ./.forgejo/actions/dispatch-board-test
+      with:
+        forgejo_url: ${{ inputs.forgejo_url }}
+        repository: ${{ inputs.repository }}
+        ref: ${{ inputs.ref }}
+        dispatch_token: ${{ inputs.dispatch_token }}
+        machine: ${{ inputs.machine }}
+        image: ${{ inputs.image }}
