@@ -49,12 +49,14 @@ jobs:
     steps:
       - name: set up keys
         working-directory: /home/labgrid
+        env:
+          LG_EXPORTER_SSH_KEY: ${{ secrets.LG_EXPORTER_SSH_KEY }}
+          TFTP_SERVER_SSH_KEY: ${{ secrets.TFTP_SERVER_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.LG_EXPORTER_SSH_KEY }}" > ~/.ssh/id_rsa
-          echo "${{ secrets.TFTP_SERVER_SSH_KEY }}" > ~/.ssh/id_rsa_tftp
-          chmod 600 ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa_tftp
+          umask 077
+          printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
+          printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
           ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
 
@@ -137,13 +139,13 @@ jobs:
       - name: Setup SSH key
         working-directory: /home/labgrid
         env:
-          SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
+          REPORT_SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" >> ~/.ssh/id_rsa
+          umask 077
+          printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
           ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
-          chmod 600 ~/.ssh/id_rsa
 
       - name: test SSH connection
         working-directory: /home/labgrid
@@ -168,12 +170,12 @@ jobs:
 
       - name: Deploy external reports
         env:
-          SSH_KEY: ${{ secrets.PUB_LOG_DEPLOY_KEY }}
+          PUB_LOG_DEPLOY_KEY: ${{ secrets.PUB_LOG_DEPLOY_KEY }}
         run: |
           REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          umask 077
+          printf '%s\n' "$PUB_LOG_DEPLOY_KEY" > ~/.ssh/deploy_key
           ssh-keyscan -H 178.105.181.249 >> ~/.ssh/known_hosts
           rsync -avz --mkpath \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
