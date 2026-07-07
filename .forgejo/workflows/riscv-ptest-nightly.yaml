@@ -162,13 +162,13 @@ jobs:
       - name: Setup SSH key
         working-directory: /home/labgrid
         env:
-          SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
+          REPORT_SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" >> ~/.ssh/id_rsa
+          umask 077
+          printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
           ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
-          chmod 600 ~/.ssh/id_rsa
 
       - name: test SSH connection
         working-directory: /home/labgrid
@@ -177,7 +177,7 @@ jobs:
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
 
           # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful" || true
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful"
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
