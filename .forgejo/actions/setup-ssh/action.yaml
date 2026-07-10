@@ -1,0 +1,30 @@
+name: 'Setup SSH access'
+description: 'Installs a private key and appends known_hosts entries for SSH/rsync/scp access.'
+
+inputs:
+  ssh_private_key:
+    description: 'Private key content'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts content to append (multi-line allowed)'
+    required: true
+  key_filename:
+    description: 'Filename under ~/.ssh (e.g. id_rsa, id_rsa_tftp)'
+    required: false
+    default: 'id_rsa'
+
+runs:
+  using: composite
+  steps:
+    - name: install SSH credentials
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh_private_key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh_known_hosts }}
+        KEY_FILENAME: ${{ inputs.key_filename }}
+      run: |
+        set -euo pipefail
+        mkdir -p ~/.ssh
+        umask 077
+        printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/"${KEY_FILENAME}"
+        printf '%s\n' "${SSH_KNOWN_HOSTS}" >> ~/.ssh/known_hosts

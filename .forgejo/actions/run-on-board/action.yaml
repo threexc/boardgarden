@@ -2,7 +2,7 @@ name: 'Run on board'
 description: >
   End-to-end board deployment: install TFTP SSH creds, rsync kernel/DTB/wic
   artifacts to the TFTP server, then optionally dispatch the board-test
-  workflow. Wraps setup-tftp-ssh + deploy-tftp-artifacts + dispatch-board-test.
+  workflow. Wraps setup-ssh + deploy-tftp-artifacts + dispatch-board-test.
 
 inputs:
   # SSH / TFTP server
@@ -63,7 +63,7 @@ runs:
   using: composite
   steps:
     - name: install TFTP SSH credentials
-      uses: ./.forgejo/actions/setup-tftp-ssh
+      uses: ./.forgejo/actions/setup-ssh
       with:
         ssh_private_key: ${{ inputs.ssh_private_key }}
         ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
