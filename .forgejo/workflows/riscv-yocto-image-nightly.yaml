@@ -36,7 +36,6 @@ on:
           - orangepi-rv2-mainline
 
 env:
-  FORGEJO_URL: "https://forgejo.oryx-coho.ts.net"
   TFTP_SERVER: "ecovault.oryx-coho.ts.net"
   TFTP_USER: "auto"
 
@@ -132,6 +131,6 @@ jobs:
           deploy_wic: ${{ env.DEPLOY_WIC }}
           dispatch: ${{ contains(fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]'), matrix.machine) }}
           dispatch_token: ${{ secrets.ACTION_DISPATCH }}
-          forgejo_url: ${{ env.FORGEJO_URL }}
+          forgejo_url: ${{ github.server_url }}
           ref: ${{ github.ref_name || 'main' }}
           repository: ${{ github.repository }}
