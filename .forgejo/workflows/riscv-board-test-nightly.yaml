@@ -28,7 +28,7 @@ env:
 
 jobs:
   test-board-boot:
-    runs-on: docker-small
+    runs-on: tgamblin-board-test
     strategy:
       matrix:
         machine: >-

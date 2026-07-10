@@ -9,7 +9,7 @@ on:
 
 jobs:
   ruff:
-    runs-on: docker-small
+    runs-on: tgamblin-maintenance
     container:
       image: ghcr.io/astral-sh/uv:python3.12-bookworm
     steps:

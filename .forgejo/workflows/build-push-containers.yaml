@@ -10,7 +10,7 @@ on:
 jobs:
   build-container-images:
     name: Build and push image
-    runs-on: docker-small
+    runs-on: tgamblin-maintenance
     container:
       image: forgejo.oryx-coho.ts.net/tgamblin/container-builder
 

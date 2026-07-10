@@ -42,7 +42,7 @@ env:
 
 jobs:
   build-riscv-image:
-    runs-on: docker
+    runs-on: tgamblin-build
     strategy:
       matrix:
         machine: >-

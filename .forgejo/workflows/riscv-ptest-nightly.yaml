@@ -27,7 +27,7 @@ on:
           - xz
 jobs:
   build-riscv-image:
-    runs-on: docker
+    runs-on: tgamblin-qemu
     strategy:
       matrix:
         package: >-
@@ -104,7 +104,7 @@ jobs:
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
 
   run-ptests:
-    runs-on: docker
+    runs-on: tgamblin-qemu
     needs: build-riscv-image
     strategy:
       matrix:
