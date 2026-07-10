@@ -12,7 +12,7 @@ jobs:
     name: Build and push image
     runs-on: tgamblin-maintenance
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/container-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder
 
     steps:
     - name: Checkout
