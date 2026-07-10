@@ -36,7 +36,7 @@ jobs:
             fromJSON('["bzip2", "coreutils", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -52,13 +52,13 @@ jobs:
       - name: clone boardgarden
         uses: ./.forgejo/actions/git-clone
         with:
-          url: https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
+          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git
           path: boardgarden
 
       - name: clone bitbake
         uses: ./.forgejo/actions/git-clone
         with:
-          url: https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
+          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/bitbake.git
           path: bitbake
 
       - name: configure bitbake and layers
@@ -114,7 +114,7 @@ jobs:
             fromJSON('["bzip2", "coreutils", "gzip", "parted", "python3-cryptography", "tar", "xz"]')
           }}
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/lg-operator
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
       options: --add-host ecogrid:192.168.40.101 --add-host ecovault:192.168.40.134
     steps:
       - name: Download qemuriscv64 bios

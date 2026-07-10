@@ -24,7 +24,7 @@ jobs:
         run: |
           mkdir repo && cd repo
           git init -q
-          git remote add origin "${GITHUB_SERVER_URL:-https://forgejo.oryx-coho.ts.net}/${GITHUB_REPOSITORY:-tgamblin/boardgarden}.git"
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout -q FETCH_HEAD
       - name: sync uv workspace

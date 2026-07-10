@@ -6,16 +6,16 @@ jobs:
   check-meta-riscv:
     runs-on: tgamblin-maintenance
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
     steps:
       - name: run yocto-check-layer-wrapper
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git .
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/openembedded-core.git
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git openembedded-core/bitbake
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/meta-riscv.git
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git" .
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/openembedded-core.git"
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/bitbake.git" openembedded-core/bitbake
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/meta-riscv.git"
           cd openembedded-core && source oe-init-build-env
           bitbake-layers add-layer ../../meta-riscv
           echo "DL_DIR = \"/buildcache/downloads\"" >> conf/local.conf

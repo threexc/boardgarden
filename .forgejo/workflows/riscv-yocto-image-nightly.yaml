@@ -51,7 +51,7 @@ jobs:
               || fromJSON('["bananapi-f3", "eswin-ebc77-mainline", "k3-pico-itx", "muse-pi-pro", "nezha-allwinner-d1", "orangepi-rv2-mainline"]')
           }}
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -69,8 +69,8 @@ jobs:
         run: |
           locale-gen en_US.UTF-8
           export LANG=en_US.UTF-8
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/bitbake.git
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git"
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/bitbake.git"
 
       - name: configure bitbake and layers
         uses: ./.forgejo/actions/bitbake-setup

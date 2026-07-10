@@ -12,7 +12,7 @@ jobs:
     name: Build and push image
     runs-on: tgamblin-maintenance
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/container-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder
 
     steps:
     - name: Checkout
@@ -37,13 +37,13 @@ jobs:
         driver-opts: |
           network=host
         buildkitd-config-inline: |
-          [registry."forgejo.oryx-coho.ts.net"]
+          [registry."${{ vars.BOARDGARDEN_HOST }}"]
             ca=["/etc/ssl/certs/ca-certificates.crt"]
 
     - name: Login to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: forgejo.oryx-coho.ts.net
+        registry: ${{ vars.BOARDGARDEN_HOST }}
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_TOKEN }}
 
@@ -55,7 +55,7 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          forgejo.oryx-coho.ts.net/tgamblin/yocto-builder:latest
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:latest
 
     - name: Build and push container-builder
       uses: docker/build-push-action@v5
@@ -65,7 +65,7 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          forgejo.oryx-coho.ts.net/tgamblin/container-builder:latest
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder:latest
 
     - name: Build and push lg-operator
       uses: docker/build-push-action@v5
@@ -75,4 +75,4 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          forgejo.oryx-coho.ts.net/tgamblin/lg-operator:latest
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:latest

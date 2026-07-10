@@ -39,7 +39,7 @@ jobs:
             fromJSON('["bananapi-f3", "muse-pi-pro", "orangepi-rv2-mainline"]')
           }}
     container:
-      image: forgejo.oryx-coho.ts.net/tgamblin/lg-operator
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
       options: --add-host ecogrid:192.168.40.101
       env:
         LG_COORDINATOR: ecogrid
@@ -78,7 +78,7 @@ jobs:
       - name: clone boardgarden
         working-directory: /home/labgrid
         run: |
-          git clone https://forgejo.oryx-coho.ts.net/tgamblin/boardgarden.git
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git"
 
       - name: install uv
         working-directory: /home/labgrid
