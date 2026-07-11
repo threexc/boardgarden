@@ -1,0 +1,21 @@
+name: Lint workflows
+
+on:
+  push:
+    paths:
+      - '.forgejo/workflows/**'
+  pull_request:
+    paths:
+      - '.forgejo/workflows/**'
+
+jobs:
+  lint:
+    runs-on: tgamblin-maintenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+
+      - name: Run zizmor
+        run: uvx zizmor .forgejo/workflows
