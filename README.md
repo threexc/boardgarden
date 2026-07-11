@@ -77,12 +77,9 @@ workflows, while the `dockerfiles` directory contains definitions for the
 `container-builder`, `labgrid-operator`, and `yocto-builder` container images
 stored in the registry.
 
-The following secrets are in use:
-
-- `LG_EXPORTER_SSH_KEY` for allowing runner access to the Labgrid exporter machine
-- `REGISTRY_TOKEN` and `REGISTRY_USERNAME` for pushing container images to the internal registry
-- `REPORT_SSH_KEY` for copying test reports to the web server
-- `TFTP_SERVER_SSH_KEY` for copying build artifacts to the TFTP server
+For the list of runners, repository secrets, and repository variables these
+workflows expect, see [docs/runners.md](docs/runners.md). It also contains a
+migration checklist for spinning boardgarden up on a fresh Forgejo instance.
 
 ### boards
 
