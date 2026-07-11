@@ -43,7 +43,9 @@ runs:
       run: |
         SRC="${IMAGES_PATH}/${MACHINE}"
         DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+        RSH="ssh -o StrictHostKeyChecking=accept-new"
         rsync -avz --omit-link-times --ignore-missing-args \
+          -e "${RSH}" \
           "${SRC}"/Image* \
           "${SRC}"/*.dtb \
           "${SRC}"/extlinux.conf \
@@ -62,14 +64,17 @@ runs:
       run: |
         SRC="${IMAGES_PATH}/${MACHINE}"
         DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}"
+        RSH="ssh -o StrictHostKeyChecking=accept-new"
         rsync -avz --omit-link-times --ignore-missing-args \
+          -e "${RSH}" \
           "${SRC}/${IMAGE}-${MACHINE}.rootfs-"*.wic.gz \
           "${DST}/"
         rsync -avz --omit-link-times --ignore-missing-args \
+          -e "${RSH}" \
           "${SRC}/${IMAGE}-${MACHINE}.rootfs-"*.wic.bmap \
           "${DST}/"
 
-        ssh "${TFTP_USER}@${TFTP_SERVER}" "
+        ssh -o StrictHostKeyChecking=accept-new "${TFTP_USER}@${TFTP_SERVER}" "
           set -e
           cd /srv/tftp/${BOARD}
           ln -sf \$(ls -1t ${IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz
