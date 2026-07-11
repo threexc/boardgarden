@@ -121,7 +121,9 @@ jobs:
           EXIT_CODE=1
           for ATTEMPT in 1 2 3; do
             echo "Test attempt ${ATTEMPT} of 3"
-            if uv run pytest -vvv --html=report.html --self-contained-html $BOARD/pytest; then
+            TESTS="common/src/boardfarm_common/tests"
+            [ -d "$BOARD/pytest" ] && TESTS="$TESTS $BOARD/pytest"
+            if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html $TESTS; then
               echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
               EXIT_CODE=0
               break
