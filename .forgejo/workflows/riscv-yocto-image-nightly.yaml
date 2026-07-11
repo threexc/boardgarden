@@ -36,7 +36,7 @@ on:
           - orangepi-rv2-mainline
 
 env:
-  TFTP_SERVER: "ecovault.oryx-coho.ts.net"
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
   TFTP_USER: "auto"
 
 jobs:
@@ -52,6 +52,7 @@ jobs:
           }}
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:

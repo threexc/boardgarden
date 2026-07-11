@@ -23,7 +23,7 @@ on:
           - muse-pi-pro
           - orangepi-rv2-mainline
 env:
-  TFTP_SERVER: "ecovault.oryx-coho.ts.net"
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
   TFTP_USER: "auto"
 
 jobs:
@@ -40,9 +40,9 @@ jobs:
           }}
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
-      options: --add-host ecogrid:192.168.40.101
+      options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
-        LG_COORDINATOR: ecogrid
+        LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
         RISCV_IMAGE: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.image || inputs.image || 'core-image-minimal' }}
         RISCV_MACHINE: ${{ matrix.machine }}
         VERSION: 7.0
@@ -57,7 +57,7 @@ jobs:
           umask 077
           printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
           printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
-          ssh-keyscan ecogrid >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan "$LG_COORDINATOR" >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: test SSH connection
@@ -67,13 +67,13 @@ jobs:
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
 
           # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@ecogrid "echo SSH connection successful"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@${LG_COORDINATOR} "echo SSH connection successful"
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
           cat ~/.ssh/known_hosts
           echo "=== Testing SSH connection ==="
-          ssh -v labgrid@ecogrid "echo SSH connection successful"
+          ssh -v labgrid@${LG_COORDINATOR} "echo SSH connection successful"
 
       - name: clone boardgarden
         working-directory: /home/labgrid
@@ -144,7 +144,7 @@ jobs:
           mkdir -p ~/.ssh
           umask 077
           printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
-          ssh-keyscan ecovault >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan "$TFTP_SERVER" >> ~/.ssh/known_hosts 2>/dev/null
           ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: test SSH connection
@@ -154,16 +154,16 @@ jobs:
           grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
 
           # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@ecovault "echo SSH connection successful"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@${TFTP_SERVER} "echo SSH connection successful"
           echo "=== SSH directory contents ==="
           ls -la ~/.ssh/
           echo "=== Known hosts ==="
           cat ~/.ssh/known_hosts
           echo "=== Testing SSH connection ==="
-          ssh -v reporter@ecovault "echo SSH connection successful"
+          ssh -v "reporter@${TFTP_SERVER}" "echo SSH connection successful"
 
       - name: Deploy internal reports
         run: |
           REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
-          ssh -o StrictHostKeyChecking=no reporter@ecovault "mkdir -p /testresults/$REPORT_DIR"
-          rsync -av /home/labgrid/boardgarden/boards/report.html reporter@ecovault:/testresults/$REPORT_DIR/
+          ssh -o StrictHostKeyChecking=no "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
+          rsync -av /home/labgrid/boardgarden/boards/report.html "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
