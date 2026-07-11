@@ -6,8 +6,11 @@ inputs:
     description: 'Private key content'
     required: true
   ssh_known_hosts:
-    description: 'known_hosts content to append (multi-line allowed)'
-    required: true
+    description: >
+      known_hosts content to append (multi-line allowed). Optional so multi-key
+      setups can install known_hosts once and skip on subsequent calls.
+    required: false
+    default: ''
   key_filename:
     description: 'Filename under ~/.ssh (e.g. id_rsa, id_rsa_tftp)'
     required: false
@@ -27,4 +30,6 @@ runs:
         mkdir -p ~/.ssh
         umask 077
         printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/"${KEY_FILENAME}"
-        printf '%s\n' "${SSH_KNOWN_HOSTS}" >> ~/.ssh/known_hosts
+        if [ -n "${SSH_KNOWN_HOSTS}" ]; then
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" >> ~/.ssh/known_hosts
+        fi
