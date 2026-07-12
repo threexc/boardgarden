@@ -1,0 +1,45 @@
+name: nightly-build-and-test
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - meta-riscv-tgamblin-k1-fixes
+          - meta-riscv-tgamblin-k3-fixes
+      image:
+        description: 'Image to build'
+        required: true
+        default: 'core-image-minimal'
+        type: choice
+        options:
+          - core-image-minimal
+          - core-image-full-cmdline
+          - core-image-ptest-python3
+      machines:
+        description: 'JSON array of machines, or "auto"'
+        required: true
+        default: 'auto'
+        type: string
+
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_build-images.yaml
+    with:
+      image: ${{ inputs.image || 'core-image-minimal' }}
+      machines: ${{ inputs.machines || 'auto' }}
+      bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+
+  test:
+    needs: build
+    uses: ./.forgejo/workflows/_run-board-tests.yaml
+    with:
+      image: ${{ inputs.image || 'core-image-minimal' }}
+      machines: ${{ inputs.machines || 'auto' }}
