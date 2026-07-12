@@ -64,16 +64,24 @@ jobs:
         SSTATE_DIR: "/buildcache/sstate-cache"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/build-yocto-image
+      - id: build
+        uses: ./.forgejo/actions/build-yocto-image
         with:
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-minimal' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
-          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
+      - uses: ./.forgejo/actions/deploy-to-tftp
+        with:
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           tftp_server: ${{ env.TFTP_SERVER }}
           tftp_user: ${{ env.TFTP_USER }}
-          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
+          board: ${{ steps.build.outputs.board }}
+          machine: ${{ matrix.machine }}
+          image: ${{ inputs.image || 'core-image-minimal' }}
+          images_path: ${{ steps.build.outputs.images_path }}
+          deploy_wic: ${{ steps.build.outputs.deploy_wic }}
 
   test:
     needs: [discover, build]
