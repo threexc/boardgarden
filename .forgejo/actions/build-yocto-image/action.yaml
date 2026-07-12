@@ -1,0 +1,107 @@
+name: 'Build Yocto image and deploy'
+description: >
+  For a given Yocto MACHINE, run bitbake to build the specified image, then
+  rsync kernel/DTB/wic artifacts to the TFTP server. Intended to be used
+  inside a job with a yocto-builder container.
+
+inputs:
+  machine:
+    description: 'Full Yocto MACHINE value (may include -mainline suffix)'
+    required: true
+  image:
+    description: 'Yocto image to build (e.g. core-image-minimal)'
+    required: true
+  bitbake_setup_override:
+    description: 'bitbake-setup source override (none for default)'
+    required: false
+    default: 'none'
+  ssh_private_key:
+    description: 'Private key for the TFTP server user'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts covering the TFTP server'
+    required: true
+  tftp_server:
+    description: 'Hostname of the TFTP server'
+    required: true
+  tftp_user:
+    description: 'SSH user on the TFTP server'
+    required: true
+  boardgarden_owner:
+    description: 'Owner/org of the mirrored boardgarden + bitbake repos'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: set up bitbake, workflows
+      shell: bash
+      env:
+        BOARDGARDEN_OWNER: ${{ inputs.boardgarden_owner }}
+      run: |
+        locale-gen en_US.UTF-8
+        export LANG=en_US.UTF-8
+        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/boardgarden.git"
+        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/bitbake.git"
+
+    - name: configure bitbake and layers
+      uses: ./.forgejo/actions/bitbake-setup
+      with:
+        config_json: boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+        positions: |
+          nodistro
+          machine/${{ inputs.machine }}
+        source_override: ${{ inputs.bitbake_setup_override }}
+
+    - name: build image
+      shell: bash
+      env:
+        RISCV_IMAGE: ${{ inputs.image }}
+      run: |
+        . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+
+        bitbake-config-build \
+          enable-fragment \
+          core/yocto/root-login-with-empty-password
+
+        # Disable osc-context for systemd to avoid labgrid prompt-detection issues
+        # when images are booted during board tests
+        echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
+
+        # add buildinfo to the image
+        echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
+
+        bitbake ${RISCV_IMAGE}
+
+    - name: locate and verify images deploy directory
+      id: locate
+      shell: bash
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+      run: |
+        IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images"
+        if [ ! -d "${IMAGES_PATH}/${RISCV_MACHINE}" ]; then
+          echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
+          exit 1
+        fi
+        BOARD="${RISCV_MACHINE%-mainline}"
+        DEPLOY_WIC="false"
+        if [ "${RISCV_MACHINE}" = "bananapi-f3" ]; then
+          DEPLOY_WIC="true"
+        fi
+        echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
+        echo "board=${BOARD}" >> "$GITHUB_OUTPUT"
+        echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
+
+    - name: deploy artifacts to TFTP server
+      uses: ./.forgejo/actions/run-on-board
+      with:
+        ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
+        ssh_private_key: ${{ inputs.ssh_private_key }}
+        tftp_server: ${{ inputs.tftp_server }}
+        tftp_user: ${{ inputs.tftp_user }}
+        board: ${{ steps.locate.outputs.board }}
+        machine: ${{ inputs.machine }}
+        image: ${{ inputs.image }}
+        images_path: ${{ steps.locate.outputs.images_path }}
+        deploy_wic: ${{ steps.locate.outputs.deploy_wic }}
