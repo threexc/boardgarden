@@ -57,6 +57,14 @@ runs:
         printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
         printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
         printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+        # Fallback for hosts not covered by SSH_KNOWN_HOSTS — e.g., labgrid's
+        # internal ssh subprocess dialing short hostnames the secret doesn't
+        # explicitly list. TOFU per ephemeral container; safe on Tailscale mesh.
+        cat > ~/.ssh/config <<'EOF'
+        Host *
+            StrictHostKeyChecking accept-new
+        EOF
+        chmod 600 ~/.ssh/config
 
     - name: clone boardgarden
       shell: bash
