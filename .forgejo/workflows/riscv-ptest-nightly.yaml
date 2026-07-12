@@ -1,6 +1,4 @@
 on:
-  schedule:
-    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       bitbake_setup_override:
