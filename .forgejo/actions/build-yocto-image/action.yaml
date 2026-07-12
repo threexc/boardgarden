@@ -1,8 +1,8 @@
-name: 'Build Yocto image and deploy'
+name: 'Build Yocto image'
 description: >
-  For a given Yocto MACHINE, run bitbake to build the specified image, then
-  rsync kernel/DTB/wic artifacts to the TFTP server. Intended to be used
-  inside a job with a yocto-builder container.
+  For a given Yocto MACHINE, run bitbake to build the specified image. Emits
+  outputs (board, images_path, deploy_wic) for downstream deploy steps.
+  Intended to be used inside a job with a yocto-builder container.
 
 inputs:
   machine:
@@ -15,21 +15,20 @@ inputs:
     description: 'bitbake-setup source override (none for default)'
     required: false
     default: 'none'
-  ssh_private_key:
-    description: 'Private key for the TFTP server user'
-    required: true
-  ssh_known_hosts:
-    description: 'known_hosts covering the TFTP server'
-    required: true
-  tftp_server:
-    description: 'Hostname of the TFTP server'
-    required: true
-  tftp_user:
-    description: 'SSH user on the TFTP server'
-    required: true
   boardgarden_owner:
     description: 'Owner/org of the mirrored boardgarden + bitbake repos'
     required: true
+
+outputs:
+  board:
+    description: 'Short board name (TFTP subdirectory), machine with -mainline stripped'
+    value: ${{ steps.locate.outputs.board }}
+  images_path:
+    description: 'Absolute path to tmp/deploy/images on the builder'
+    value: ${{ steps.locate.outputs.images_path }}
+  deploy_wic:
+    description: 'Whether the machine has wic flash artifacts worth deploying'
+    value: ${{ steps.locate.outputs.deploy_wic }}
 
 runs:
   using: composite
@@ -92,16 +91,3 @@ runs:
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
         echo "board=${BOARD}" >> "$GITHUB_OUTPUT"
         echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
-
-    - name: deploy artifacts to TFTP server
-      uses: ./.forgejo/actions/run-on-board
-      with:
-        ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
-        ssh_private_key: ${{ inputs.ssh_private_key }}
-        tftp_server: ${{ inputs.tftp_server }}
-        tftp_user: ${{ inputs.tftp_user }}
-        board: ${{ steps.locate.outputs.board }}
-        machine: ${{ inputs.machine }}
-        image: ${{ inputs.image }}
-        images_path: ${{ steps.locate.outputs.images_path }}
-        deploy_wic: ${{ steps.locate.outputs.deploy_wic }}

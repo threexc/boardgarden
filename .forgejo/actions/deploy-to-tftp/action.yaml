@@ -1,7 +1,8 @@
-name: 'Run on board'
+name: 'Deploy to TFTP'
 description: >
-  Deploy artifacts to the TFTP server for a board: install TFTP SSH creds,
-  rsync kernel/DTB/wic. Wraps setup-ssh + deploy-tftp-artifacts.
+  Deploy Yocto build artifacts to the TFTP server for a board:
+  install TFTP SSH creds, then rsync kernel/DTB/wic. Wraps
+  setup-ssh + deploy-tftp-artifacts.
 
 inputs:
   # SSH / TFTP server
