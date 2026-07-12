@@ -4,9 +4,9 @@
 
 | Label | Used by | Requirements |
 |---|---|---|
-| `tgamblin-build` | `riscv-yocto-image-nightly` | Big disk, big RAM, Docker, `/auto/runner/buildcache` bind-mount |
+| `tgamblin-build` | `nightly-build-and-test`, `weekly-build-only` (via `_build-images`) | Cores, RAM, storage, Docker, `/auto/runner/buildcache` bind-mount |
 | `tgamblin-qemu` | `riscv-ptest-nightly` | Same as `tgamblin-build`; runs QEMU |
-| `tgamblin-board-test` | `riscv-board-test-nightly` | Docker, network route to Labgrid coordinator + TFTP server |
+| `tgamblin-board-test` | `nightly-build-and-test` (via `_run-board-tests`) | Docker, network route to Labgrid coordinator + TFTP server |
 | `tgamblin-maintenance` | `meta-riscv-check-layer`, `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
 
 ## Host containers
@@ -42,14 +42,13 @@ Set these in Settings → Actions → Secrets.
 
 | Secret | Used by | What it is |
 |---|---|---|
-| `ACTION_DISPATCH` | `run-on-board` → `dispatch-board-test` | Forgejo PAT with `write:repository` for triggering `workflow_dispatch` on `riscv-board-test-nightly.yaml` |
-| `LG_EXPORTER_SSH_KEY` | `riscv-board-test-nightly` | Private key granting the runner login as `labgrid@` on the exporter host (`ecogrid`) |
+| `LG_EXPORTER_SSH_KEY` | `_run-board-tests` | Private key granting the runner login as `labgrid@` on the exporter host (`ecogrid`) |
 | `REGISTRY_TOKEN` | `build-push-containers` | Forgejo container registry token (paired with `REGISTRY_USERNAME`) |
 | `REGISTRY_USERNAME` | `build-push-containers` | Forgejo user or bot with `write:package` scope |
 | `RENOVATE_TOKEN` | `renovate` | Forgejo bot PAT with `read:repository`, `write:repository`, `write:issue` |
-| `REPORT_SSH_KEY` | `riscv-board-test-nightly`, `riscv-ptest-nightly` | Private key for `reporter@ecovault`. rsync of `report.html` to `/testresults/` |
+| `REPORT_SSH_KEY` | `_run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@ecovault`. rsync of `report.html` to `/testresults/` |
 | `SSH_KNOWN_HOSTS` | `setup-ssh` (via `run-on-board`) | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server). Seed with `ssh-keyscan -H -T 10 <host>` |
-| `TFTP_SERVER_SSH_KEY` | `run-on-board` → `setup-ssh`; `riscv-board-test-nightly` | Private key for `auto@ecovault`. rsync build artifacts into `/srv/tftp/<board>/` |
+| `TFTP_SERVER_SSH_KEY` | `_build-images` → `run-on-board` → `setup-ssh`; `_run-board-tests` | Private key for `auto@ecovault`. rsync build artifacts into `/srv/tftp/<board>/` |
 
 ## Container `--add-host` mappings
 
@@ -80,7 +79,7 @@ Regenerate contents:
 
 ## Buildcache and UIDs/GIDs
 
-`riscv-yocto-image-nightly` and `riscv-ptest-nightly` bind-mount
+`_build-images` (via `nightly-build-and-test` / `weekly-build-only`) and `riscv-ptest-nightly` bind-mount
 `/auto/runner/buildcache` into the container as `/buildcache`, populating
 `DL_DIR` and `SSTATE_DIR`. Provision this on the runner host:
 
