@@ -1,0 +1,196 @@
+name: run-board-tests
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Yocto image to test against'
+        type: string
+        default: 'core-image-minimal'
+      machines:
+        description: >
+          JSON array of Yocto MACHINE names, or "auto" to auto-derive from
+          boards/*/board.yaml (excluding qemu-strategy boards).
+        type: string
+        default: 'auto'
+
+# Forgejo Actions does not yet support `workflow_call.secrets`; secrets are
+# implicitly inherited from the calling repo. Referenced here:
+#   secrets.LG_EXPORTER_SSH_KEY
+#   secrets.TFTP_SERVER_SSH_KEY
+#   secrets.REPORT_SSH_KEY
+#   secrets.SSH_KNOWN_HOSTS
+
+env:
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
+  TFTP_USER: "auto"
+
+jobs:
+  discover:
+    if: inputs.machines == 'auto'
+    runs-on: tgamblin-maintenance
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATRIX=$(
+            for f in boards/*/board.yaml; do
+              strategy=$(awk -F: '/^strategy:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              [ "$strategy" = "qemu" ] && continue
+              machine=$(awk -F: '/^yocto_machine:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              if [ -z "$machine" ]; then
+                echo "::error file=$f::missing required 'yocto_machine' field" >&2
+                exit 1
+              fi
+              echo "$machine"
+            done | sort | jq -R -s -c 'split("\n") | map(select(length > 0))'
+          )
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  test-board-boot:
+    needs: [discover]
+    if: always() && (needs.discover.result == 'success' || needs.discover.result == 'skipped')
+    runs-on: tgamblin-board-test
+    strategy:
+      matrix:
+        machine: >-
+          ${{
+            inputs.machines == 'auto'
+              && fromJSON(needs.discover.outputs.matrix)
+              || fromJSON(inputs.machines)
+          }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      env:
+        LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
+        RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_MACHINE: ${{ matrix.machine }}
+        VERSION: 7.0
+    steps:
+      - name: set up keys
+        working-directory: /home/labgrid
+        env:
+          LG_EXPORTER_SSH_KEY: ${{ secrets.LG_EXPORTER_SSH_KEY }}
+          TFTP_SERVER_SSH_KEY: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          umask 077
+          printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
+          printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
+          ssh-keyscan "$LG_COORDINATOR" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.107.94.6 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v labgrid@${LG_COORDINATOR} "echo SSH connection successful"
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v labgrid@${LG_COORDINATOR} "echo SSH connection successful"
+
+      - name: clone boardgarden
+        working-directory: /home/labgrid
+        run: |
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git"
+
+      - name: install uv
+        working-directory: /home/labgrid
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: run uv sync
+        working-directory: /home/labgrid/boardgarden
+        run: |
+          cd boards
+          uv sync
+
+      - name: Fetch latest rootfs
+        if: matrix.machine == 'bananapi-f3'
+        working-directory: /home/labgrid
+        run: |
+          BOARD="${RISCV_MACHINE%-mainline}"
+          LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
+          LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no \
+            ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.bmap")
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+            ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC} .
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp -o StrictHostKeyChecking=no" \
+            ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP} .
+          ln -sf ${LATEST_WIC} ${BOARD}.rootfs-latest.wic.gz
+          ln -sf ${LATEST_BMAP} ${BOARD}.rootfs-latest.wic.bmap
+
+      - name: run labgrid-client
+        working-directory: /home/labgrid/boardgarden/boards
+        run: |
+          eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
+          BOARD="${RISCV_MACHINE%-mainline}"
+          LG_PLACE="bf-${BOARD}"
+          echo $LG_PLACE
+          echo $LG_TOKEN
+          uv run labgrid-client wait
+          uv run labgrid-client -p + lock
+          uv run labgrid-client -p + show
+          EXIT_CODE=1
+          for ATTEMPT in 1 2 3; do
+            echo "Test attempt ${ATTEMPT} of 3"
+            TESTS="common/src/boardfarm_common/tests"
+            [ -d "$BOARD/pytest" ] && TESTS="$TESTS $BOARD/pytest"
+            if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html $TESTS; then
+              echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
+              EXIT_CODE=0
+              break
+            else
+              echo "Attempt ${ATTEMPT} failed"
+            fi
+          done
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "All 3 pytest attempts failed"
+          fi
+          uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+          uv run labgrid-client -p + release
+          exit $EXIT_CODE
+
+      - name: Setup SSH key
+        working-directory: /home/labgrid
+        env:
+          REPORT_SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          umask 077
+          printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
+          ssh-keyscan "$TFTP_SERVER" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: test SSH connection
+        working-directory: /home/labgrid
+        run: |
+          # Check if the key is encrypted
+          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
+
+          # Try with explicit key and BatchMode
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@${TFTP_SERVER} "echo SSH connection successful"
+          echo "=== SSH directory contents ==="
+          ls -la ~/.ssh/
+          echo "=== Known hosts ==="
+          cat ~/.ssh/known_hosts
+          echo "=== Testing SSH connection ==="
+          ssh -v "reporter@${TFTP_SERVER}" "echo SSH connection successful"
+
+      - name: Deploy internal reports
+        run: |
+          REPORT_DIR="yocto/meta-riscv/${{ matrix.machine }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+          ssh -o StrictHostKeyChecking=no "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
+          rsync -av /home/labgrid/boardgarden/boards/report.html "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
