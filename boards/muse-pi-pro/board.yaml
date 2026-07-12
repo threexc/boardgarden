@@ -1,4 +1,5 @@
 name: muse-pi-pro
+yocto_machine: muse-pi-pro
 strategy: tftp
 description: Muse Pi Pro (SpacemiT K1) RISC-V SBC
 remote_place: bf-muse-pi-pro

@@ -1,4 +1,5 @@
 name: orangepi-rv2
+yocto_machine: orangepi-rv2-mainline
 strategy: tftp
 description: OrangePi RV2 (SpacemiT K1) RISC-V SBC. NFS root
 remote_place: bf-orangepi-rv2
