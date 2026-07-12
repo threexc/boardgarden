@@ -1,0 +1,34 @@
+name: 'Discover machines'
+description: >
+  Emit a JSON array of Yocto MACHINE names, derived from boards/*/board.yaml
+  (excluding qemu-strategy boards). Reads the required 'yocto_machine' field
+  from each board manifest. Uses only awk + sort (no jq dependency).
+
+outputs:
+  matrix:
+    description: 'JSON array of machine names'
+    value: ${{ steps.list.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+    - id: list
+      shell: bash
+      run: |
+        set -euo pipefail
+        MATRIX=$(
+          {
+            for f in boards/*/board.yaml; do
+              strategy=$(awk -F: '/^strategy:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              [ "$strategy" = "qemu" ] && continue
+              machine=$(awk -F: '/^yocto_machine:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              if [ -z "$machine" ]; then
+                echo "::error file=$f::missing required 'yocto_machine' field" >&2
+                exit 1
+              fi
+              echo "$machine"
+            done
+          } | sort -u | awk 'BEGIN{printf "["} {if(NR>1) printf ","; printf "\"%s\"", $0} END{printf "]"}'
+        )
+        echo "matrix=$MATRIX"
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
