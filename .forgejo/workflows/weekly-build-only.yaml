@@ -1,0 +1,43 @@
+name: weekly-build-only
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - meta-riscv-tgamblin-k1-fixes
+          - meta-riscv-tgamblin-k3-fixes
+      image:
+        description: 'Image to build'
+        required: true
+        default: 'core-image-full-cmdline'
+        type: choice
+        options:
+          - core-image-minimal
+          - core-image-full-cmdline
+          - core-image-ptest-python3
+      machines:
+        description: >
+          JSON array of machines to override the default layer-sanity list.
+          Leave blank to build the default set (meta-riscv machines without
+          local hardware).
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_build-images.yaml
+    with:
+      image: ${{ inputs.image || 'core-image-full-cmdline' }}
+      # Layer-sanity build set: meta-riscv machines with no local hardware.
+      # Keeps disjoint from nightly-build-and-test's auto-derived board list.
+      machines: ${{ inputs.machines || '["eswin-ebc77-mainline", "nezha-allwinner-d1"]' }}
+      bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
