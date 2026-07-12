@@ -1,0 +1,147 @@
+name: build-images
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Yocto image to build'
+        type: string
+        default: 'core-image-minimal'
+      machines:
+        description: >
+          JSON array of Yocto MACHINE names, or "auto" to auto-derive from
+          boards/*/board.yaml (excluding qemu-strategy boards).
+        type: string
+        default: 'auto'
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        type: string
+        default: 'none'
+
+# Forgejo Actions does not yet support `workflow_call.secrets`; secrets are
+# implicitly inherited from the calling repo. Referenced here:
+#   secrets.TFTP_SERVER_SSH_KEY
+#   secrets.SSH_KNOWN_HOSTS
+
+env:
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
+  TFTP_USER: "auto"
+
+jobs:
+  discover:
+    if: inputs.machines == 'auto'
+    runs-on: tgamblin-maintenance
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATRIX=$(
+            for f in boards/*/board.yaml; do
+              strategy=$(awk -F: '/^strategy:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              [ "$strategy" = "qemu" ] && continue
+              machine=$(awk -F: '/^yocto_machine:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              if [ -z "$machine" ]; then
+                echo "::error file=$f::missing required 'yocto_machine' field" >&2
+                exit 1
+              fi
+              echo "$machine"
+            done | sort | jq -R -s -c 'split("\n") | map(select(length > 0))'
+          )
+          echo "matrix=$MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: [discover]
+    if: always() && (needs.discover.result == 'success' || needs.discover.result == 'skipped')
+    runs-on: tgamblin-build
+    strategy:
+      matrix:
+        machine: >-
+          ${{
+            inputs.machines == 'auto'
+              && fromJSON(needs.discover.outputs.matrix)
+              || fromJSON(inputs.machines)
+          }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override }}
+        DL_DIR: "/buildcache/downloads"
+        RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_MACHINE: ${{ matrix.machine }}
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up bitbake, workflows
+        run: |
+          locale-gen en_US.UTF-8
+          export LANG=en_US.UTF-8
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git"
+          git clone "${GITHUB_SERVER_URL}/${{ vars.BOARDGARDEN_OWNER }}/bitbake.git"
+
+      - name: configure bitbake and layers
+        uses: ./.forgejo/actions/bitbake-setup
+        with:
+          config_json: boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+          positions: |
+            nodistro
+            machine/${{ matrix.machine }}
+          source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
+
+      - name: build ${{ inputs.image }}
+        run: |
+          . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+
+          bitbake-config-build \
+            enable-fragment \
+            core/yocto/root-login-with-empty-password
+
+          # Disable osc-context for systemd to avoid labgrid prompt-detection issues
+          # when images are booted during board tests
+          echo "PACKAGECONFIG:remove:pn-systemd = \"osc-context\"" >> conf/local.conf
+
+          # add buildinfo to the image
+          echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
+
+          bitbake ${RISCV_IMAGE}
+
+      - name: locate and verify images deploy directory
+        id: locate-images
+        run: |
+          IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images"
+          if [ ! -d "${IMAGES_PATH}/${RISCV_MACHINE}" ]; then
+            echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
+            exit 1
+          fi
+          # Strip -mainline suffix for TFTP directory name
+          BOARD="${RISCV_MACHINE%-mainline}"
+          # Flag wic deployment for boards that support it
+          DEPLOY_WIC="false"
+          if [ "${RISCV_MACHINE}" = "bananapi-f3" ]; then
+            DEPLOY_WIC="true"
+          fi
+          echo "IMAGES_PATH=${IMAGES_PATH}" >> "$GITHUB_ENV"
+          echo "BOARD=${BOARD}"             >> "$GITHUB_ENV"
+          echo "DEPLOY_WIC=${DEPLOY_WIC}"   >> "$GITHUB_ENV"
+
+      - name: deploy artifacts to TFTP server
+        uses: ./.forgejo/actions/run-on-board
+        with:
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          tftp_user: ${{ env.TFTP_USER }}
+          board: ${{ env.BOARD }}
+          machine: ${{ matrix.machine }}
+          image: ${{ inputs.image }}
+          images_path: ${{ env.IMAGES_PATH }}
+          deploy_wic: ${{ env.DEPLOY_WIC }}
