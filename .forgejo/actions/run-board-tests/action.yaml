@@ -1,0 +1,156 @@
+name: 'Run board tests'
+description: >
+  For a given Yocto MACHINE, drive labgrid to run the corresponding pytest
+  suite against a physical board, then upload the HTML report. Intended to
+  be used inside a job with a lg-operator container.
+
+inputs:
+  machine:
+    description: 'Full Yocto MACHINE value (may include -mainline suffix)'
+    required: true
+  image:
+    description: 'Yocto image being tested (used only for report path)'
+    required: true
+  lg_exporter_ssh_key:
+    description: 'Private key for labgrid@<coordinator>'
+    required: true
+  tftp_server_ssh_key:
+    description: 'Private key for <tftp_user>@<tftp_server>'
+    required: true
+  report_ssh_key:
+    description: 'Private key for reporter@<tftp_server>'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts covering the coordinator + TFTP/report server'
+    required: true
+  tftp_server:
+    description: 'Hostname of the TFTP + report server'
+    required: true
+  tftp_user:
+    description: 'SSH user on the TFTP server'
+    required: true
+  lg_coordinator:
+    description: 'Hostname of the labgrid coordinator/exporter'
+    required: true
+  boardgarden_owner:
+    description: 'Owner/org of the mirrored boardgarden repo'
+    required: true
+  reports_root:
+    description: 'Subdirectory prefix under /testresults/ on the report server'
+    required: false
+    default: 'yocto/meta-riscv'
+
+runs:
+  using: composite
+  steps:
+    - name: set up keys
+      shell: bash
+      working-directory: /home/labgrid
+      env:
+        LG_EXPORTER_SSH_KEY: ${{ inputs.lg_exporter_ssh_key }}
+        TFTP_SERVER_SSH_KEY: ${{ inputs.tftp_server_ssh_key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh_known_hosts }}
+      run: |
+        set -euo pipefail
+        mkdir -p ~/.ssh
+        umask 077
+        printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
+        printf '%s\n' "$TFTP_SERVER_SSH_KEY" > ~/.ssh/id_rsa_tftp
+        printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+
+    - name: clone boardgarden
+      shell: bash
+      working-directory: /home/labgrid
+      env:
+        BOARDGARDEN_OWNER: ${{ inputs.boardgarden_owner }}
+      run: |
+        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/boardgarden.git"
+
+    - name: install uv
+      shell: bash
+      working-directory: /home/labgrid
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: run uv sync
+      shell: bash
+      working-directory: /home/labgrid/boardgarden
+      run: |
+        cd boards
+        uv sync
+
+    - name: Fetch latest rootfs
+      if: inputs.machine == 'bananapi-f3'
+      shell: bash
+      working-directory: /home/labgrid
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+        TFTP_USER: ${{ inputs.tftp_user }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+      run: |
+        BOARD="${RISCV_MACHINE%-mainline}"
+        LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp \
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
+        LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp \
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.bmap")
+        rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp" \
+          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC} .
+        rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp" \
+          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP} .
+        ln -sf ${LATEST_WIC} ${BOARD}.rootfs-latest.wic.gz
+        ln -sf ${LATEST_BMAP} ${BOARD}.rootfs-latest.wic.bmap
+
+    - name: run labgrid-client
+      shell: bash
+      working-directory: /home/labgrid/boardgarden/boards
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+      run: |
+        eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
+        BOARD="${RISCV_MACHINE%-mainline}"
+        LG_PLACE="bf-${BOARD}"
+        echo $LG_PLACE
+        echo $LG_TOKEN
+        uv run labgrid-client wait
+        uv run labgrid-client -p + lock
+        uv run labgrid-client -p + show
+        EXIT_CODE=1
+        for ATTEMPT in 1 2 3; do
+          echo "Test attempt ${ATTEMPT} of 3"
+          TESTS="common/src/boardfarm_common/tests"
+          [ -d "$BOARD/pytest" ] && TESTS="$TESTS $BOARD/pytest"
+          if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html $TESTS; then
+            echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
+            EXIT_CODE=0
+            break
+          else
+            echo "Attempt ${ATTEMPT} failed"
+          fi
+        done
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "All 3 pytest attempts failed"
+        fi
+        uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+        uv run labgrid-client -p + release
+        exit $EXIT_CODE
+
+    - name: install report SSH key
+      shell: bash
+      env:
+        REPORT_SSH_KEY: ${{ inputs.report_ssh_key }}
+      run: |
+        umask 077
+        printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa_report
+
+    - name: Deploy internal reports
+      shell: bash
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+        REPORTS_ROOT: ${{ inputs.reports_root }}
+      run: |
+        REPORT_DIR="${REPORTS_ROOT}/${RISCV_MACHINE}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
+        ssh -i ~/.ssh/id_rsa_report "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
+        rsync -av -e "ssh -i ~/.ssh/id_rsa_report" \
+          /home/labgrid/boardgarden/boards/report.html \
+          "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
