@@ -32,12 +32,40 @@ on:
         default: ''
         type: string
 
+env:
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
+  TFTP_USER: "auto"
+
 jobs:
   build:
-    uses: ./.forgejo/workflows/_build-images.yaml
-    with:
-      image: ${{ inputs.image || 'core-image-full-cmdline' }}
-      # Layer-sanity build set: meta-riscv machines with no local hardware.
-      # Keeps disjoint from nightly-build-and-test's auto-derived board list.
-      machines: ${{ inputs.machines || '["eswin-ebc77-mainline", "nezha-allwinner-d1"]' }}
-      bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+    runs-on: tgamblin-build
+    strategy:
+      matrix:
+        # Layer-sanity build set: meta-riscv machines with no local hardware.
+        # Disjoint from nightly-build-and-test's auto-derived board list.
+        machine: >-
+          ${{
+            inputs.machines != ''
+              && fromJSON(inputs.machines)
+              || fromJSON('["eswin-ebc77-mainline", "nezha-allwinner-d1"]')
+          }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/build-yocto-image
+        with:
+          machine: ${{ matrix.machine }}
+          image: ${{ inputs.image || 'core-image-full-cmdline' }}
+          bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          tftp_user: ${{ env.TFTP_USER }}
+          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
