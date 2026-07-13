@@ -1,8 +1,9 @@
 name: 'Discover machines'
 description: >
-  Emit a JSON array of Yocto MACHINE names, derived from boards/*/board.yaml
-  (excluding qemu-strategy boards). Reads the required 'yocto_machine' field
-  from each board manifest. Uses only awk + sort (no jq dependency).
+  Emit a JSON array of Yocto MACHINE names, derived from boards/*/board.yaml.
+  Excludes qemu-strategy boards and any board dir lacking a strategy.py file
+  (config-only entries with no boot logic). Reads the required 'yocto_machine'
+  field from each board manifest. Uses only awk + sort (no jq dependency).
 
 outputs:
   matrix:
@@ -19,6 +20,8 @@ runs:
         MATRIX=$(
           {
             for f in boards/*/board.yaml; do
+              dir=$(dirname "$f")
+              [ -f "$dir/strategy.py" ] || continue
               strategy=$(awk -F: '/^strategy:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
               [ "$strategy" = "qemu" ] && continue
               machine=$(awk -F: '/^yocto_machine:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
