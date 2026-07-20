@@ -14,6 +14,8 @@ RUN apt-get update && \
     dwarves \
     fakeroot \
     flex \
+    gcc-aarch64-linux-gnu \
+    gcc-riscv64-linux-gnu \
     git \
     kmod \
     libelf-dev \
