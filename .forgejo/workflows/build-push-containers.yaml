@@ -76,3 +76,13 @@ jobs:
         platforms: linux/amd64
         tags: |
           ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:latest
+
+    - name: Build and push kernel-builder
+      uses: docker/build-push-action@v5
+      with:
+        context: ./.forgejo/dockerfiles
+        file: ./.forgejo/dockerfiles/kernel-builder/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: |
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/kernel-builder:latest
