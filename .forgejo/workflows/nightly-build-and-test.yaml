@@ -23,6 +23,11 @@ on:
           - core-image-minimal
           - core-image-full-cmdline
           - core-image-ptest-python3
+      initramfs_image:
+        description: 'Initramfs image to build for boards using kernel+dtb+initramfs boot'
+        required: true
+        default: 'core-image-minimal-initramfs'
+        type: string
       machines:
         description: 'JSON array of machines, or "auto"'
         required: true
@@ -69,6 +74,7 @@ jobs:
         with:
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-minimal' }}
+          initramfs_image: ${{ inputs.initramfs_image || 'core-image-minimal-initramfs' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
       - uses: ./.forgejo/actions/deploy-to-tftp
