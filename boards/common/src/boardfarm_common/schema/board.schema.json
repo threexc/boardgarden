@@ -23,7 +23,8 @@
         "method": { "type": "string" },
         "bootargs": { "type": "string" },
         "kernel_addr": { "type": "string" },
-        "dtb_addr": { "type": "string" }
+        "dtb_addr": { "type": "string" },
+        "ramdisk_addr": { "type": "string" }
       }
     },
     "tftp": {
@@ -31,7 +32,8 @@
       "properties": {
         "subdir": { "type": "string" },
         "kernel": { "type": "string" },
-        "dtb": { "type": "string" }
+        "dtb": { "type": "string" },
+        "initramfs": { "type": "string" }
       }
     },
     "uboot": { "type": "object" },
@@ -39,7 +41,9 @@
       "type": "object",
       "properties": {
         "username": { "type": "string" },
-        "password": { "type": ["string", "null"] }
+        "password": { "type": ["string", "null"] },
+        "prompt": { "type": "string" },
+        "login_prompt": { "type": "string" }
       }
     },
     "image": {
