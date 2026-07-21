@@ -1,36 +1,31 @@
 name: orangepi-rv2
 yocto_machine: orangepi-rv2-mainline
 strategy: tftp
-description: OrangePi RV2 (SpacemiT K1) RISC-V SBC. NFS root
+description: OrangePi RV2 (SpacemiT K1) RISC-V SBC. Yocto initramfs root
 remote_place: bf-orangepi-rv2
-image_source: armbian
+image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml
 
 boot:
   method: tftp
-  bootargs: >
-    console=ttyS0,115200n8
-    earlyprintk
-    ip=dhcp
-    loglevel=7
-    nfsroot=$serverip:/srv/nfs3/rv2_1,nfsvers=3,tcp
-    root=/dev/nfs
-    rootdelay=5
-    rw
-    swiotlb=65536
+  bootargs: console=ttyS0,115200 shell
   # OrangePi RV2 U-Boot uses $fdt_addr_r; family default is $dtb_addr.
   dtb_addr: $fdt_addr_r
+  ramdisk_addr: $ramdisk_addr_r
 
 tftp:
   subdir: orangepi-rv2
   dtb: k1-orangepi-rv2.dtb
+  initramfs: uRamdisk
 
 uboot:
-  tftp_cmd: booti $kernel_addr_r - $fdt_addr_r
+  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
 
 shell:
   username: root
   password: null
+  # initramfs-module-debug drops straight to a busybox shell, no login prompt.
+  prompt: '~ #\s*'
 
 strategy_class: OrangePiRV2BootStrategy
