@@ -1,7 +1,7 @@
 name: 'Deploy Artifacts to TFTP Server'
 description: >
-  Rsyncs kernel, DTB, extlinux.conf, and (optionally) wic flash images
-  to the TFTP server for a given board.
+  Rsyncs kernel, DTB, extlinux.conf, initramfs (if built), and (optionally)
+  wic flash images to the TFTP server for a given board.
 
 inputs:
   tftp_user:
@@ -49,6 +49,7 @@ runs:
           "${SRC}"/Image* \
           "${SRC}"/*.dtb \
           "${SRC}"/extlinux.conf \
+          "${SRC}"/uRamdisk \
           "${DST}/"
 
     - name: rsync wic flash images and update latest symlinks
