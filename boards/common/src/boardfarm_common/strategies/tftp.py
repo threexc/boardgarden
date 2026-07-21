@@ -54,7 +54,9 @@ class TftpBootStrategy(BoardStrategy):
         if "initramfs" in tftp:
             # Staged last so U-Boot's $filesize (set by the most recent tftpboot)
             # reflects the initramfs size for a `$ramdisk_addr_r:$filesize` boot arg.
-            helpers.uboot_tftpboot_file(self, boot["ramdisk_addr"], tftp["subdir"], tftp["initramfs"])
+            helpers.uboot_tftpboot_file(
+                self, boot["ramdisk_addr"], tftp["subdir"], tftp["initramfs"]
+            )
 
     def transition(self, status):
         if not isinstance(status, TftpStatus):
