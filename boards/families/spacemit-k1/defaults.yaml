@@ -14,3 +14,7 @@ boot:
 
 tftp:
   kernel: Image
+
+shell:
+  prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
+  login_prompt: '[-\w]+ login: '
