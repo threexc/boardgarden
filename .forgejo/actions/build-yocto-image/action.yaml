@@ -11,6 +11,12 @@ inputs:
   image:
     description: 'Yocto image to build (e.g. core-image-minimal)'
     required: true
+  initramfs_image:
+    description: >
+      Yocto initramfs image to build, for boards whose board.yaml sets
+      tftp.initramfs (e.g. core-image-minimal-initramfs)
+    required: false
+    default: 'core-image-minimal-initramfs'
   bitbake_setup_override:
     description: 'bitbake-setup source override (none for default)'
     required: false
@@ -56,6 +62,8 @@ runs:
       shell: bash
       env:
         RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
+        RISCV_MACHINE: ${{ inputs.machine }}
       run: |
         . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
 
@@ -70,7 +78,22 @@ runs:
         # add buildinfo to the image
         echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
 
+        # Boards that boot via kernel+dtb+initramfs (board.yaml sets tftp.initramfs),
+        # rather than a full disk/wic image, also need the initramfs image built,
+        # with its debug module enabled so a shell bootarg can drop to a shell.
+        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD_YAML="$GITHUB_WORKSPACE/boardgarden/boards/${BOARD}/board.yaml"
+        HAS_INITRAMFS="false"
+        if [ -f "${BOARD_YAML}" ] && grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
+          HAS_INITRAMFS="true"
+          echo 'INITRAMFS_SCRIPTS:append = " initramfs-module-debug"' >> conf/local.conf
+        fi
+
         bitbake ${RISCV_IMAGE}
+
+        if [ "${HAS_INITRAMFS}" = "true" ]; then
+          bitbake ${RISCV_INITRAMFS_IMAGE}
+        fi
 
     - name: locate and verify images deploy directory
       id: locate
@@ -91,3 +114,23 @@ runs:
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
         echo "board=${BOARD}" >> "$GITHUB_OUTPUT"
         echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
+
+    - name: package initramfs as U-Boot ramdisk image
+      shell: bash
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+        RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
+        IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
+      run: |
+        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD_YAML="$GITHUB_WORKSPACE/boardgarden/boards/${BOARD}/board.yaml"
+        if [ ! -f "${BOARD_YAML}" ] || ! grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
+          exit 0
+        fi
+
+        # booti can't load a raw cpio.gz as a ramdisk directly - it needs the
+        # mkimage/uImage header so U-Boot knows how to unpack it.
+        IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
+        CPIO_GZ="${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.rootfs.cpio.gz"
+        mkimage -A riscv -O linux -T ramdisk -C gzip \
+          -d "${CPIO_GZ}" "${IMAGE_DIR}/uRamdisk"
