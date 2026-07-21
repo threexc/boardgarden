@@ -40,6 +40,7 @@ RUN apt-get update && \
     texinfo \
     tmux \
     tftp-hpa \
+    u-boot-tools \
     unzip \
     wget \
     xz-utils \
