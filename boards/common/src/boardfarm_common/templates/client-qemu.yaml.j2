@@ -2,7 +2,7 @@
 {%- set n = manifest.name -%}
 {%- set strategy_class = manifest.strategy_class | default("QemuBootStrategy") -%}
 imports:
-  - qemu_strategy.py
+  - strategy.py
 
 targets:
   main:
