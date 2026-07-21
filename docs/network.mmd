@@ -31,7 +31,7 @@ flowchart LR
   runner2 -->|"upload hardware test results"| ecovault
   ecovault -->|"Yocto .wic image"| board_1
   ecovault -->|"kernel + dtb + eMMC rootfs (Armbian)"| board_2
-  ecovault -->|"kernel + dtb + Yocto nfsroot"| board_3
+  ecovault -->|"kernel + dtb + Yocto initramfs"| board_3
   ecovault -->|"kernel + dtb + onboard rootfs (Bianbu)"| board_5
 
   %% ── Styles ──

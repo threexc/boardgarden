@@ -265,7 +265,7 @@ links:
 
   - from: board_3
     to: ecovault
-    label: kernel + dtb + Yocto nfsroot
+    label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
 
