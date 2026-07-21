@@ -27,14 +27,14 @@ targets:
           name: 'orangepi-rv2-uboot-1'
           boot_commands:
             emmc: 'boot'
-            tftp: 'booti $kernel_addr_r - $fdt_addr_r'
+            tftp: 'booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r'
           bindings:
             console: 'orangepi-rv2-console-1'
           login_timeout: 30
           boot_timeout: 30
           strip_timestamp: True
       - ShellDriver:
-          prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
+          prompt: '~ #\s*'
           login_prompt: '[-\w]+ login: '
           username: 'root'
           name: 'orangepi-rv2-shell-1'
