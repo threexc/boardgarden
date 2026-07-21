@@ -37,8 +37,8 @@ targets:
           boot_timeout: 30
           strip_timestamp: True
       - ShellDriver:
-          prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
-          login_prompt: '[-\w]+ login: '
+          prompt: '{{ manifest.shell.prompt }}'
+          login_prompt: '{{ manifest.shell.login_prompt }}'
           username: '{{ manifest.shell.username }}'
           {%- if manifest.shell.password %}
           password: '{{ manifest.shell.password }}'
