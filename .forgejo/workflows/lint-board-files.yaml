@@ -2,7 +2,9 @@ on:
   push:
     paths:
       - 'boards/**/*.py'
-      - 'boards/**/pyproject.toml'
+      - 'common/**/*.py'
+      - 'common/pyproject.toml'
+      - 'pyproject.toml'
       - '.pre-commit-config.yaml'
   pull_request:
   workflow_dispatch:
@@ -22,8 +24,8 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout -q FETCH_HEAD
       - name: ruff check
-        working-directory: repo/boards
+        working-directory: repo
         run: uvx ruff@0.14 check --no-cache
       - name: ruff format --check
-        working-directory: repo/boards
+        working-directory: repo
         run: uvx ruff@0.14 format --no-cache --check
