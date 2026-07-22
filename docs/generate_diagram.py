@@ -26,17 +26,18 @@ except ImportError:
 # ── Styles ────────────────────────────────────────────────────────────────────
 
 STYLES = {
-    "machine":  "fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f",
-    "planned":  "fill:#f0fdf4,stroke:#86efac,color:#14532d",
+    "machine": "fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f",
+    "planned": "fill:#f0fdf4,stroke:#86efac,color:#14532d",
     "external": "fill:#f3f4f6,stroke:#9ca3af,color:#374151",
-    "service":  "fill:#fef9c3,stroke:#d97706,color:#713f12",
-    "board":    "fill:#fce7f3,stroke:#ec4899,color:#831843",
+    "service": "fill:#fef9c3,stroke:#d97706,color:#713f12",
+    "board": "fill:#fce7f3,stroke:#ec4899,color:#831843",
     "board_planned": "fill:#f0fdf4,stroke:#86efac,color:#14532d",
     "board_in_progress": "fill:#e0f2fe,stroke:#38bdf8,color:#0c4a6e",
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def clean(val):
     """Return val if it's a non-null, non-tilde string, else None."""
@@ -48,7 +49,7 @@ def clean(val):
 def svc_label(svc):
     """Label for a service node: name + tailscale FQDN (if set) + protocol/port."""
     parts = []
-    ts     = clean(svc.get("tailscale_name"))
+    ts = clean(svc.get("tailscale_name"))
     domain = svc.get("_tailnet_domain", "")
     hide_tailnet = str(svc.get("hide_tailnet", "false")).lower() == "true"
     if not hide_tailnet:
@@ -57,7 +58,7 @@ def svc_label(svc):
         elif ts:
             parts.append(f"<i>{ts}</i>")
     proto = clean(svc.get("protocol"))
-    port  = clean(svc.get("port"))
+    port = clean(svc.get("port"))
     if proto and port:
         parts.append(f"{proto}:{port}")
     elif proto:
@@ -133,11 +134,12 @@ def link_label(lnk):
 
 # ── Board label helpers ───────────────────────────────────────────────────────
 
+
 def build_board_label(b: dict) -> str:
     """Return the label string for a board node. Planned boards get an extra italic '(planned)' line."""
-    label  = clean(b.get("label")) or clean(b.get("model")) or b["id"]
-    arch   = clean(b.get("arch"))
-    arch   = board_arch_short(arch) if arch else None
+    label = clean(b.get("label")) or clean(b.get("model")) or b["id"]
+    arch = clean(b.get("arch"))
+    arch = board_arch_short(arch) if arch else None
     status = b.get("status", "")
 
     parts = [label]
@@ -151,12 +153,13 @@ def build_board_label(b: dict) -> str:
 
 # ── Mermaid ───────────────────────────────────────────────────────────────────
 
+
 def generate_mermaid(data):
-    net      = data.get("network", {})
+    net = data.get("network", {})
     machines = data.get("machines", [])
     services = data.get("services", [])
-    boards   = data.get("boards", [])
-    links    = data.get("links", [])
+    boards = data.get("boards", [])
+    links = data.get("links", [])
 
     tailnet_domain = clean(net.get("tailnet_domain", ""))
 
@@ -176,10 +179,10 @@ def generate_mermaid(data):
     # ── Machine nodes ─────────────────────────────────────────────────
     machine_ids, planned_ids, in_progress_ids, external_ids = [], [], [], []
     for m in machines:
-        mid    = m["id"]
-        label  = machine_label(m)
+        mid = m["id"]
+        label = machine_label(m)
         status = m.get("status", "")
-        mtype  = m.get("type", "machine")
+        mtype = m.get("type", "machine")
 
         if mtype == "external":
             lines.append(f'    {mid}{{{{"{label}"}}}}')
@@ -197,13 +200,13 @@ def generate_mermaid(data):
     # ── Service nodes ─────────────────────────────────────────────────
     svc_ids = []
     for svc in services:
-        sid   = svc["id"]
+        sid = svc["id"]
         label = svc_label(svc)
         lines.append(f'    {sid}(("{label}"))')
         svc_ids.append(sid)
 
     # ── Board subgraph ────────────────────────────────────────────────
-    board_ids         = []
+    board_ids = []
     board_planned_ids = []
     board_in_progress_ids = []
 
@@ -211,9 +214,9 @@ def generate_mermaid(data):
         lines.append('    subgraph boards["Test Targets"]')
         lines.append("      direction TB")
         for b in boards:
-            bid    = b["id"]
+            bid = b["id"]
             status = b.get("status", "")
-            label  = build_board_label(b)
+            label = build_board_label(b)
             lines.append(f'      {bid}["{label}"]')
             if status == "planned":
                 board_planned_ids.append(bid)
@@ -244,37 +247,38 @@ def generate_mermaid(data):
             if label:
                 lines.append(f'  {src} {arrow}|"{label}"| {dst}')
             else:
-                lines.append(f'  {src} {arrow} {dst}')
+                lines.append(f"  {src} {arrow} {dst}")
 
     # ── Styles ────────────────────────────────────────────────────────
     lines.append("")
     lines.append("  %% ── Styles ──")
 
     for cls, ids in [
-        ("machine",        machine_ids),
-        ("planned",        planned_ids),
-        ("in progress",    in_progress_ids),
-        ("external",       external_ids),
-        ("service",        svc_ids),
-        ("board",          board_ids),
-        ("board_planned",  board_planned_ids),
-        ("board_in_progress",  board_in_progress_ids),
+        ("machine", machine_ids),
+        ("planned", planned_ids),
+        ("in progress", in_progress_ids),
+        ("external", external_ids),
+        ("service", svc_ids),
+        ("board", board_ids),
+        ("board_planned", board_planned_ids),
+        ("board_in_progress", board_in_progress_ids),
     ]:
         if ids:
-            lines.append(f'  classDef {cls} {STYLES[cls]}')
-            lines.append(f'  class {",".join(ids)} {cls}')
+            lines.append(f"  classDef {cls} {STYLES[cls]}")
+            lines.append(f"  class {','.join(ids)} {cls}")
 
     return "\n".join(lines)
 
 
 # ── BOM ───────────────────────────────────────────────────────────────────────
 
+
 def generate_bom(data):
-    net      = data.get("network", {})
+    net = data.get("network", {})
     machines = data.get("machines", [])
     services = data.get("services", [])
-    boards   = data.get("boards", [])
-    links    = data.get("links", [])
+    boards = data.get("boards", [])
+    links = data.get("links", [])
     real_boards = [b for b in boards if b.get("type") != "connector"]
 
     tailnet_domain = clean(net.get("tailnet_domain", ""))
@@ -284,9 +288,9 @@ def generate_bom(data):
     # Network
     out.append("## Network\n")
     if clean(net.get("name")):
-        out.append(f'**Project:** {net["name"]}  ')
+        out.append(f"**Project:** {net['name']}  ")
     if tailnet_domain:
-        out.append(f'**Tailnet:** {tailnet_domain}  ')
+        out.append(f"**Tailnet:** {tailnet_domain}  ")
     out.append("")
 
     # Machines
@@ -296,11 +300,11 @@ def generate_bom(data):
     for m in machines:
         ts = clean(m.get("tailscale_name"))
         fqdn = f"{ts}.{tailnet_domain}" if ts and tailnet_domain else (ts or "—")
-        os_  = clean(m.get("os")) or "—"
+        os_ = clean(m.get("os")) or "—"
         status = m.get("status", "active")
         hw = m.get("hardware", {})
         model = clean(hw.get("model")) if hw else None
-        url   = clean(hw.get("url"))   if hw else None
+        url = clean(hw.get("url")) if hw else None
         if model and url:
             model_cell = f"[{model}]({url})"
         elif model:
@@ -309,7 +313,9 @@ def generate_bom(data):
             model_cell = "—"
         specs_list = [clean(s) for s in hw.get("specs", [])] if hw else []
         specs_cell = "<br/>".join(s for s in specs_list if s) or "—"
-        out.append(f'| `{m["id"]}` | {m["label"]} | {fqdn} | {os_} | {model_cell} | {specs_cell} | {status} |')
+        out.append(
+            f"| `{m['id']}` | {m['label']} | {fqdn} | {os_} | {model_cell} | {specs_cell} | {status} |"
+        )
     out.append("")
 
     # Services
@@ -317,13 +323,13 @@ def generate_bom(data):
     out.append("| ID | Service | Tailscale FQDN | Host | Protocol | Port | Role |")
     out.append("|----|---------|----------------|------|----------|------|------|")
     for svc in services:
-        ts    = clean(svc.get("tailscale_name"))
-        fqdn  = f"{ts}.{tailnet_domain}" if ts and tailnet_domain else (ts or "—")
+        ts = clean(svc.get("tailscale_name"))
+        fqdn = f"{ts}.{tailnet_domain}" if ts and tailnet_domain else (ts or "—")
         proto = clean(svc.get("protocol")) or "—"
-        port  = clean(svc.get("port")) or "—"
+        port = clean(svc.get("port")) or "—"
         out.append(
-            f'| `{svc["id"]}` | {svc["label"]} | {fqdn} | `{svc.get("host","—")}` '
-            f'| {proto} | {port} | {svc.get("role","—")} |'
+            f"| `{svc['id']}` | {svc['label']} | {fqdn} | `{svc.get('host', '—')}` "
+            f"| {proto} | {port} | {svc.get('role', '—')} |"
         )
     out.append("")
 
@@ -336,10 +342,10 @@ def generate_bom(data):
             name = clean(sw.get("name"))
             if not name:
                 continue
-            ver  = clean(sw.get("version")) or "—"
+            ver = clean(sw.get("version")) or "—"
             out.append(
-                f'| `{svc.get("host","—")}` | {svc["label"]} '
-                f'| {name} | {ver} | {svc.get("role","—")} |'
+                f"| `{svc.get('host', '—')}` | {svc['label']} "
+                f"| {name} | {ver} | {svc.get('role', '—')} |"
             )
     out.append("")
 
@@ -349,21 +355,24 @@ def generate_bom(data):
         out.append("| ID | Label | Vendor | Model | Arch | Connection | Status |")
         out.append("|----|-------|--------|-------|------|------------|--------|")
         for b in boards:
-            label  = clean(b.get("label"))  or "—"
+            label = clean(b.get("label")) or "—"
             vendor = clean(b.get("vendor")) or "—"
-            model  = clean(b.get("model"))  or "—"
-            url    = clean(b.get("url"))
+            model = clean(b.get("model")) or "—"
+            url = clean(b.get("url"))
             model_cell = f"[{model}]({url})" if url and model != "—" else model
             status = b.get("status", "active")
             out.append(
-                f'| `{b["id"]}` | {label} | {vendor} | {model_cell} '
-                f'| {b.get("arch","—")} | {b.get("connection","—")} | {status} |'
+                f"| `{b['id']}` | {label} | {vendor} | {model_cell} "
+                f"| {b.get('arch', '—')} | {b.get('connection', '—')} | {status} |"
             )
         out.append("")
 
         # Per-board hardware accessories
-        board_links = [l for l in links if l.get("type") == "physical"
-                       and (l.get("hardware") or l.get("interfaces"))]
+        board_links = [
+            link
+            for link in links
+            if link.get("type") == "physical" and (link.get("hardware") or link.get("interfaces"))
+        ]
         for board in real_boards:
             board_hw = []
             for lnk in board_links:
@@ -380,11 +389,11 @@ def generate_bom(data):
                 out.append("| Interface | Part | Part Number | Role |")
                 out.append("|-----------|------|-------------|------|")
                 for iface_label, hw in board_hw:
-                    pn   = clean(hw.get("pn"))  or "—"
+                    pn = clean(hw.get("pn")) or "—"
                     part = hw["part"]
-                    url  = clean(hw.get("url"))
+                    url = clean(hw.get("url"))
                     part_cell = f"[{part}]({url})" if url else part
-                    out.append(f'| {iface_label} | {part_cell} | {pn} | {hw.get("role","—")} |')
+                    out.append(f"| {iface_label} | {part_cell} | {pn} | {hw.get('role', '—')} |")
                 out.append("")
 
     return "\n".join(out)
@@ -392,11 +401,12 @@ def generate_bom(data):
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(description="network.yaml → Mermaid + BOM")
     parser.add_argument("--yaml", default="network.yaml")
-    parser.add_argument("--mmd",  default="network.mmd")
-    parser.add_argument("--bom",  default="bom.md")
+    parser.add_argument("--mmd", default="network.mmd")
+    parser.add_argument("--bom", default="bom.md")
     args = parser.parse_args()
 
     yaml_path = Path(args.yaml)

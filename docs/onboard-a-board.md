@@ -20,7 +20,7 @@ at the end of this doc.
 `env.yaml` are generated from it (see step 4).
 
 Minimum fields depend on the family — the JSON Schema
-(`boards/common/src/boardfarm_common/schema/board.schema.json`) enforces
+(`common/src/boardfarm_common/schema/board.schema.json`) enforces
 this in CI.
 
 ### `tftp` example
@@ -120,8 +120,7 @@ for other families.
 Do not hand-write `client.yaml`. Generate it from the manifest:
 
 ```
-cd boards
-uv run boardfarm-render my-board       # writes boards/my-board/client.yaml
+uv run boardfarm-render boards/my-board       # writes boards/my-board/client.yaml
 ```
 
 CI runs `boardfarm-render --check` on every push. If someone edits
@@ -129,13 +128,13 @@ CI runs `boardfarm-render --check` on every push. If someone edits
 re-render.
 
 Available templates live at
-`boards/common/src/boardfarm_common/templates/client-<family>.yaml.j2`.
+`common/src/boardfarm_common/templates/client-<family>.yaml.j2`.
 Extend them there — not in per-board files.
 
 ## 5. Validate
 
 ```
-uv run boardfarm-validate my-board     # single board
+uv run boardfarm-validate boards/my-board     # single board
 uv run boardfarm-validate              # all boards
 ```
 
@@ -149,7 +148,7 @@ Copy an existing board's `pytest/` directory as a starting point:
 ```
 boards/my-board/pytest/
   conftest.py       # sets --lg-env to ../client.yaml, exposes tftp fixture
-  pytest.ini        # (optional; global config is in boards/pyproject.toml)
+  pytest.ini        # (optional; global config is in pyproject.toml)
   test_tftp.py      # smoke tests
 ```
 
@@ -199,10 +198,10 @@ uv run labgrid-client -p bf-my-board release
 
 Only needed if none of `tftp` / `sdmux` / `qemu` fit.
 
-1. `boards/common/src/boardfarm_common/strategies/<family>.py` — new class
+1. `common/src/boardfarm_common/strategies/<family>.py` — new class
    plus its own `Status` enum, subclass `BoardStrategy`.
-2. Re-export from `boards/common/src/boardfarm_common/strategies/__init__.py`.
-3. Register the family in `boards/common/pyproject.toml`:
+2. Re-export from `common/src/boardfarm_common/strategies/__init__.py`.
+3. Register the family in `common/pyproject.toml`:
    ```toml
    [project.entry-points."boardfarm.strategies"]
    <family> = "boardfarm_common.strategies.<family>:<ClassName>"
