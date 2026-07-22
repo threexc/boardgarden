@@ -1,7 +1,7 @@
 """Validate board.yaml manifests against ``schema/board.schema.json``.
 
 CLI:
-    boardfarm-validate                # walks boards/*/board.yaml under cwd
+    boardfarm-validate                # walks boards/*/board.yaml under the repo root (cwd)
     boardfarm-validate path/to/board.yaml [more.yaml ...]
 """
 
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         "paths",
         nargs="*",
         type=Path,
-        help="board.yaml files (or board dirs). Default: boards/*/board.yaml under cwd.",
+        help="board.yaml files (or board dirs). Default: boards/*/board.yaml under the repo root (cwd).",
     )
     args = parser.parse_args(argv)
 
@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         for p in args.paths:
             targets.append(p if p.is_dir() else p.parent)
     else:
-        targets = [p.parent for p in _iter_board_yamls(Path.cwd())]
+        targets = [p.parent for p in _iter_board_yamls(Path.cwd() / "boards")]
 
     if not targets:
         print("no board.yaml files found", file=sys.stderr)

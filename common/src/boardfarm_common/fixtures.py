@@ -1,7 +1,7 @@
 """pytest fixtures + hooks shared across all board test suites.
 
 Auto-loaded via the ``pytest11`` entry point in
-``boards/common/pyproject.toml``. No per-board conftest.py needed for these.
+``common/pyproject.toml``. No per-board conftest.py needed for these.
 """
 
 import os

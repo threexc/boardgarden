@@ -1,7 +1,7 @@
 """Render labgrid client.yaml (or env.yaml for qemu) from a board manifest.
 
 CLI:
-    boardfarm-render                       # renders client.yaml for every boards/*/board.yaml under cwd
+    boardfarm-render                       # renders client.yaml for every boards/*/board.yaml under the repo root (cwd)
     boardfarm-render <board_dir> [...]     # renders only the given boards
     boardfarm-render --check               # non-destructive; exit 1 if any rendered output differs
 """
@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    board_dirs = args.board_dirs or _find_boards(Path.cwd())
+    board_dirs = args.board_dirs or _find_boards(Path.cwd() / "boards")
     if not board_dirs:
         print("no boards found", file=sys.stderr)
         return 2

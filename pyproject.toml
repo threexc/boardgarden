@@ -24,8 +24,8 @@ boardfarm-common = { workspace = true }
 [tool.pytest.ini_options]
 testpaths = [
     "common/src/boardfarm_common/tests",
-    "bananapi-f3/pytest",
-    "qemuriscv64/pytest",
+    "boards/bananapi-f3/pytest",
+    "boards/qemuriscv64/pytest",
 ]
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
