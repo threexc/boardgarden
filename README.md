@@ -92,10 +92,7 @@ actions used (such as setting a TFTP server's IP address on the U-Boot prompt)
 are more or less the same.
 
 Assuming you have `uv` installed, you can set up the Python virtual environment
-with all of the necessary modules by doing:
-
-1. `cd boards`
-2. `uv sync`
+with all of the necessary modules by doing `uv sync`.
 
 Using the board configurations will depend on how you have structured your
 Labgrid deployment (see the [docs](https://labgrid.readthedocs.io/en/latest/)
@@ -115,12 +112,12 @@ As an example, once you have created a place called
 should be able to invoke the labgrid CLI using `uv run`, e.g.:
 
 1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
-2. `uv run labgrid-client -p bf-muse-pi-pro -c muse-pi-pro/client.yaml -s tftp con`
+2. `uv run labgrid-client -p bf-muse-pi-pro -c boards/muse-pi-pro/client.yaml -s tftp con`
 
 Or, if you want to run the test suite, you can do:
 
 1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
-2. `uv run pytest -vvv --html=report.html --self-contained-html muse-pi-pro`
+2. `uv run pytest -vvv --html=report.html --self-contained-html boards/muse-pi-pro`
 
 These same general concepts are employed by the pipelines inside the
 `.forgejo/workflows` directory, so that should be considered a more complete
