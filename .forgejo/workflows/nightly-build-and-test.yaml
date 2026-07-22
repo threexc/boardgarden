@@ -52,6 +52,7 @@ jobs:
     needs: discover
     runs-on: tgamblin-build
     strategy:
+      fail-fast: false
       matrix:
         machine: >-
           ${{
@@ -88,18 +89,47 @@ jobs:
           image: ${{ inputs.image || 'core-image-minimal' }}
           images_path: ${{ steps.build.outputs.images_path }}
           deploy_wic: ${{ steps.build.outputs.deploy_wic }}
+      # Marks this specific matrix entry as a successful build, only if the
+      # build succeeded. Matrix job outputs can't be aggregated directly, but
+      # artifacts can.
+      - name: mark build success
+        run: echo ok > /tmp/build-ok
+      - uses: actions/upload-artifact@v3
+        with:
+          name: built-machine-${{ matrix.machine }}
+          path: /tmp/build-ok
+
+  collect_built_machines:
+    needs: [discover, build]
+    # Run under any scenario other than builds being cancelled
+    if: ${{ !cancelled() }}
+    runs-on: tgamblin-maintenance
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: built-machines
+      - id: collect
+        run: |
+          set -euo pipefail
+          MATRIX=$(
+            {
+              for d in built-machines/built-machine-*/; do
+                [ -d "$d" ] || continue
+                basename "$d" | sed 's/^built-machine-//'
+              done
+            } | sort -u | awk 'BEGIN{printf "["} {if(NR>1) printf ","; printf "\"%s\"", $0} END{printf "]"}'
+          )
+          echo "matrix=$MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   test:
-    needs: [discover, build]
+    needs: [discover, collect_built_machines]
     runs-on: tgamblin-board-test
     strategy:
       matrix:
-        machine: >-
-          ${{
-            inputs.machines != '' && inputs.machines != 'auto'
-              && fromJSON(inputs.machines)
-              || fromJSON(needs.discover.outputs.matrix)
-          }}
+        machine: ${{ fromJSON(needs.collect_built_machines.outputs.matrix) }}
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
       options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
