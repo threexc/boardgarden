@@ -259,7 +259,7 @@ links:
 
   - from: board_2
     to: ecovault
-    label: kernel + dtb + eMMC rootfs (Armbian)
+    label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
 
