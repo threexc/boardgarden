@@ -1,33 +1,30 @@
 name: muse-pi-pro
 yocto_machine: muse-pi-pro
 strategy: tftp
-description: Muse Pi Pro (SpacemiT K1) RISC-V SBC
+description: Muse Pi Pro (SpacemiT K1) RISC-V SBC. Yocto initramfs boot
 remote_place: bf-muse-pi-pro
-image_source: bianbu
+image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml
 
 boot:
   method: tftp
-  bootargs: >
-    console=ttyS0,115200n8
-    earlyprintk
-    loglevel=7
-    root=/dev/mmcblk0p6
-    rootfstype=ext4
-    rootwait
-    swiotlb=65536
-    workqueue.default_affinity_scope=system
+  bootargs: console=ttyS0,115200 shell
+  dtb_addr: $dtb_addr
+  ramdisk_addr: $ramdisk_addr
 
 tftp:
   subdir: muse-pi-pro
   dtb: k1-musepi-pro.dtb
+  initramfs: uRamdisk
 
 uboot:
-  tftp_cmd: booti $kernel_addr_r - $dtb_addr
+  tftp_cmd: booti $kernel_addr_r $ramdisk_addr:$filesize $dtb_addr
 
 shell:
   username: root
-  password: bianbu
+  password: null
+  # initramfs-module-debug drops straight to a busybox shell, no login prompt.
+  prompt: '~ #\s*'
 
 strategy_class: MusePiProBootStrategy
