@@ -84,7 +84,6 @@ runs:
       shell: bash
       working-directory: /home/labgrid/boardgarden
       run: |
-        cd boards
         uv sync
 
     - name: Fetch latest rootfs
@@ -110,7 +109,7 @@ runs:
 
     - name: run labgrid-client
       shell: bash
-      working-directory: /home/labgrid/boardgarden/boards
+      working-directory: /home/labgrid/boardgarden
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
       run: |
@@ -126,8 +125,8 @@ runs:
         for ATTEMPT in 1 2 3; do
           echo "Test attempt ${ATTEMPT} of 3"
           TESTS="common/src/boardfarm_common/tests"
-          [ -d "$BOARD/pytest" ] && TESTS="$TESTS $BOARD/pytest"
-          if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html $TESTS; then
+          [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
+          if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/client.yaml" $TESTS; then
             echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
             EXIT_CODE=0
             break
@@ -138,7 +137,7 @@ runs:
         if [ $EXIT_CODE -ne 0 ]; then
           echo "All 3 pytest attempts failed"
         fi
-        uv run labgrid-client -p + -c $BOARD/client.yaml pw off
+        uv run labgrid-client -p + -c "boards/$BOARD/client.yaml" pw off
         uv run labgrid-client -p + release
         exit $EXIT_CODE
 
@@ -160,5 +159,5 @@ runs:
         REPORT_DIR="${REPORTS_ROOT}/${RISCV_MACHINE}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
         ssh -i ~/.ssh/id_rsa_report "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
         rsync -av -e "ssh -i ~/.ssh/id_rsa_report" \
-          /home/labgrid/boardgarden/boards/report.html \
+          /home/labgrid/boardgarden/report.html \
           "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
