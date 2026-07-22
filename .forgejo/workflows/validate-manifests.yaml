@@ -3,13 +3,14 @@ on:
     paths:
       - 'boards/**/board.yaml'
       - 'boards/families/**'
-      - 'boards/common/src/boardfarm_common/schema/**'
-      - 'boards/common/src/boardfarm_common/templates/**'
-      - 'boards/common/src/boardfarm_common/validate.py'
-      - 'boards/common/src/boardfarm_common/render.py'
-      - 'boards/common/src/boardfarm_common/loader.py'
-      - 'boards/common/src/boardfarm_common/manifest.py'
-      - 'boards/common/pyproject.toml'
+      - 'common/src/boardfarm_common/schema/**'
+      - 'common/src/boardfarm_common/templates/**'
+      - 'common/src/boardfarm_common/validate.py'
+      - 'common/src/boardfarm_common/render.py'
+      - 'common/src/boardfarm_common/loader.py'
+      - 'common/src/boardfarm_common/manifest.py'
+      - 'common/pyproject.toml'
+      - 'pyproject.toml'
   pull_request:
   workflow_dispatch:
 
@@ -28,11 +29,11 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout -q FETCH_HEAD
       - name: sync uv workspace
-        working-directory: repo/boards
+        working-directory: repo
         run: uv sync
       - name: validate all board.yaml
-        working-directory: repo/boards
+        working-directory: repo
         run: uv run boardfarm-validate
       - name: check rendered client.yaml is in sync with manifests
-        working-directory: repo/boards
+        working-directory: repo
         run: uv run boardfarm-render --check
