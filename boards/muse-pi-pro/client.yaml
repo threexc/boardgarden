@@ -27,17 +27,16 @@ targets:
           name: 'muse-pi-pro-uboot-1'
           boot_commands:
             emmc: 'boot'
-            tftp: 'booti $kernel_addr_r - $dtb_addr'
+            tftp: 'booti $kernel_addr_r $ramdisk_addr:$filesize $dtb_addr'
           bindings:
             console: 'muse-pi-pro-console-1'
           login_timeout: 30
           boot_timeout: 30
           strip_timestamp: True
       - ShellDriver:
-          prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
+          prompt: '~ #\s*'
           login_prompt: '[-\w]+ login: '
           username: 'root'
-          password: 'bianbu'
           name: 'muse-pi-pro-shell-1'
           bindings:
             console: 'muse-pi-pro-console-1'
