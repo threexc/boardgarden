@@ -4,9 +4,9 @@ repos:
     hooks:
       - id: ruff-check
         args: [--fix]
-        files: ^boards/.*\.py$
+        files: ^(boards|common)/.*\.py$
       - id: ruff-format
-        files: ^boards/.*\.py$
+        files: ^(boards|common)/.*\.py$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -16,5 +16,5 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
         args: [--allow-multiple-documents]
-        exclude: ^(\.forgejo/workflows/|boards/common/src/boardfarm_common/templates/)
+        exclude: ^(\.forgejo/workflows/|common/src/boardfarm_common/templates/)
       - id: check-json
