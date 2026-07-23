@@ -1,3 +1,5 @@
+name: riscv-ptest-nightly
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,6 +25,10 @@ on:
           - python3-cryptography
           - tar
           - xz
+
+env:
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
+
 jobs:
   build-riscv-image:
     runs-on: tgamblin-qemu
@@ -45,13 +51,7 @@ jobs:
         SSTATE_DIR: "/buildcache/sstate-cache"
     steps:
       - name: checkout
-        uses: actions/checkout@v3
-
-      - name: clone boardgarden
-        uses: ./.forgejo/actions/git-clone
-        with:
-          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git
-          path: boardgarden
+        uses: actions/checkout@v4
 
       - name: clone bitbake
         uses: ./.forgejo/actions/git-clone
@@ -78,25 +78,25 @@ jobs:
           bitbake-config-build \
             enable-fragment \
             core/yocto/root-login-with-empty-password
-          
+
           bitbake core-image-ptest-${PTEST_PACKAGE}
         env:
           PTEST_PACKAGE: ${{ matrix.package }}
 
       - name: Archive qemuriscv64 bios
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ptest_image_bios_${{ matrix.package }}
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
 
       - name: Archive qemuriscv64 kernel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ptest_image_kernel_${{ matrix.package }}
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/Image
 
       - name: Archive qemuriscv64 ext4 rootfs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ptest_image_ext4_${{ matrix.package }}
           path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
@@ -118,7 +118,7 @@ jobs:
         TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
     steps:
       - name: Download qemuriscv64 bios
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ptest_image_bios_${{ matrix.package }}
           path: /home/labgrid/bios_download
@@ -126,7 +126,7 @@ jobs:
         run: |
           mv /home/labgrid/bios_download/fw_jump.elf /home/labgrid/fw_jump.elf
       - name: Download qemuriscv64 kernel
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ptest_image_kernel_${{ matrix.package }}
           path: /home/labgrid/kernel_download
@@ -134,59 +134,48 @@ jobs:
         run: |
           mv /home/labgrid/kernel_download/Image /home/labgrid/Image
       - name: Download qemuriscv64 ext4 rootfs
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ptest_image_ext4_${{ matrix.package }}
           path: /home/labgrid/ext4_download
       - name: Rename ext4 image
         run: |
           mv /home/labgrid/ext4_download/*.ext4 /home/labgrid/ptest_image.ext4
+
       - name: clone boardgarden
+        uses: ./.forgejo/actions/git-clone
+        with:
+          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git
+          path: /home/labgrid/boardgarden
+
+      - name: install uv
         working-directory: /home/labgrid
         run: |
-          git clone https://github.com/threexc/boardgarden.git
+          curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      - name: set up virtualenv
+      - name: run uv sync
         working-directory: /home/labgrid/boardgarden
         run: |
-          python3 -m venv venv && source venv/bin/activate
-          pip install --upgrade pip
-          pip install labgrid pytest pytest-html
+          uv sync
 
       - name: run labgrid-client
         working-directory: /home/labgrid/boardgarden
         run: |
-          source venv/bin/activate
-          pytest -vv --html=report.html --self-contained-html --lg-env boards/qemuriscv64/env.yaml boards/qemuriscv64/pytest/test_ptests.py
+          uv run pytest -vv --html=report.html --self-contained-html \
+            --lg-env boards/qemuriscv64/env.yaml \
+            boards/qemuriscv64/pytest/test_ptests.py
 
-      - name: Setup SSH key
-        working-directory: /home/labgrid
-        env:
-          REPORT_SSH_KEY: ${{ secrets.REPORT_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          umask 077
-          printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa
-          ssh-keyscan "$TFTP_SERVER" >> ~/.ssh/known_hosts 2>/dev/null
-          ssh-keyscan 100.72.220.81 >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: test SSH connection
-        working-directory: /home/labgrid
-        run: |
-          # Check if the key is encrypted
-          grep "ENCRYPTED" ~/.ssh/id_rsa || echo "Key is not encrypted"
-
-          # Try with explicit key and BatchMode
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa -v reporter@${TFTP_SERVER} "echo SSH connection successful"
-          echo "=== SSH directory contents ==="
-          ls -la ~/.ssh/
-          echo "=== Known hosts ==="
-          cat ~/.ssh/known_hosts
-          echo "=== Testing SSH connection ==="
-          ssh -v reporter@${TFTP_SERVER} "echo SSH connection successful"
+      - name: install report SSH key
+        uses: ./.forgejo/actions/setup-ssh
+        with:
+          ssh_private_key: ${{ secrets.REPORT_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
       - name: Deploy report
         run: |
           REPORT_DIR="yocto/oe-core/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
-          ssh -o StrictHostKeyChecking=no reporter@${TFTP_SERVER} "mkdir -p /testresults/$REPORT_DIR"
-          rsync -av /home/labgrid/boardgarden/report.html reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/
+          RSH="ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=accept-new"
+          ${RSH} "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
+          rsync -avz --omit-link-times -e "${RSH}" \
+            /home/labgrid/boardgarden/report.html \
+            "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
