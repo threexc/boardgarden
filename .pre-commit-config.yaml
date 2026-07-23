@@ -4,9 +4,9 @@ repos:
     hooks:
       - id: ruff-check
         args: [--fix]
-        files: ^(boards|common)/.*\.py$
+        files: ^(boards|common|tests)/.*\.py$
       - id: ruff-format
-        files: ^(boards|common)/.*\.py$
+        files: ^(boards|common|tests)/.*\.py$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
