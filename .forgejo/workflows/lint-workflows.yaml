@@ -21,4 +21,4 @@ jobs:
         # --no-online-audits: this runner has no GitHub API token, and online
         # audits (e.g. ref-confusion) fail with 401s against the real GitHub
         # API rather than degrading gracefully.
-        run: uvx zizmor --no-online-audits .forgejo/workflows/nightly-build-and-test.yaml .forgejo/workflows/weekly-build-only.yaml .forgejo/workflows/meta-riscv-check-layer.yaml
+        run: uvx zizmor --no-online-audits .forgejo/workflows/nightly-build-and-test.yaml .forgejo/workflows/weekly-build-only.yaml .forgejo/workflows/meta-riscv-check-layer.yaml .forgejo/workflows/riscv-ptest-nightly.yaml
