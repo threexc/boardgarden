@@ -131,6 +131,6 @@ runs:
         # booti can't load a raw cpio.gz as a ramdisk directly - it needs the
         # mkimage/uImage header so U-Boot knows how to unpack it.
         IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
-        CPIO_GZ="${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.rootfs.cpio.gz"
+        CPIO_GZ="${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.cpio.gz"
         mkimage -A riscv -O linux -T ramdisk -C gzip \
           -d "${CPIO_GZ}" "${IMAGE_DIR}/uRamdisk"
