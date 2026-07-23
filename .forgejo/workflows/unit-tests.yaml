@@ -1,0 +1,41 @@
+name: unit-tests
+
+on:
+  push:
+    paths:
+      - 'common/src/boardfarm_common/**'
+      - 'boards/**/board.yaml'
+      - 'boards/**/client.yaml'
+      - 'boards/**/env.yaml'
+      - 'boards/families/**'
+      - 'tests/**'
+      - 'common/pyproject.toml'
+      - 'pyproject.toml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    # Pure-Python tests for boardfarm_common (manifest merging, template
+    # rendering, strategy registry, strategy transition graphs) exercised
+    # with fake targets/mocks. No labgrid environment, board, or hardware
+    # required, so this runs on the same lightweight runner/image as
+    # validate-manifests and lint-board-files.
+    runs-on: tgamblin-maintenance
+    container:
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    steps:
+      - name: clone boardgarden at test SHA
+        shell: bash
+        run: |
+          mkdir repo && cd repo
+          git init -q
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q FETCH_HEAD
+      - name: sync uv workspace
+        working-directory: repo
+        run: uv sync
+      - name: run unit tests
+        working-directory: repo
+        run: uv run pytest tests -v
