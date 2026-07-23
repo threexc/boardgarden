@@ -23,6 +23,7 @@ boardfarm-common = { workspace = true }
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
 testpaths = [
+    "tests",
     "common/src/boardfarm_common/tests",
     "boards/bananapi-f3/pytest",
     "boards/qemuriscv64/pytest",
