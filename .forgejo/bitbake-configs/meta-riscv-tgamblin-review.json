@@ -1,0 +1,17 @@
+{
+    "description": "Source override for meta-riscv templates to use tgamblin's review branch",
+    "sources": {
+        "meta-riscv": {
+            "git-remote": {
+                "branch": "tgamblin/review",
+                "remotes": {
+                    "origin": {
+                        "uri": "https://github.com/threexc/meta-riscv.git"
+                    }
+                },
+                "rev": "tgamblin/review"
+            }
+        }
+    },
+    "version": "1.0"
+}
