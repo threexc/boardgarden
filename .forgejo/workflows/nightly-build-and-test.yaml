@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - none
+          - meta-riscv-tgamblin-review
           - meta-riscv-tgamblin-k1-fixes
           - meta-riscv-tgamblin-k3-fixes
       image:
