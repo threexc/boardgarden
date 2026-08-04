@@ -7,8 +7,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-# Should contain LG_COORDINATOR configuration
-EnvironmentFile=-/etc/environment
+EnvironmentFile=-/etc/labgrid/exporter.env
 ExecStart=/home/labgrid/boardgarden/boards/.venv/bin/labgrid-exporter -n %i-exporter /home/labgrid/boardgarden/boards/%i/exporter.yaml
 Restart=always
 RestartSec=30
