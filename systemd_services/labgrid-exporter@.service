@@ -1,0 +1,21 @@
+[Unit]
+Description=Labgrid %i Exporter
+After=labgrid-coordinator.service
+Requires=labgrid-coordinator.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Environment="PYTHONUNBUFFERED=1"
+# Should contain LG_COORDINATOR configuration
+EnvironmentFile=-/etc/environment
+ExecStart=/home/labgrid/boardgarden/boards/.venv/bin/labgrid-exporter -n %i-exporter /home/labgrid/boardgarden/boards/%i/exporter.yaml
+Restart=always
+RestartSec=30
+User=labgrid
+Group=labgrid
+# Adjust to your distribution (most often "dialout" or "tty")
+SupplementaryGroups=dialout plugdev
+
+[Install]
+WantedBy=multi-user.target
