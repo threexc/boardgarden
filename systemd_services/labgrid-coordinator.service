@@ -14,6 +14,11 @@ Restart=always
 RestartSec=30
 User=labgrid
 Group=labgrid
+# labgrid-coordinator reads/writes places.yaml relative to its cwd. Without
+# this, cwd defaults to / and it fights over /places.yaml with whatever else
+# runs it as a different user.
+StateDirectory=labgrid-coordinator
+WorkingDirectory=/var/lib/labgrid-coordinator
 
 [Install]
 WantedBy=multi-user.target
