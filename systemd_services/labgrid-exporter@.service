@@ -7,8 +7,9 @@ StartLimitIntervalSec=0
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-EnvironmentFile=-/etc/labgrid/exporter.env
-ExecStart=/home/labgrid/boardgarden/boards/.venv/bin/labgrid-exporter -n %i-exporter /home/labgrid/boardgarden/boards/%i/exporter.yaml
+Environment="BOARDGARDEN_ROOT=/home/labgrid/boardgarden"
+EnvironmentFile=-/etc/labgrid/boardgarden.env
+ExecStart=${BOARDGARDEN_ROOT}/boards/.venv/bin/labgrid-exporter -n %i-exporter ${BOARDGARDEN_ROOT}/boards/%i/exporter.yaml
 Restart=always
 RestartSec=30
 User=labgrid
