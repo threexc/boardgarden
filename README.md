@@ -125,8 +125,9 @@ reference.
 
 ### systemd_services
 
-Examples of how to create systemd services for running the Labgrid coordinator
-and exporter processes on one or more systems.
+Unit files for running the Labgrid coordinator and exporter processes on one
+or more systems. See [systemd_services/README.md](systemd_services/README.md)
+for install steps and configuration.
 
 ### udev
 
