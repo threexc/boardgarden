@@ -9,7 +9,7 @@ StartLimitIntervalSec=0
 Environment="PYTHONUNBUFFERED=1"
 Environment="BOARDGARDEN_ROOT=/home/labgrid/boardgarden"
 EnvironmentFile=-/etc/labgrid/boardgarden.env
-ExecStart=${BOARDGARDEN_ROOT}/boards/.venv/bin/labgrid-exporter -n %i-exporter ${BOARDGARDEN_ROOT}/boards/%i/exporter.yaml
+ExecStart=/bin/sh -c 'exec "${BOARDGARDEN_ROOT}/boards/.venv/bin/labgrid-exporter" -n "%i-exporter" "${BOARDGARDEN_ROOT}/boards/%i/exporter.yaml"'
 Restart=always
 RestartSec=30
 User=labgrid
