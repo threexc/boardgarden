@@ -1,12 +1,17 @@
 [Unit]
 Description=Labgrid Coordinator Service
-After=network.target
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/home/tgamblin/boardgarden/boards/.venv/bin/labgrid-coordinator
-Restart=on-failure
+ExecStart=/home/labgrid/boardgarden/boards/.venv/bin/labgrid-coordinator
+Restart=always
+RestartSec=30
+User=labgrid
+Group=labgrid
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
