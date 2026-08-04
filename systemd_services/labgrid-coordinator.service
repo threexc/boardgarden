@@ -7,7 +7,9 @@ StartLimitIntervalSec=0
 [Service]
 Type=simple
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/home/labgrid/boardgarden/boards/.venv/bin/labgrid-coordinator
+Environment="BOARDGARDEN_ROOT=/home/labgrid/boardgarden"
+EnvironmentFile=-/etc/labgrid/boardgarden.env
+ExecStart=${BOARDGARDEN_ROOT}/boards/.venv/bin/labgrid-coordinator
 Restart=always
 RestartSec=30
 User=labgrid
