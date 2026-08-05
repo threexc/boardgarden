@@ -15,6 +15,8 @@ machines:
       - "Labgrid Coordinator"
       - "Labgrid Exporters"
       - "Forgejo"
+      - "TFTP Server"
+      - "Test Results"
     tailscale_name: ecogrid
     os: Debian 13 ("Trixie")
     hardware:
@@ -44,21 +46,9 @@ machines:
         package: labgrid
         version: "25.1.dev273"
         role: Exposes USB-to-UART and power to coordinator
-
-  - id: ecovault
-    label: "ecovault"
-    hide_tailnet: true
-    role:
-      - "TFTP Server"
-      - "Test Results"
-    tailscale_name: ecovault
-    os: Debian 13 ("Trixie")
-    hardware:
-      hide_details: true
-      model: ThinkCentre M715q
-      specs:
-        - AMD Ryzen 3 PRO 2200GE
-        - 16 GB DDR4 RAM
+      - name: TFTP Server
+        package: tftpd-hpa
+        role: Serves kernel/DTB/initramfs/wic images to boards; migrated from ecovault (same paths, users, permissions)
 
   - id: runner1
     label: "megalith"
@@ -227,12 +217,12 @@ links:
 
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
-    to: ecovault
+    to: ecogrid
     label: upload Yocto artifacts
     type: logical
 
   - from: runner1
-    to: ecovault
+    to: ecogrid
     label: upload QEMU test results
     type: logical
 
@@ -247,30 +237,30 @@ links:
     type: logical
 
   - from: runner2
-    to: ecovault
+    to: ecogrid
     label: upload hardware test results
     type: logical
 
   - from: board_1
-    to: ecovault
+    to: ecogrid
     label: Yocto .wic image
     type: logical
     reverse: true
 
   - from: board_2
-    to: ecovault
+    to: ecogrid
     label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
 
   - from: board_3
-    to: ecovault
+    to: ecogrid
     label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
 
   - from: board_5
-    to: ecovault
+    to: ecogrid
     label: kernel + dtb + onboard rootfs (Bianbu)
     type: logical
     reverse: true

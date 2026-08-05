@@ -1,8 +1,7 @@
 %%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "Liberation Sans"}} }%%
 flowchart LR
   subgraph tailnet["🔒 Tailnet"]
-    ecogrid["<b>Labgrid Coordinator</b><br/><b>Labgrid Exporters</b><br/><b>Forgejo</b><br/>ecogrid"]
-    ecovault["<b>TFTP Server</b><br/><b>Test Results</b><br/>ecovault"]
+    ecogrid["<b>Labgrid Coordinator</b><br/><b>Labgrid Exporters</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>ecogrid"]
     runner1["<b>Forgejo Runner (Large)</b><br/>megalith"]
     runner2["<b>Forgejo Runner (Small)</b><br/>microlith"]
     github{{"GitHub"}}
@@ -24,19 +23,19 @@ flowchart LR
   ecogrid ==>|"power / serial"| board_3
   ecogrid ==>|"power / serial"| board_5
   ecogrid -..->|"push mirror"| github
-  runner1 -->|"upload Yocto artifacts"| ecovault
-  runner1 -->|"upload QEMU test results"| ecovault
+  runner1 -->|"upload Yocto artifacts"| ecogrid
+  runner1 -->|"upload QEMU test results"| ecogrid
   runner1 -->|"boot QEMU, run tests"| board_4
   runner2 -->|"acquire board, run tests"| ecogrid
-  runner2 -->|"upload hardware test results"| ecovault
-  ecovault -->|"Yocto .wic image"| board_1
-  ecovault -->|"kernel + dtb + Yocto initramfs"| board_2
-  ecovault -->|"kernel + dtb + Yocto initramfs"| board_3
-  ecovault -->|"kernel + dtb + onboard rootfs (Bianbu)"| board_5
+  runner2 -->|"upload hardware test results"| ecogrid
+  ecogrid -->|"Yocto .wic image"| board_1
+  ecogrid -->|"kernel + dtb + Yocto initramfs"| board_2
+  ecogrid -->|"kernel + dtb + Yocto initramfs"| board_3
+  ecogrid -->|"kernel + dtb + onboard rootfs (Bianbu)"| board_5
 
   %% ── Styles ──
   classDef machine fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-  class ecogrid,ecovault,runner1,runner2 machine
+  class ecogrid,runner1,runner2 machine
   classDef external fill:#f3f4f6,stroke:#9ca3af,color:#374151
   class github external
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
