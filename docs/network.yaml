@@ -113,13 +113,6 @@ boards:
     connection: serial + power
 
   - id: board_4
-    label: qemuriscv64
-    vendor: QEMU
-    model: RVA23S64
-    arch: riscv64 (RVA23)
-    connection: virtual
-
-  - id: board_5
     label: K3 Pico-ITX
     vendor: Sipeed
     model: K3 Pico-ITX
@@ -192,7 +185,7 @@ links:
             role: USB-to-UART bridge
 
   - from: ecogrid
-    to: board_5
+    to: board_4
     type: physical
     interfaces:
       - label: power
@@ -219,16 +212,6 @@ links:
   - from: runner1
     to: ecogrid
     label: upload Yocto artifacts
-    type: logical
-
-  - from: runner1
-    to: ecogrid
-    label: upload QEMU test results
-    type: logical
-
-  - from: runner1
-    to: board_4
-    label: boot QEMU, run tests
     type: logical
 
   - from: runner2
@@ -259,7 +242,7 @@ links:
     type: logical
     reverse: true
 
-  - from: board_5
+  - from: board_4
     to: ecogrid
     label: kernel + dtb + onboard rootfs (Bianbu)
     type: logical

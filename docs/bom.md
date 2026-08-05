@@ -31,8 +31,7 @@
 | `board_1` | BananaPi F3 | BananaPi | [BPI-F3](https://wiki.banana-pi.org/Banana_Pi_BPI-F3) | riscv64 (RVA22 + RVV 1.0) | serial + power + sd mux | active |
 | `board_2` | Muse Pi Pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power | active |
 | `board_3` | OrangePi RV2 | OrangePi | [OrangePi RV2](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html) | riscv64 (RVA22 + RVV 1.0) | serial + power | active |
-| `board_4` | qemuriscv64 | QEMU | RVA23S64 | riscv64 (RVA23) | virtual | active |
-| `board_5` | K3 Pico-ITX | Sipeed | [K3 Pico-ITX](https://sipeed.com/k3) | riscv64 (RVA23) | serial + power | in progress |
+| `board_4` | K3 Pico-ITX | Sipeed | [K3 Pico-ITX](https://sipeed.com/k3) | riscv64 (RVA23) | serial + power | in progress |
 
 ### BananaPi F3
 
