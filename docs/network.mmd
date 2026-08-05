@@ -1,8 +1,8 @@
 %%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "Liberation Sans"}} }%%
 flowchart LR
   subgraph tailnet["🔒 Tailnet"]
-    ecogrid["<b>Labgrid Coordinator</b><br/><b>Labgrid Exporters</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>ecogrid"]
-    runner1["<b>Forgejo Runner (Large)</b><br/>megalith"]
+    ecogrid["<b>Labgrid</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>ecogrid"]
+    runner1["<b>Forgejo Runner (Large)</b><br/>blacksmith"]
     runner2["<b>Forgejo Runner (Small)</b><br/>microlith"]
     github{{"GitHub"}}
     subgraph boards["Test Targets"]

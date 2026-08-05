@@ -10,7 +10,7 @@
 | ID | Hostname | Tailscale FQDN | OS | Model | Specs | Status |
 |----|----------|----------------|----|-------|-------|--------|
 | `ecogrid` | ecogrid | ecogrid.oryx-coho.ts.net | Debian 13 ("Trixie") | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
-| `runner1` | megalith | megalith.oryx-coho.ts.net | Fedora 44 | [Custom Build](https://www.asrock.com/MB/AMD/B650E%20Taichi/index.asp) | AMD Ryzen 9 7900<br/>64 GB DDR5 RAM | active |
+| `runner1` | blacksmith | blacksmith.oryx-coho.ts.net | Debian 13 | ThinkCentre M720q | Intel i9-9900T<br/>64 GB DDR4 RAM | active |
 | `runner2` | microlith | microlith.oryx-coho.ts.net | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
 | `github` | GitHub | — | — | — | — | active |
 

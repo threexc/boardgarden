@@ -12,8 +12,7 @@ machines:
     label: "ecogrid"
     hide_tailnet: true
     role:
-      - "Labgrid Coordinator"
-      - "Labgrid Exporters"
+      - "Labgrid"
       - "Forgejo"
       - "TFTP Server"
       - "Test Results"
@@ -51,19 +50,18 @@ machines:
         role: Serves kernel/DTB/initramfs/wic images to boards; migrated from ecovault (same paths, users, permissions)
 
   - id: runner1
-    label: "megalith"
+    label: "blacksmith"
     hide_tailnet: true
     role:
       - "Forgejo Runner (Large)"
-    tailscale_name: megalith
-    os: Fedora 44
+    tailscale_name: blacksmith
+    os: Debian 13
     hardware:
       hide_details: true
-      model: Custom Build
-      url: https://www.asrock.com/MB/AMD/B650E%20Taichi/index.asp
+      model: ThinkCentre M720q
       specs:
-        - AMD Ryzen 9 7900
-        - 64 GB DDR5 RAM
+        - Intel i9-9900T
+        - 64 GB DDR4 RAM
 
   - id: runner2
     label: "microlith"
