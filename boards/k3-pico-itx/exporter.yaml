@@ -12,6 +12,6 @@ bf-k3-pico-itx:
     pin: 0
   k3-pico-itx-tftp-1:
     cls: 'RemoteTFTPProvider'
-    host: '192.168.40.134'
+    host: '192.168.40.101'
     internal: '/srv/tftp/k3-pico-itx/'
     external: 'k3-pico-itx/'
