@@ -136,7 +136,7 @@ jobs:
       options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
-        VERSION: 7.0
+        VERSION: 7.2
     steps:
       - uses: actions/checkout@v4
       - uses: ./.forgejo/actions/run-board-tests
