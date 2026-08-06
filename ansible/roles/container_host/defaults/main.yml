@@ -1,0 +1,12 @@
+---
+# Existing bare-metal user that already owns the report tree and holds
+# REPORT_SSH_KEY. The container runs as this UID/GID so file ownership on
+# /testresults doesn't change.
+testresults_reporter_user: reporter
+
+testresults_path: /testresults
+testresults_nginx_conf_dir: /etc/testresults-nginx
+testresults_nginx_image: docker.io/nginxinc/nginx-unprivileged:1.27-alpine
+# Host-side published port; the container always listens on 8080 internally
+# (the nginx-unprivileged image's default, unrelated to this value).
+testresults_nginx_port: 8080

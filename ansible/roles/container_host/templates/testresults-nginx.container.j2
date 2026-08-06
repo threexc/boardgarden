@@ -1,0 +1,19 @@
+[Unit]
+Description=Testresults file server (nginx)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image={{ testresults_nginx_image }}
+ContainerName=testresults-nginx
+User={{ testresults_reporter_uid.stdout }}:{{ testresults_reporter_gid.stdout }}
+PublishPort={{ testresults_nginx_port }}:8080
+Volume={{ testresults_path }}:/usr/share/nginx/html:ro,Z
+Volume={{ testresults_nginx_conf_dir }}/testresults-nginx.conf:/etc/nginx/conf.d/default.conf:ro,Z
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target default.target

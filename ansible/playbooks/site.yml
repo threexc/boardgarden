@@ -1,0 +1,6 @@
+---
+- name: Provision boardgarden container host
+  hosts: container_hosts
+  become: true
+  roles:
+    - container_host

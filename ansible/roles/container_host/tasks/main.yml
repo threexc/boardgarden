@@ -1,0 +1,59 @@
+---
+- name: Install podman
+  ansible.builtin.apt:
+    name: podman
+    state: present
+    update_cache: true
+
+- name: Look up existing reporter UID
+  ansible.builtin.command: id -u {{ testresults_reporter_user }}
+  register: testresults_reporter_uid
+  changed_when: false
+
+- name: Look up existing reporter GID
+  ansible.builtin.command: id -g {{ testresults_reporter_user }}
+  register: testresults_reporter_gid
+  changed_when: false
+
+- name: Ensure testresults directory exists with expected ownership
+  ansible.builtin.file:
+    path: "{{ testresults_path }}"
+    state: directory
+    owner: "{{ testresults_reporter_user }}"
+    group: "{{ testresults_reporter_user }}"
+    mode: "0755"
+
+- name: Ensure nginx config directory exists
+  ansible.builtin.file:
+    path: "{{ testresults_nginx_conf_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy nginx config
+  ansible.builtin.template:
+    src: testresults-nginx.conf.j2
+    dest: "{{ testresults_nginx_conf_dir }}/testresults-nginx.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart testresults-nginx
+
+- name: Deploy testresults-nginx Quadlet unit
+  ansible.builtin.template:
+    src: testresults-nginx.container.j2
+    dest: /etc/containers/systemd/testresults-nginx.container
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart testresults-nginx
+
+- name: Ensure testresults-nginx service is enabled and started
+  ansible.builtin.systemd:
+    name: testresults-nginx.service
+    enabled: true
+    state: started
+    daemon_reload: true

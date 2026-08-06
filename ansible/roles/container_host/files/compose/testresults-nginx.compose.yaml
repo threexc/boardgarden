@@ -1,0 +1,18 @@
+# Manual fallback for hosts not managed by the ansible/ playbook (e.g. plain
+# Docker instead of Podman). Set TESTRESULTS_UID/TESTRESULTS_GID to the
+# existing `reporter` user's ids so file ownership stays consistent.
+#
+# Usage:
+#   TESTRESULTS_UID=$(id -u reporter) TESTRESULTS_GID=$(id -g reporter) \
+#     docker compose -f testresults-nginx.compose.yaml up -d
+services:
+  testresults-nginx:
+    image: docker.io/nginxinc/nginx-unprivileged:1.27-alpine
+    container_name: testresults-nginx
+    user: "${TESTRESULTS_UID}:${TESTRESULTS_GID}"
+    restart: unless-stopped
+    ports:
+      - "${TESTRESULTS_PORT:-8080}:8080"
+    volumes:
+      - ${TESTRESULTS_PATH:-/testresults}:/usr/share/nginx/html:ro
+      - ./testresults-nginx.conf:/etc/nginx/conf.d/default.conf:ro
