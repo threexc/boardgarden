@@ -12,6 +12,7 @@ tgamblin's boardfarm repo, built for testing RISC-V development boards with [Lab
   - [.forgejo](#forgejo)
   - [boards](#boards)
   - [systemd_services](#systemd-services)
+  - [ansible](#ansible)
   - [udev](#udev)
   - [workbench](#workbench)
 
@@ -128,6 +129,13 @@ reference.
 Unit files for running the Labgrid coordinator and exporter processes on one
 or more systems. See [systemd_services/README.md](systemd_services/README.md)
 for install steps and configuration.
+
+### ansible
+
+Provisioning for boardgarden's container hosts — the start of migrating
+bare-metal services (tftpd-hpa, the report file server, the Labgrid
+coordinator, Forgejo) to containers, one service at a time. See
+[ansible/README.md](ansible/README.md).
 
 ### udev
 
