@@ -163,4 +163,3 @@ jobs:
           tftp_server: ${{ env.TFTP_SERVER }}
           tftp_user: ${{ env.TFTP_USER }}
           lg_coordinator: ${{ vars.LG_COORDINATOR_HOST }}
-          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
