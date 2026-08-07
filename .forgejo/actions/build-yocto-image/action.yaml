@@ -22,7 +22,7 @@ inputs:
     required: false
     default: 'none'
   boardgarden_owner:
-    description: 'Owner/org of the mirrored boardgarden + bitbake repos'
+    description: 'Owner/org of the mirrored bitbake repo'
     required: true
 
 outputs:
@@ -42,20 +42,20 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: set up bitbake, workflows
+    - name: set up bitbake
       shell: bash
       env:
         BOARDGARDEN_OWNER: ${{ inputs.boardgarden_owner }}
       run: |
         locale-gen en_US.UTF-8
         export LANG=en_US.UTF-8
-        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/boardgarden.git"
         git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/bitbake.git"
 
     - name: configure bitbake and layers
       uses: ./.forgejo/actions/bitbake-setup
       with:
-        config_json: boardgarden/.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+        config_json: .forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+        overrides_dir: .forgejo/bitbake-configs
         positions: |
           nodistro
           machine/${{ inputs.machine }}
@@ -85,7 +85,7 @@ runs:
         # rather than a full disk/wic image, also need the initramfs image built,
         # with its debug module enabled so a shell bootarg can drop to a shell.
         BOARD="${RISCV_MACHINE%-mainline}"
-        BOARD_YAML="$GITHUB_WORKSPACE/boardgarden/boards/${BOARD}/board.yaml"
+        BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         HAS_INITRAMFS="false"
         if [ -f "${BOARD_YAML}" ] && grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
           HAS_INITRAMFS="true"
@@ -143,7 +143,7 @@ runs:
         IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
       run: |
         BOARD="${RISCV_MACHINE%-mainline}"
-        BOARD_YAML="$GITHUB_WORKSPACE/boardgarden/boards/${BOARD}/board.yaml"
+        BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         if [ ! -f "${BOARD_YAML}" ] || ! grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
           exit 0
         fi
