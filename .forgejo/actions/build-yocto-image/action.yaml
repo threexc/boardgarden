@@ -35,6 +35,9 @@ outputs:
   deploy_wic:
     description: 'Whether the machine has wic flash artifacts worth deploying'
     value: ${{ steps.locate.outputs.deploy_wic }}
+  kernel_version:
+    description: 'KERNEL_VERSION of the built kernel (matches `uname -r` on target)'
+    value: ${{ steps.kernel_version.outputs.kernel_version }}
 
 runs:
   using: composite
@@ -94,6 +97,23 @@ runs:
         if [ "${HAS_INITRAMFS}" = "true" ]; then
           bitbake ${RISCV_INITRAMFS_IMAGE}
         fi
+
+    - name: get kernel version
+      id: kernel_version
+      shell: bash
+      run: |
+        . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+
+        # KERNEL_VERSION is read from the kernel tree's own release file
+        # (populated by the kernel build itself), so it's the exact string
+        # the target's `uname -r` will report - unlike DISTRO/image version
+        # numbers, it tracks kernel recipe upgrades automatically.
+        KERNEL_VERSION=$(bitbake -e virtual/kernel | grep '^KERNEL_VERSION=' | cut -d'"' -f2)
+        if [ -z "${KERNEL_VERSION}" ]; then
+          echo "::error::Could not determine KERNEL_VERSION"
+          exit 1
+        fi
+        echo "kernel_version=${KERNEL_VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: locate and verify images deploy directory
       id: locate
