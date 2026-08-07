@@ -32,9 +32,6 @@ inputs:
   lg_coordinator:
     description: 'Hostname of the labgrid coordinator/exporter'
     required: true
-  boardgarden_owner:
-    description: 'Owner/org of the mirrored boardgarden repo'
-    required: true
   reports_root:
     description: 'Subdirectory prefix under /testresults/ on the report server'
     required: false
@@ -66,25 +63,11 @@ runs:
         EOF
         chmod 600 ~/.ssh/config
 
-    - name: clone boardgarden
-      shell: bash
-      working-directory: /home/labgrid
-      env:
-        BOARDGARDEN_OWNER: ${{ inputs.boardgarden_owner }}
-      run: |
-        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/boardgarden.git"
-
     - name: install uv
-      shell: bash
-      working-directory: /home/labgrid
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-
-    - name: run uv sync
-      shell: bash
-      working-directory: /home/labgrid/boardgarden
-      run: |
-        uv sync
+      uses: astral-sh/setup-uv@v5
+      with:
+        working-directory: ${{ github.workspace }}
+        enable-cache: true
 
     - name: Fetch latest rootfs
       if: inputs.machine == 'bananapi-f3'
@@ -109,10 +92,11 @@ runs:
 
     - name: run labgrid-client
       shell: bash
-      working-directory: /home/labgrid/boardgarden
+      working-directory: ${{ github.workspace }}
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
       run: |
+        uv sync
         eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
         BOARD="${RISCV_MACHINE%-mainline}"
         LG_PLACE="bf-${BOARD}"
@@ -159,5 +143,5 @@ runs:
         REPORT_DIR="${REPORTS_ROOT}/${RISCV_MACHINE}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
         ssh -i ~/.ssh/id_rsa_report "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
         rsync -av -e "ssh -i ~/.ssh/id_rsa_report" \
-          /home/labgrid/boardgarden/report.html \
+          "${{ github.workspace }}/report.html" \
           "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
