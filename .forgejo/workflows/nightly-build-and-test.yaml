@@ -90,11 +90,11 @@ jobs:
           image: ${{ inputs.image || 'core-image-minimal' }}
           images_path: ${{ steps.build.outputs.images_path }}
           deploy_wic: ${{ steps.build.outputs.deploy_wic }}
-      # Marks this specific matrix entry as a successful build, only if the
-      # build succeeded. Matrix job outputs can't be aggregated directly, but
-      # artifacts can.
-      - name: mark build success
-        run: echo ok > /tmp/build-ok
+      # Marks this specific matrix entry as a successful build and records the
+      # kernel version it produced, only if the build succeeded. Matrix job
+      # outputs can't be aggregated directly, but artifacts can.
+      - name: record build success and kernel version
+        run: echo "${{ steps.build.outputs.kernel_version }}" > /tmp/build-ok
       - uses: actions/upload-artifact@v3
         with:
           name: built-machine-${{ matrix.machine }}
@@ -107,6 +107,7 @@ jobs:
     runs-on: tgamblin-maintenance
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
+      versions: ${{ steps.collect.outputs.versions }}
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -114,16 +115,28 @@ jobs:
       - id: collect
         run: |
           set -euo pipefail
-          MATRIX=$(
-            {
-              for d in built-machines/built-machine-*/; do
-                [ -d "$d" ] || continue
-                basename "$d" | sed 's/^built-machine-//'
-              done
-            } | sort -u | awk 'BEGIN{printf "["} {if(NR>1) printf ","; printf "\"%s\"", $0} END{printf "]"}'
-          )
+          MACHINES=""
+          VERSIONS="{"
+          FIRST=1
+          for d in built-machines/built-machine-*/; do
+            [ -d "$d" ] || continue
+            m=$(basename "$d" | sed 's/^built-machine-//')
+            v=$(cat "${d}build-ok")
+            if [ "$FIRST" -eq 1 ]; then
+              FIRST=0
+            else
+              MACHINES="${MACHINES},"
+              VERSIONS="${VERSIONS},"
+            fi
+            MACHINES="${MACHINES}\"${m}\""
+            VERSIONS="${VERSIONS}\"${m}\":\"${v}\""
+          done
+          MATRIX="[${MACHINES}]"
+          VERSIONS="${VERSIONS}}"
           echo "matrix=$MATRIX"
+          echo "versions=$VERSIONS"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   test:
     needs: [discover, collect_built_machines]
@@ -136,7 +149,7 @@ jobs:
       options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
-        VERSION: 7.2
+        VERSION: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.forgejo/actions/run-board-tests
