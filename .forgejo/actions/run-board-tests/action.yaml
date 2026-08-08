@@ -130,6 +130,7 @@ runs:
         exit $EXIT_CODE
 
     - name: install report SSH key
+      if: ${{ !cancelled() }}
       shell: bash
       env:
         REPORT_SSH_KEY: ${{ inputs.report_ssh_key }}
@@ -138,6 +139,7 @@ runs:
         printf '%s\n' "$REPORT_SSH_KEY" > ~/.ssh/id_rsa_report
 
     - name: Deploy internal reports
+      if: ${{ !cancelled() }}
       shell: bash
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
