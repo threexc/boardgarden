@@ -65,6 +65,10 @@ runs:
 
     - name: install uv
       uses: astral-sh/setup-uv@v5
+      env:
+        # /opt/hostedtoolcache is a runner-mounted volume owned by root,
+        # not the image's chown'd copy - redirect to a path labgrid owns.
+        RUNNER_TOOL_CACHE: /home/labgrid/hostedtoolcache
       with:
         working-directory: ${{ github.workspace }}
         enable-cache: true
