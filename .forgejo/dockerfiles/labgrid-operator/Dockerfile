@@ -36,5 +36,7 @@ ARG USER_UID=1500
 ARG USER_GID=1500
 RUN groupadd -g $USER_GID labgrid && useradd -m -u $USER_UID -g $USER_GID -s /bin/bash labgrid
 
+RUN mkdir -p /opt/hostedtoolcache && chown -R $USER_UID:$USER_GID /opt/hostedtoolcache
+
 USER labgrid
 WORKDIR /home/labgrid
