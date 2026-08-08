@@ -149,13 +149,13 @@ jobs:
       options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
-        VERSION: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.forgejo/actions/run-board-tests
         with:
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-minimal' }}
+          kernel_version: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
           lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
           tftp_server_ssh_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
