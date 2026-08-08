@@ -166,12 +166,14 @@ jobs:
             boards/qemuriscv64/pytest/test_ptests.py
 
       - name: install report SSH key
+        if: ${{ !cancelled() }}
         uses: ./.forgejo/actions/setup-ssh
         with:
           ssh_private_key: ${{ secrets.REPORT_SSH_KEY }}
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
       - name: Deploy report
+        if: ${{ !cancelled() }}
         run: |
           REPORT_DIR="yocto/oe-core/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
           RSH="ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=accept-new"
