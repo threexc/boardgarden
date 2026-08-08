@@ -11,6 +11,9 @@ inputs:
   image:
     description: 'Yocto image being tested (used only for report path)'
     required: true
+  kernel_version:
+    description: 'Expected kernel version string, checked against `uname -a` on target'
+    required: true
   lg_exporter_ssh_key:
     description: 'Private key for labgrid@<coordinator>'
     required: true
@@ -99,6 +102,7 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
+        VERSION: ${{ inputs.kernel_version }}
       run: |
         uv sync
         eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
