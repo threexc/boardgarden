@@ -98,23 +98,6 @@ runs:
           bitbake ${RISCV_INITRAMFS_IMAGE}
         fi
 
-    - name: get kernel version
-      id: kernel_version
-      shell: bash
-      run: |
-        . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
-
-        # KERNEL_VERSION is read from the kernel tree's own release file
-        # (populated by the kernel build itself), so it's the exact string
-        # the target's `uname -r` will report - unlike DISTRO/image version
-        # numbers, it tracks kernel recipe upgrades automatically.
-        KERNEL_VERSION=$(bitbake -e virtual/kernel | grep '^KERNEL_VERSION=' | cut -d'"' -f2)
-        if [ -z "${KERNEL_VERSION}" ]; then
-          echo "::error::Could not determine KERNEL_VERSION"
-          exit 1
-        fi
-        echo "kernel_version=${KERNEL_VERSION}" >> "$GITHUB_OUTPUT"
-
     - name: locate and verify images deploy directory
       id: locate
       shell: bash
@@ -134,6 +117,33 @@ runs:
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
         echo "board=${BOARD}" >> "$GITHUB_OUTPUT"
         echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
+
+    - name: get kernel version
+      id: kernel_version
+      shell: bash
+      env:
+        RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_MACHINE: ${{ inputs.machine }}
+        IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
+      run: |
+        # The rootfs manifest is (re)written fresh by every image build,
+        # unlike do_compile/do_shared_workdir which sstate skips whenever the
+        # kernel recipe hasn't changed. Its kernel package name embeds the
+        # real compiled version - e.g. "kernel-7.2.0-rc5" - independent of
+        # the kernel recipe's own PV scheme, which may not match at all
+        # (e.g. PV "7.2-rc5+git0+f5098b6bae-r0" for that same build).
+        MANIFEST="${IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs.manifest"
+        if [ ! -f "${MANIFEST}" ]; then
+          echo "::error::manifest not found: ${MANIFEST}"
+          exit 1
+        fi
+
+        KERNEL_VERSION=$(awk '$1 ~ /^kernel-[0-9]/ {print $1}' "${MANIFEST}" | sed 's/^kernel-//')
+        if [ -z "${KERNEL_VERSION}" ]; then
+          echo "::error::No kernel-<version> package found in ${MANIFEST}"
+          exit 1
+        fi
+        echo "kernel_version=${KERNEL_VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: package initramfs as U-Boot ramdisk image
       shell: bash
