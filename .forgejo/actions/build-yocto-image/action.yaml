@@ -42,14 +42,10 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: set up bitbake
+    - name: set up locale
       shell: bash
-      env:
-        BOARDGARDEN_OWNER: ${{ inputs.boardgarden_owner }}
       run: |
         locale-gen en_US.UTF-8
-        export LANG=en_US.UTF-8
-        git clone "${GITHUB_SERVER_URL}/${BOARDGARDEN_OWNER}/bitbake.git"
 
     - name: configure bitbake and layers
       uses: ./.forgejo/actions/bitbake-setup
@@ -60,6 +56,7 @@ runs:
           nodistro
           machine/${{ inputs.machine }}
         source_override: ${{ inputs.bitbake_setup_override }}
+        repo_owner: ${{ inputs.boardgarden_owner }}
 
     - name: build image
       shell: bash

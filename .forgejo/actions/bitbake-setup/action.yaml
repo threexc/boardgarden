@@ -1,5 +1,5 @@
 name: 'bitbake-setup'
-description: 'Initialise a bitbake build tree via ./bitbake/bin/bitbake-setup, with optional source override.'
+description: 'Initialise a bitbake build tree via ./bitbake-bbs/bin/bitbake-setup, with optional source override.'
 
 inputs:
   config_json:
@@ -21,11 +21,20 @@ inputs:
   bitbake_setup_bin:
     description: 'Path to the bitbake-setup binary.'
     required: false
-    default: './bitbake/bin/bitbake-setup'
+    default: './bitbake-bbs/bin/bitbake-setup'
+  repo_owner:
+    description: 'Owner/org of the mirrored bitbake repo, used to clone it.'
+    required: true
 
 runs:
   using: composite
   steps:
+    - name: clone bitbake
+      uses: ./.forgejo/actions/git-clone
+      with:
+        url: ${{ github.server_url }}/${{ inputs.repo_owner }}/bitbake.git
+        path: bitbake-bbs
+
     - name: bitbake-setup init
       shell: bash
       env:
