@@ -53,12 +53,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: clone bitbake
-        uses: ./.forgejo/actions/git-clone
-        with:
-          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/bitbake.git
-          path: bitbake
-
       - name: configure bitbake and layers
         uses: ./.forgejo/actions/bitbake-setup
         with:
@@ -68,6 +62,7 @@ jobs:
             distro/poky
             machine/${{ env.RISCV_MACHINE }}
           source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
+          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
       - name: build core-image-ptest image
         working-directory: /home/yoctouser/yocto-build
