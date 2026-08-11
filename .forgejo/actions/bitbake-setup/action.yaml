@@ -25,12 +25,21 @@ inputs:
   repo_owner:
     description: 'Owner/org of the mirrored bitbake repo, used to clone it.'
     required: true
+  working_directory:
+    description: >-
+      Directory to clone bitbake and run bitbake-setup in (config_json,
+      overrides_dir, and bitbake_setup_bin are resolved relative to it).
+      Needed because "working-directory" on the caller's step is ignored
+      for "uses" steps.
+    required: false
+    default: '.'
 
 runs:
   using: composite
   steps:
     - name: clone bitbake
       shell: bash
+      working-directory: ${{ inputs.working_directory }}
       env:
         REPO_OWNER: ${{ inputs.repo_owner }}
       run: |
@@ -39,6 +48,7 @@ runs:
 
     - name: bitbake-setup init
       shell: bash
+      working-directory: ${{ inputs.working_directory }}
       env:
         CONFIG_JSON: ${{ inputs.config_json }}
         POSITIONS: ${{ inputs.positions }}
