@@ -12,7 +12,7 @@ bf-bananapi-f3:
     pin: 0
   bananapi-f3-tftp-1:
     cls: 'RemoteTFTPProvider'
-    host: '192.168.40.101'
+    host: '192.168.40.166'
     internal: '/srv/tftp/bananapi-f3/'
     external: 'bananapi-f3/'
   bananapi-f3-sdmux-1:

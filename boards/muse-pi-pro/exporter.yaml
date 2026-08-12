@@ -12,6 +12,6 @@ bf-muse-pi-pro:
     pin: 0
   muse-pi-pro-tftp-1:
     cls: 'RemoteTFTPProvider'
-    host: '192.168.40.101'
+    host: '192.168.40.166'
     internal: '/srv/tftp/muse-pi-pro/'
     external: 'muse-pi-pro/'
