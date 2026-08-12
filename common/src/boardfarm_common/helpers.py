@@ -17,7 +17,7 @@ default_bootargs = (
     "systemd.journald.storage=volatile "
 )
 
-default_serverip = "192.168.40.101"
+default_serverip = "192.168.40.166"
 
 
 def uboot_stage(strategy):
