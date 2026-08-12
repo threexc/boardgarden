@@ -32,9 +32,9 @@ Set these in Settings → Actions → Variables.
 | `BOARDGARDEN_HOST` | `forgejo.example.ts.net` | Hostname of the Forgejo container registry (no scheme) |
 | `BOARDGARDEN_OWNER` | `tgamblin` | Owner/org of the `boardgarden`, `bitbake`, `openembedded-core`, `meta-riscv` mirrors |
 | `LG_COORDINATOR_HOST` | `ecogrid` | Short hostname of the Labgrid coordinator (also the exporter host). Used as `LG_COORDINATOR`, ssh target, and left half of `--add-host` |
-| `LG_COORDINATOR_IP` | `192.168.40.101` | LAN address for the coordinator. Right half of `--add-host` |
+| `LG_COORDINATOR_IP` | `192.168.40.166` | LAN address for the coordinator. Right half of `--add-host` |
 | `TFTP_SERVER_HOST` | `ecogrid` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid coordinator/exporter on `ecogrid` for now; may separate |
-| `TFTP_SERVER_IP` | `192.168.40.101` | LAN address for the TFTP server. Right half of `--add-host` |
+| `TFTP_SERVER_IP` | `192.168.40.166` | LAN address for the TFTP server. Right half of `--add-host` |
 
 ## Repo secrets
 
