@@ -19,6 +19,7 @@ tftp:
   initramfs: uRamdisk
 
 uboot:
+  autoboot: 'Hit any key to stop autoboot'
   tftp_cmd: booti $kernel_addr_r $ramdisk_addr:$filesize $dtb_addr
 
 shell:
