@@ -10,8 +10,10 @@ inherits:
 boot:
   method: tftp
   bootargs: console=ttyS0,115200 shell
-  dtb_addr: $dtb_addr
-  ramdisk_addr: $ramdisk_addr
+  # Armbian U-Boot uses $fdt_addr_r/$ramdisk_addr_r; $dtb_addr/$ramdisk_addr
+  # both fall back to the same default there and overlap the kernel.
+  dtb_addr: $fdt_addr_r
+  ramdisk_addr: $ramdisk_addr_r
 
 tftp:
   subdir: muse-pi-pro
@@ -20,7 +22,7 @@ tftp:
 
 uboot:
   autoboot: 'Hit any key to stop autoboot'
-  tftp_cmd: booti $kernel_addr_r $ramdisk_addr:$filesize $dtb_addr
+  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
 
 shell:
   username: root
