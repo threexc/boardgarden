@@ -22,7 +22,7 @@ targets:
             provider: 'muse-pi-pro-tftp-1'
       - UBootDriver:
           prompt: '=> '
-          autoboot: 'Autoboot in 5 seconds'
+          autoboot: 'Hit any key to stop autoboot'
           interrupt: 's'
           name: 'muse-pi-pro-uboot-1'
           boot_commands:
