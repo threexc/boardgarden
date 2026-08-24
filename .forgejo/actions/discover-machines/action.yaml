@@ -1,9 +1,10 @@
 name: 'Discover machines'
 description: >
   Emit a JSON array of Yocto MACHINE names, derived from boards/*/board.yaml.
-  Excludes qemu-strategy boards and any board dir lacking a strategy.py file
-  (config-only entries with no boot logic). Reads the required 'yocto_machine'
-  field from each board manifest. Uses only awk + sort (no jq dependency).
+  Excludes qemu-strategy boards, any board dir lacking a strategy.py file
+  (config-only entries with no boot logic), and any board.yaml setting
+  `exclude_from_nightly: true`. Reads the required 'yocto_machine' field from
+  each board manifest. Uses only awk + sort (no jq dependency).
 
 outputs:
   matrix:
@@ -24,6 +25,8 @@ runs:
               [ -f "$dir/strategy.py" ] || continue
               strategy=$(awk -F: '/^strategy:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
               [ "$strategy" = "qemu" ] && continue
+              exclude=$(awk -F: '/^exclude_from_nightly:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+              [ "$exclude" = "true" ] && continue
               machine=$(awk -F: '/^yocto_machine:/ {gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
               if [ -z "$machine" ]; then
                 echo "::error file=$f::missing required 'yocto_machine' field" >&2
