@@ -1,0 +1,21 @@
+[Unit]
+Description=TFTP server (tftpd-hpa)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image={{ container_host_tftpd_hpa_image_tag }}
+ContainerName=tftpd-hpa
+# TFTP replies come from an ephemeral port back to the client's ephemeral
+# port (no control channel) — host networking avoids the NAT asymmetry a
+# published port would introduce. Boards already dial ecogrid's real LAN IP
+# directly (boards/*/exporter.yaml, helpers.py default_serverip).
+Network=host
+Volume={{ container_host_tftp_root }}:/srv/tftp:ro,Z
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target default.target

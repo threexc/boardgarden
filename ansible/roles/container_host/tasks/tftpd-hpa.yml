@@ -1,0 +1,64 @@
+---
+- name: Look up existing tftp UID
+  ansible.builtin.command: id -u {{ container_host_tftp_user }}
+  register: container_host_tftp_uid
+  changed_when: false
+
+- name: Look up existing tftp GID
+  ansible.builtin.command: id -g {{ container_host_tftp_user }}
+  register: container_host_tftp_gid
+  changed_when: false
+
+- name: Ensure tftp root directory exists with expected ownership
+  ansible.builtin.file:
+    path: "{{ container_host_tftp_root }}"
+    state: directory
+    owner: "{{ container_host_tftp_user }}"
+    group: "{{ container_host_tftp_user }}"
+    mode: "0755"
+
+- name: Ensure tftpd-hpa build context directory exists
+  ansible.builtin.file:
+    path: "{{ container_host_tftpd_hpa_build_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy tftpd-hpa Dockerfile
+  ansible.builtin.copy:
+    src: tftpd-hpa/Dockerfile
+    dest: "{{ container_host_tftpd_hpa_build_dir }}/Dockerfile"
+    owner: root
+    group: root
+    mode: "0644"
+  register: container_host_tftpd_hpa_dockerfile
+
+- name: Build tftpd-hpa image
+  containers.podman.podman_image:
+    name: "{{ container_host_tftpd_hpa_image_tag }}"
+    path: "{{ container_host_tftpd_hpa_build_dir }}"
+    force: "{{ container_host_tftpd_hpa_dockerfile.changed }}"
+    build:
+      extra_args: >-
+        --build-arg TFTP_UID={{ container_host_tftp_uid.stdout }}
+        --build-arg TFTP_GID={{ container_host_tftp_gid.stdout }}
+  notify: Restart tftpd-hpa
+
+- name: Deploy tftpd-hpa Quadlet unit
+  ansible.builtin.template:
+    src: tftpd-hpa.container.j2
+    dest: /etc/containers/systemd/tftpd-hpa.container
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart tftpd-hpa
+
+- name: Ensure tftpd-hpa service is enabled and started
+  ansible.builtin.systemd:
+    name: tftpd-hpa.service
+    enabled: true
+    state: started
+    daemon_reload: true

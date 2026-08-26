@@ -7,3 +7,8 @@
   ansible.builtin.systemd:
     name: testresults-nginx.service
     state: restarted
+
+- name: Restart tftpd-hpa
+  ansible.builtin.systemd:
+    name: tftpd-hpa.service
+    state: restarted

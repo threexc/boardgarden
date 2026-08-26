@@ -1,9 +1,17 @@
 # ansible
 
-Provisioning for boardgarden's container hosts. So far this only covers the
-**testresults file server** (nginx serving `/testresults` over HTTP), since it
-has no live dependents and is the lowest-risk place to prove out the container +
-Ansible mechanics.
+Provisioning for boardgarden's container hosts. So far this covers:
+
+- the **testresults file server** (nginx serving `/testresults` over HTTP) —
+  no live dependents, lowest-risk place to prove out the container + Ansible
+  mechanics.
+- **tftpd-hpa** — live in CI (`deploy-to-tftp`, `run-board-tests`), built
+  locally on the target from a thin custom image since no maintained
+  upstream tftpd-hpa image exists. Entrypoint flags
+  (`--secure --user tftp --address :69`) assume the stock Debian
+  `/etc/default/tftpd-hpa` defaults from the ecovault → ecogrid migration —
+  diff against the real file on ecogrid before relying on this in
+  production.
 
 ## Why Podman + Quadlet
 
@@ -32,19 +40,25 @@ directly — see the usage comment at the top of
 ## Usage
 
 ```bash
-cp inventory.example.ini inventory.ini   # edit to point at your host(s)
-ansible-playbook playbooks/site.yml --ask-become-pass -e testresults_nginx_port=<port_number>
+ansible-galaxy collection install -r requirements.yml   # containers.podman, for building the tftpd-hpa image
+cp inventory.example.ini inventory.ini                  # edit to point at your host(s)
+ansible-playbook playbooks/site.yml --ask-become-pass -e container_host_testresults_nginx_port=<port_number>
 ```
 
-Requires the `reporter` system user and `/testresults` directory to already
-exist on the target host (same ones used by the bare-metal report upload
-path documented in [docs/runners.md](../docs/runners.md)). This role reads
-that user's UID/GID rather than creating a new one, so existing SSH keys and
-file ownership stay valid.
+Requires the `reporter` and `tftp` system users, and the `/testresults` and
+`/srv/tftp` directories, to already exist on the target host (same ones used
+by the bare-metal report/TFTP paths documented in
+[docs/runners.md](../docs/runners.md)). This role reads those users'
+UID/GID rather than creating new ones, so existing SSH keys and file
+ownership stay valid.
 
 ## Layout
 
-- `roles/container_host/` installs Podman, deploys the Quadlet unit +
-  nginx config, enables the service.
+- `roles/container_host/` installs Podman, builds/deploys each service's
+  Quadlet unit, enables the service. Tasks are split one file per service
+  (`tasks/testresults.yml`, `tasks/tftpd-hpa.yml`) since more services
+  (Labgrid coordinator, Forgejo) are still coming.
 - `roles/container_host/files/compose/` provides static Docker/podman-compose
   fallback (not applied by this playbook).
+- All role variables are prefixed `container_host_` (ansible-lint
+  `var-naming[no-role-prefix]`).
