@@ -9,10 +9,22 @@ on:
 
 jobs:
   build-container-images:
-    name: Build and push image
+    name: Build and push ${{ matrix.name }}
     runs-on: tgamblin-maintenance
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: yocto-builder
+            dockerfile: ./.forgejo/dockerfiles/yocto-builder/Dockerfile
+          - name: container-builder
+            dockerfile: ./.forgejo/dockerfiles/container-builder/Dockerfile
+          - name: lg-operator
+            dockerfile: ./.forgejo/dockerfiles/labgrid-operator/Dockerfile
+          - name: kernel-builder
+            dockerfile: ./.forgejo/dockerfiles/kernel-builder/Dockerfile
 
     steps:
     - name: Checkout
@@ -47,42 +59,12 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_TOKEN }}
 
-    - name: Build and push yocto-builder
+    - name: Build and push ${{ matrix.name }}
       uses: docker/build-push-action@v5
       with:
         context: ./.forgejo/dockerfiles
-        file: ./.forgejo/dockerfiles/yocto-builder/Dockerfile
+        file: ${{ matrix.dockerfile }}
         push: true
         platforms: linux/amd64
         tags: |
-          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:latest
-
-    - name: Build and push container-builder
-      uses: docker/build-push-action@v5
-      with:
-        context: ./.forgejo/dockerfiles
-        file: ./.forgejo/dockerfiles/container-builder/Dockerfile
-        push: true
-        platforms: linux/amd64
-        tags: |
-          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder:latest
-
-    - name: Build and push lg-operator
-      uses: docker/build-push-action@v5
-      with:
-        context: ./.forgejo/dockerfiles
-        file: ./.forgejo/dockerfiles/labgrid-operator/Dockerfile
-        push: true
-        platforms: linux/amd64
-        tags: |
-          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:latest
-
-    - name: Build and push kernel-builder
-      uses: docker/build-push-action@v5
-      with:
-        context: ./.forgejo/dockerfiles
-        file: ./.forgejo/dockerfiles/kernel-builder/Dockerfile
-        push: true
-        platforms: linux/amd64
-        tags: |
-          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/kernel-builder:latest
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/${{ matrix.name }}:latest
