@@ -3,34 +3,29 @@ yocto_machine: k3-pico-itx
 strategy: tftp
 description: K3 Pico-ITX (SpacemiT K1) RISC-V SBC
 remote_place: bf-k3-pico-itx
-image_source: bianbu
+image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml
 
 boot:
   method: tftp
-  # Copied from muse-pi-pro; adjust if K3 rootfs partition differs.
-  bootargs: >
-    console=ttyS0,115200n8
-    earlyprintk
-    loglevel=7
-    root=/dev/mmcblk0p6
-    rootfstype=ext4
-    rootwait
-    swiotlb=65536
-    workqueue.default_affinity_scope=system
+  bootargs: console=ttyS0,115200 shell
+  dtb_addr: $fdt_addr_r
+  ramdisk_addr: $ramdisk_addr_r
 
 tftp:
-  # TODO: verify subdir + dtb filename. strategy.py previously pointed at
-  # "muse-pi-pro" / "k1-musepi-pro.dtb" (bug from copy-paste).
   subdir: k3-pico-itx
-  dtb: k1-k3-pico-itx.dtb
+  dtb: k3-pico-itx.dtb
+  initramfs: uRamdisk
 
 uboot:
-  tftp_cmd: booti $kernel_addr_r - $dtb_addr
+  autoboot: 'Autoboot in 5 seconds'
+  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
 
 shell:
   username: root
-  password: bianbu
+  password: null
+  # initramfs-module-debug drops straight to a busybox shell, no login prompt.
+  prompt: '~ #\s*'
 
 strategy_class: K3PicoItxBootStrategy
