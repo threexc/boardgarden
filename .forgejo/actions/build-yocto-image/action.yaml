@@ -142,7 +142,7 @@ runs:
         fi
         echo "kernel_version=${KERNEL_VERSION}" >> "$GITHUB_OUTPUT"
 
-    - name: package initramfs as U-Boot ramdisk image
+    - name: deploy raw initramfs cpio.gz as uRamdisk
       shell: bash
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
@@ -155,9 +155,11 @@ runs:
           exit 0
         fi
 
-        # booti can't load a raw cpio.gz as a ramdisk directly - it needs the
-        # mkimage/uImage header so U-Boot knows how to unpack it.
+        # boot_cmd uses $ramdisk_addr_r:$filesize (explicit size), which
+        # skips legacy-uImage header auto-detection in U-Boot - it loads
+        # whatever's at that address raw. So deploy the raw cpio.gz as-is;
+        # a mkimage/uImage-wrapped ramdisk here just leaves its header
+        # unstripped in front of the data the kernel tries to unpack.
         IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
         CPIO_GZ="${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.cpio.gz"
-        mkimage -A riscv -O linux -T ramdisk -C gzip \
-          -d "${CPIO_GZ}" "${IMAGE_DIR}/uRamdisk"
+        cp "${CPIO_GZ}" "${IMAGE_DIR}/uRamdisk"
