@@ -154,7 +154,6 @@ jobs:
       - uses: ./.forgejo/actions/run-board-tests
         with:
           machine: ${{ matrix.machine }}
-          image: ${{ inputs.image || 'core-image-minimal' }}
           kernel_version: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
           lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
           tftp_server_ssh_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
