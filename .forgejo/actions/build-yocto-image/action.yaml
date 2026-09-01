@@ -59,7 +59,6 @@ runs:
         repo_owner: ${{ inputs.boardgarden_owner }}
 
     - name: build image
-      id: build_image
       shell: bash
       env:
         RISCV_IMAGE: ${{ inputs.image }}
@@ -98,7 +97,6 @@ runs:
         fi
 
         bitbake ${EFFECTIVE_IMAGE}
-        echo "effective_image=${EFFECTIVE_IMAGE}" >> "$GITHUB_OUTPUT"
 
     - name: locate and verify images deploy directory
       id: locate
@@ -125,27 +123,30 @@ runs:
       id: kernel_version
       shell: bash
       env:
-        RISCV_IMAGE: ${{ steps.build_image.outputs.effective_image }}
         RISCV_MACHINE: ${{ inputs.machine }}
         IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
       run: |
-        # The rootfs manifest is (re)written fresh by every image build,
-        # unlike do_compile/do_shared_workdir which sstate skips whenever the
-        # kernel recipe hasn't changed. Its kernel package name embeds the
-        # real compiled version - e.g. "kernel-7.2.0-rc5" - independent of
-        # the kernel recipe's own PV scheme, which may not match at all
-        # (e.g. PV "7.2-rc5+git0+f5098b6bae-r0" for that same build).
-        MANIFEST="${IMAGES_PATH}/${RISCV_MACHINE}/${RISCV_IMAGE}-${RISCV_MACHINE}.rootfs.manifest"
-        if [ ! -f "${MANIFEST}" ]; then
-          echo "::error::manifest not found: ${MANIFEST}"
+        # The kernel's do_deploy always drops Image[.ext]--<version>-<machine>-<datetime>.bin
+        # (KERNEL_IMAGETYPE varies by BSP - Image, Image.gz, etc.) alongside the dtb,
+        # regardless of which image recipe pulled virtual/kernel in - unlike a rootfs
+        # manifest, which initramfs images don't write at all, or a modules tarball,
+        # which isn't deployed when the kernel has no loadable modules. Its embedded
+        # version - e.g. "7.2.2+git0+52c36105f7-r0" - comes straight from the deploy
+        # filename rather than the kernel recipe's own PV, which may not agree at all
+        # across builds of the same source.
+        IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
+        shopt -s nullglob
+        CANDIDATES=("${IMAGE_DIR}"/Image*--*-"${RISCV_MACHINE}"-*.bin)
+        shopt -u nullglob
+        if [ ${#CANDIDATES[@]} -eq 0 ]; then
+          echo "::error::no Image*--*-${RISCV_MACHINE}-*.bin found in ${IMAGE_DIR}"
           exit 1
         fi
 
-        KERNEL_VERSION=$(awk '$1 ~ /^kernel-[0-9]/ {print $1}' "${MANIFEST}" | sed 's/^kernel-//')
-        if [ -z "${KERNEL_VERSION}" ]; then
-          echo "::error::No kernel-<version> package found in ${MANIFEST}"
-          exit 1
-        fi
+        BASENAME=$(basename "${CANDIDATES[0]}")
+        KERNEL_VERSION="${BASENAME#Image*--}"
+        KERNEL_VERSION="${KERNEL_VERSION%-${RISCV_MACHINE}-*.bin}"
+        KERNEL_VERSION="${KERNEL_VERSION%%+*}"
         echo "kernel_version=${KERNEL_VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: deploy raw initramfs cpio.gz as uRamdisk
