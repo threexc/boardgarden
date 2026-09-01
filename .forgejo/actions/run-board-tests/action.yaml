@@ -8,9 +8,6 @@ inputs:
   machine:
     description: 'Full Yocto MACHINE value (may include -mainline suffix)'
     required: true
-  image:
-    description: 'Yocto image being tested (used only for report path)'
-    required: true
   kernel_version:
     description: 'Expected kernel version string, checked against `uname -a` on target'
     required: true
@@ -77,7 +74,6 @@ runs:
         enable-cache: true
 
     - name: Fetch latest rootfs
-      if: inputs.machine == 'bananapi-f3'
       shell: bash
       working-directory: /home/labgrid
       env:
@@ -86,6 +82,11 @@ runs:
         TFTP_SERVER: ${{ inputs.tftp_server }}
       run: |
         BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD_YAML="${GITHUB_WORKSPACE}/boards/${BOARD}/board.yaml"
+        if [ ! -f "${BOARD_YAML}" ] || ! grep -q '^strategy:[[:space:]]*sdmux' "${BOARD_YAML}"; then
+          exit 0
+        fi
+
         LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp \
           ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
         LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp \
