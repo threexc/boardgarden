@@ -1,0 +1,21 @@
+bf-milkv-duo256m:
+  location: ecoforge
+  milkv-duo256m-serial-port-1:
+    cls: 'USBSerialPort'
+    match:
+      '@ID_SERIAL_SHORT': 'EUANb147613'
+  milkv-duo256m-power-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'DU0ET82D'
+    pin: 0
+  milkv-duo256m-tftp-1:
+    cls: 'RemoteTFTPProvider'
+    host: '192.168.40.166'
+    internal: '/srv/tftp/milkv-duo256m/'
+    external: 'milkv-duo256m/'
+  milkv-duo256m-sdmux-1:
+    cls: 'USBSDMuxDevice'
+    match:
+      ID_SERIAL_SHORT: '000000001473'

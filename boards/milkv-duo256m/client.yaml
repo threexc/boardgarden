@@ -1,0 +1,47 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: bf-milkv-duo256m
+    drivers:
+      - SerialDriver:
+          name: 'milkv-duo256m-console-1'
+          bindings:
+            port: 'milkv-duo256m-serial-port-1'
+      - GpioDigitalOutputDriver:
+          name: 'milkv-duo256m-power-gpio-1'
+          bindings:
+            gpio: 'milkv-duo256m-power-gpio-1'
+      - DigitalOutputPowerDriver:
+          name: 'milkv-duo256m-power-1'
+          bindings:
+            output: 'milkv-duo256m-power-gpio-1'
+      - USBStorageDriver:
+          image: 'sdimage'
+          bindings:
+            storage: 'milkv-duo256m-sdmux-1'
+      - USBSDMuxDriver:
+          bindings:
+            mux: 'milkv-duo256m-sdmux-1'
+      - ShellDriver:
+          prompt: '(\x1b\[\?2004h|\x1b\\)?root@[\w-]+:[^ ]+[#$] '
+          login_prompt: 'login: '
+          login_timeout: 120
+          username: 'root'
+          name: 'milkv-duo256m-shell-1'
+          bindings:
+            console: 'milkv-duo256m-console-1'
+      - MilkVDuo256MBootStrategy:
+          name: 'milkv-duo256m-strategy-1'
+          bindings:
+            power: 'milkv-duo256m-power-1'
+            console: 'milkv-duo256m-console-1'
+            shell: 'milkv-duo256m-shell-1'
+
+images:
+  sdimage: "/home/labgrid/milkv-duo256m.rootfs-latest.wic.gz"
+tools:
+  usbsdmux: '/home/labgrid/.local/bin/usbsdmux'
+
+imports:
+  - strategy.py

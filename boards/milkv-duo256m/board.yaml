@@ -1,0 +1,23 @@
+name: milkv-duo256m
+yocto_machine: milkv-duo256m
+strategy: sdmux
+arch: riscv64
+description: Milk-V Duo (256M model). Boots from microSD via USB SD-Mux
+remote_place: bf-milkv-duo256m
+image_source: yocto
+
+boot:
+  method: sdmux
+
+image:
+  label: sdimage
+  path: /home/labgrid/milkv-duo256m.rootfs-latest.wic.gz
+
+tools:
+  usbsdmux: /home/labgrid/.local/bin/usbsdmux
+
+shell:
+  username: root
+  password: null
+
+strategy_class: MilkVDuo256MBootStrategy
