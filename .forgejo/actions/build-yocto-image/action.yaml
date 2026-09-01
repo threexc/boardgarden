@@ -59,6 +59,7 @@ runs:
         repo_owner: ${{ inputs.boardgarden_owner }}
 
     - name: build image
+      id: build_image
       shell: bash
       env:
         RISCV_IMAGE: ${{ inputs.image }}
@@ -78,9 +79,10 @@ runs:
         # add buildinfo to the image
         echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
 
-        # Boards that boot via kernel+dtb+initramfs (board.yaml sets tftp.initramfs),
-        # rather than a full disk/wic image, also need the initramfs image built,
-        # with its debug module enabled so a shell bootarg can drop to a shell.
+        # Boards that boot via kernel+dtb+initramfs (board.yaml sets tftp.initramfs)
+        # only need the initramfs image, with its debug module enabled so a shell
+        # bootarg can drop to a shell; boards booting a full disk/wic image only
+        # need that image. Building both per board wastes build time every night.
         BOARD="${RISCV_MACHINE%-mainline}"
         BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         HAS_INITRAMFS="false"
@@ -89,11 +91,14 @@ runs:
           echo 'INITRAMFS_SCRIPTS:append = " initramfs-module-debug"' >> conf/local.conf
         fi
 
-        bitbake ${RISCV_IMAGE}
-
         if [ "${HAS_INITRAMFS}" = "true" ]; then
-          bitbake ${RISCV_INITRAMFS_IMAGE}
+          EFFECTIVE_IMAGE="${RISCV_INITRAMFS_IMAGE}"
+        else
+          EFFECTIVE_IMAGE="${RISCV_IMAGE}"
         fi
+
+        bitbake ${EFFECTIVE_IMAGE}
+        echo "effective_image=${EFFECTIVE_IMAGE}" >> "$GITHUB_OUTPUT"
 
     - name: locate and verify images deploy directory
       id: locate
@@ -107,8 +112,9 @@ runs:
           exit 1
         fi
         BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         DEPLOY_WIC="false"
-        if [ "${RISCV_MACHINE}" = "bananapi-f3" ]; then
+        if [ -f "${BOARD_YAML}" ] && grep -q '^strategy:[[:space:]]*sdmux' "${BOARD_YAML}"; then
           DEPLOY_WIC="true"
         fi
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
@@ -119,7 +125,7 @@ runs:
       id: kernel_version
       shell: bash
       env:
-        RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_IMAGE: ${{ steps.build_image.outputs.effective_image }}
         RISCV_MACHINE: ${{ inputs.machine }}
         IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
       run: |
