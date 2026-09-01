@@ -1,0 +1,17 @@
+{
+    "description": "Source override file for using tgamblin/fixes branch of openembedded-core",
+    "sources": {
+        "openembedded-core": {
+            "git-remote": {
+                "branch": "tgamblin/fixes",
+                "remotes": {
+                    "origin": {
+                        "uri": "https://forgejo.baylibre.com/tgamblin/openembedded-core.git"
+                    }
+                },
+                "rev": "tgamblin/fixes"
+            }
+        }
+    },
+    "version": "1.0"
+}
