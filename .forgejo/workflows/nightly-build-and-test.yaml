@@ -13,8 +13,7 @@ on:
         options:
           - none
           - meta-riscv-tgamblin-review
-          - meta-riscv-tgamblin-k1-fixes
-          - meta-riscv-tgamblin-k3-fixes
+          - meta-riscv-tgamblin-fixes
       image:
         description: 'Image to build'
         required: true
