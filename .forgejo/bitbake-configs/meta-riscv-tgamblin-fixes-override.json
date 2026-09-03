@@ -1,0 +1,17 @@
+{
+    "description": "Source override for meta-riscv templates to use tgamblin's fork and 'fixes' branch",
+    "sources": {
+        "meta-riscv": {
+            "git-remote": {
+                "branch": "tgamblin/fixes",
+                "remotes": {
+                    "origin": {
+                        "uri": "https://github.com/threexc/meta-riscv.git"
+                    }
+                },
+                "rev": "tgamblin/fixes"
+            }
+        }
+    },
+    "version": "1.0"
+}
