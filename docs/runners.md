@@ -4,9 +4,9 @@
 
 | Label | Used by | Requirements |
 |---|---|---|
-| `tgamblin-build` | `nightly-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/auto/runner/buildcache` bind-mount |
+| `tgamblin-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/auto/runner/buildcache` bind-mount |
 | `tgamblin-qemu` | `riscv-ptest-nightly` | Same as `tgamblin-build`; runs QEMU |
-| `tgamblin-board-test` | `nightly-build-and-test` (via `run-board-tests`) | Docker, network route to Labgrid coordinator + TFTP server |
+| `tgamblin-board-test` | `yocto-build-and-test` (via `run-board-tests`) | Docker, network route to Labgrid coordinator + TFTP server |
 | `tgamblin-maintenance` | `meta-riscv-check-layer`, `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
 
 ## Host containers
@@ -79,7 +79,7 @@ Regenerate contents:
 
 ## Buildcache and UIDs/GIDs
 
-`build-yocto-image` (via `nightly-build-and-test` / `weekly-build-only`) and `riscv-ptest-nightly` bind-mount
+`build-yocto-image` (via `yocto-build-and-test` / `weekly-build-only`) and `riscv-ptest-nightly` bind-mount
 `/auto/runner/buildcache` into the container as `/buildcache`, populating
 `DL_DIR` and `SSTATE_DIR`. Provision this on the runner host:
 

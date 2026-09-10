@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         # Layer-sanity build set: meta-riscv machines with no local hardware.
-        # Disjoint from nightly-build-and-test's auto-derived board list.
+        # Disjoint from yocto-build-and-test's auto-derived board list.
         machine: >-
           ${{
             inputs.machines != ''

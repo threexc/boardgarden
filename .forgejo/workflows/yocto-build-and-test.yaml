@@ -1,4 +1,4 @@
-name: nightly-build-and-test
+name: yocto-build-and-test
 
 on:
   schedule:
