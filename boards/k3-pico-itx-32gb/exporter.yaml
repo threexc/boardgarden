@@ -1,0 +1,17 @@
+wb-k3-pico-itx-32gb:
+  location: launch
+  k3-pico-itx-32gb-serial-port-1:
+    cls: 'USBSerialPort'
+    match:
+      '@ID_PATH': 'platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0'
+  k3-pico-itx-32gb-power-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'DU0ET81O'
+    pin: 0
+  k3-pico-itx-32gb-tftp-1:
+    cls: 'RemoteTFTPProvider'
+    host: '192.168.40.166'
+    internal: '/srv/tftp/k3-pico-itx/'
+    external: 'k3-pico-itx/'
