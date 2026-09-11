@@ -122,7 +122,11 @@ runs:
         # the reservation's own result. `wait` prints the resolved
         # Reservation, including "allocations:\n  main: <place>".
         WAIT_OUTPUT=$(uv run labgrid-client wait | tee /dev/stderr)
-        ALLOCATED_PLACE=$(echo "$WAIT_OUTPUT" | awk '/^  main:/{print $2; exit}')
+        ALLOCATED_PLACE=$(echo "$WAIT_OUTPUT" | awk '
+          /^allocations:/ { in_alloc=1; next }
+          /^[a-z]/ { in_alloc=0 }
+          in_alloc && /^  main:/ { print $2; exit }
+        ')
         BOARD=""
         for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
           rp=$(awk -F: '/^remote_place:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
