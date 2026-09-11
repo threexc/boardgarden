@@ -9,6 +9,7 @@ wb-k3-pico-itx-32gb:
     match:
       '@SUBSYSTEM': usb
       '@ID_SERIAL_SHORT': 'DU0ET81O'
+      'LABGRID_SYSFS_GPIOCHIP': '1'
     pin: 0
   k3-pico-itx-32gb-tftp-1:
     cls: 'RemoteTFTPProvider'
