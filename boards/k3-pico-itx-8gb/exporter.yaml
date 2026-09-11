@@ -1,4 +1,4 @@
-bf-k3-pico-itx:
+bf-k3-pico-itx-8gb:
   location: ecoforge
   k3-pico-itx-serial-port-1:
     cls: 'USBSerialPort'
