@@ -115,16 +115,24 @@ runs:
       run: |
         uv sync
         eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
+        echo $LG_TOKEN
+        # Multiple boards/<name> dirs can share the same yocto_machine (RAM
+        # variants, etc.), so which one the reservation actually allocated
+        # can't be guessed from RISCV_MACHINE alone - it has to come from
+        # the reservation's own result. `wait` prints the resolved
+        # Reservation, including "allocations:\n  main: <place>".
+        WAIT_OUTPUT=$(uv run labgrid-client wait | tee /dev/stderr)
+        ALLOCATED_PLACE=$(echo "$WAIT_OUTPUT" | awk '/^  main:/{print $2; exit}')
         BOARD=""
         for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
-          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
-          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+          rp=$(awk -F: '/^remote_place:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$rp" = "$ALLOCATED_PLACE" ] && BOARD=$(basename "$(dirname "$f")") && break
         done
-        LG_PLACE=$(awk -F: '/^remote_place:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${GITHUB_WORKSPACE}/boards/${BOARD}/board.yaml")
-        [ -z "${LG_PLACE}" ] && LG_PLACE="bf-${BOARD}"
-        echo $LG_PLACE
-        echo $LG_TOKEN
-        uv run labgrid-client wait
+        if [ -z "$BOARD" ]; then
+          echo "::error::no boards/*/board.yaml has remote_place: ${ALLOCATED_PLACE}"
+          exit 1
+        fi
+        echo "resolved board: ${BOARD} (place: ${ALLOCATED_PLACE})"
         uv run labgrid-client -p + lock
         uv run labgrid-client -p + show
         EXIT_CODE=1
