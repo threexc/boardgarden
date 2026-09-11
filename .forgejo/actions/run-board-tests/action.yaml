@@ -81,22 +81,30 @@ runs:
         TFTP_USER: ${{ inputs.tftp_user }}
         TFTP_SERVER: ${{ inputs.tftp_server }}
       run: |
-        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+        done
         BOARD_YAML="${GITHUB_WORKSPACE}/boards/${BOARD}/board.yaml"
         if [ ! -f "${BOARD_YAML}" ] || ! grep -q '^strategy:[[:space:]]*sdmux' "${BOARD_YAML}"; then
           exit 0
         fi
 
+        # TFTP subdir is a board.yaml field, not necessarily the board dir name.
+        TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${BOARD_YAML}")
+        [ -z "${TFTP_SUBDIR}" ] && TFTP_SUBDIR="${BOARD}"
+
         LATEST_WIC=$(ssh -i ~/.ssh/id_rsa_tftp \
-          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.gz")
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${TFTP_SUBDIR}/${TFTP_SUBDIR}.rootfs-latest.wic.gz")
         LATEST_BMAP=$(ssh -i ~/.ssh/id_rsa_tftp \
-          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${BOARD}/${BOARD}.rootfs-latest.wic.bmap")
+          ${TFTP_USER}@${TFTP_SERVER} "readlink /srv/tftp/${TFTP_SUBDIR}/${TFTP_SUBDIR}.rootfs-latest.wic.bmap")
         rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp" \
-          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_WIC} .
+          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${TFTP_SUBDIR}/${LATEST_WIC} .
         rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp" \
-          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/${LATEST_BMAP} .
-        ln -sf ${LATEST_WIC} ${BOARD}.rootfs-latest.wic.gz
-        ln -sf ${LATEST_BMAP} ${BOARD}.rootfs-latest.wic.bmap
+          ${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${TFTP_SUBDIR}/${LATEST_BMAP} .
+        ln -sf ${LATEST_WIC} ${TFTP_SUBDIR}.rootfs-latest.wic.gz
+        ln -sf ${LATEST_BMAP} ${TFTP_SUBDIR}.rootfs-latest.wic.bmap
 
     - name: run labgrid-client
       shell: bash
@@ -107,8 +115,13 @@ runs:
       run: |
         uv sync
         eval `uv run labgrid-client reserve --shell machine=$RISCV_MACHINE`
-        BOARD="${RISCV_MACHINE%-mainline}"
-        LG_PLACE="bf-${BOARD}"
+        BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+        done
+        LG_PLACE=$(awk -F: '/^remote_place:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${GITHUB_WORKSPACE}/boards/${BOARD}/board.yaml")
+        [ -z "${LG_PLACE}" ] && LG_PLACE="bf-${BOARD}"
         echo $LG_PLACE
         echo $LG_TOKEN
         uv run labgrid-client wait

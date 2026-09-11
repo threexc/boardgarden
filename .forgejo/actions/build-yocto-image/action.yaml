@@ -82,7 +82,11 @@ runs:
         # only need the initramfs image, with its debug module enabled so a shell
         # bootarg can drop to a shell; boards booting a full disk/wic image only
         # need that image. Building both per board wastes build time every night.
-        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+        done
         BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         HAS_INITRAMFS="false"
         if [ -f "${BOARD_YAML}" ] && grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
@@ -109,14 +113,23 @@ runs:
           echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
           exit 1
         fi
-        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+        done
         BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         DEPLOY_WIC="false"
         if [ -f "${BOARD_YAML}" ] && grep -q '^strategy:[[:space:]]*sdmux' "${BOARD_YAML}"; then
           DEPLOY_WIC="true"
         fi
+        # TFTP subdir is a board.yaml field, not necessarily the board dir name
+        # (a board dir can be renamed - e.g. for a RAM-variant suffix - while
+        # still sharing the same on-server TFTP subdir as other variants).
+        TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${BOARD_YAML}")
+        [ -z "${TFTP_SUBDIR}" ] && TFTP_SUBDIR="${BOARD}"
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
-        echo "board=${BOARD}" >> "$GITHUB_OUTPUT"
+        echo "board=${TFTP_SUBDIR}" >> "$GITHUB_OUTPUT"
         echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
 
     - name: get kernel version
@@ -156,7 +169,11 @@ runs:
         RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
         IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
       run: |
-        BOARD="${RISCV_MACHINE%-mainline}"
+        BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
+        done
         BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
         if [ ! -f "${BOARD_YAML}" ] || ! grep -q '^\s*initramfs:' "${BOARD_YAML}"; then
           exit 0
