@@ -1,2 +1,10 @@
 SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", RUN+="/bin/sh -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'"
 SUBSYSTEM=="gpio", KERNEL=="gpio*", ACTION=="add", RUN+="/bin/chown root:gpio /sys%p/active_low /sys%p/edge /sys%p/direction /sys%p/value", RUN+="/bin/chmod 660 /sys%p/active_low /sys%p/edge /sys%p/direction /sys%p/value"
+
+# Some kernels expose two sibling "gpio" subsystem devices per chip: the
+# legacy sysfs-export node (has base/ngpio/label, what labgrid's
+# MatchedSysfsGPIO needs) and a newer gpio-cdev class object with no
+# "base" attribute. Both share identical udev properties/ancestry, so
+# board.yaml can't tell them apart by value alone - flag the legacy one
+# so match dicts can select it directly.
+SUBSYSTEM=="gpio", TEST=="base", ENV{LABGRID_SYSFS_GPIOCHIP}="1"
