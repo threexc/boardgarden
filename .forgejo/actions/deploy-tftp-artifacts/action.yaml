@@ -50,6 +50,7 @@ runs:
           "${SRC}"/*.dtb \
           "${SRC}"/extlinux.conf \
           "${SRC}"/uRamdisk \
+          "${SRC}"/fw_jump.* \
           "${DST}/"
 
     - name: rsync wic flash images and update latest symlinks
