@@ -59,8 +59,32 @@ runs:
         set -euo pipefail
 
         override_arg=()
+        config_json="${CONFIG_JSON}"
         if [ "${SOURCE_OVERRIDE}" != "none" ] && [ -n "${SOURCE_OVERRIDE}" ]; then
-          override_arg=(--source-override "${OVERRIDES_DIR}/${SOURCE_OVERRIDE}-override.json")
+          override_file="${OVERRIDES_DIR}/${SOURCE_OVERRIDE}-override.json"
+          override_arg=(--source-override "${override_file}")
+
+          # Overrides that point at a github.com branch (e.g. a dev fork/branch
+          # of meta-riscv) may carry their own config_json in that branch's
+          # bitbake-registry/ dir, generated to match that branch's layers.
+          # Prefer it over our checked-in copy so e.g. new machines on the
+          # branch are picked up without updating boardgarden. Falls back to
+          # the local config_json when the branch has no matching file (e.g.
+          # non-github remotes like oe-core-master-next).
+          remote_uri=$(grep -m1 '"uri"' "${override_file}" | sed -E 's/.*"uri"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+          remote_branch=$(grep -m1 '"branch"' "${override_file}" | sed -E 's/.*"branch"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+          if [[ "${remote_uri}" == *"github.com"* ]] && [ -n "${remote_branch}" ]; then
+            repo_path="${remote_uri#*github.com/}"
+            repo_path="${repo_path%.git}"
+            raw_url="https://raw.githubusercontent.com/${repo_path}/refs/heads/${remote_branch}/bitbake-registry/$(basename "${CONFIG_JSON}")"
+            remote_config="$(mktemp --suffix=.conf.json)"
+            if curl -fsSL "${raw_url}" -o "${remote_config}"; then
+              config_json="${remote_config}"
+            else
+              echo "::warning::no branch config at ${raw_url}, using local ${CONFIG_JSON}"
+              rm -f "${remote_config}"
+            fi
+          fi
         fi
 
         positions=()
@@ -76,5 +100,5 @@ runs:
           init \
           --non-interactive \
           "${override_arg[@]}" \
-          "${CONFIG_JSON}" \
+          "${config_json}" \
           "${positions[@]}"
