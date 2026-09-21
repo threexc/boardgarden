@@ -1,7 +1,8 @@
-name: weekly-build-only
+name: yocto-build-only
 
 on:
   schedule:
+    # run weekly by default
     - cron: '0 3 * * 0'
   workflow_dispatch:
     inputs:
