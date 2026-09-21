@@ -33,10 +33,6 @@ on:
         default: ''
         type: string
 
-env:
-  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
-  TFTP_USER: "auto"
-
 jobs:
   build:
     runs-on: tgamblin-build
@@ -67,14 +63,3 @@ jobs:
           image: ${{ inputs.image || 'core-image-full-cmdline' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
-      - uses: ./.forgejo/actions/deploy-to-tftp
-        with:
-          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
-          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
-          tftp_server: ${{ env.TFTP_SERVER }}
-          tftp_user: ${{ env.TFTP_USER }}
-          board: ${{ steps.build.outputs.board }}
-          machine: ${{ matrix.machine }}
-          image: ${{ inputs.image || 'core-image-full-cmdline' }}
-          images_path: ${{ steps.build.outputs.images_path }}
-          deploy_wic: ${{ steps.build.outputs.deploy_wic }}
