@@ -126,7 +126,10 @@ runs:
         # TFTP subdir is a board.yaml field, not necessarily the board dir name
         # (a board dir can be renamed - e.g. for a RAM-variant suffix - while
         # still sharing the same on-server TFTP subdir as other variants).
-        TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${BOARD_YAML}")
+        TFTP_SUBDIR=""
+        if [ -f "${BOARD_YAML}" ]; then
+          TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${BOARD_YAML}")
+        fi
         [ -z "${TFTP_SUBDIR}" ] && TFTP_SUBDIR="${BOARD}"
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
         echo "board=${TFTP_SUBDIR}" >> "$GITHUB_OUTPUT"
