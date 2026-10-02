@@ -41,7 +41,10 @@ machines:
         package: labgrid
         version: "25.1.dev273"
         role: Exposes USB-to-UART and power to coordinator
-      - name: OrangePi RV2 Exporter
+      - name: Milk-V Duo 256M Exporter
+        package: labgrid
+        version: "25.1.dev273"
+      - name: K3 Pico-ITX Exporter
         package: labgrid
         version: "25.1.dev273"
         role: Exposes USB-to-UART and power to coordinator
@@ -77,12 +80,6 @@ machines:
         - AMD Ryzen 5 PRO 3400GE
         - 16 GB DDR4 RAM
 
-  - id: github
-    label: "GitHub"
-    type: external
-    note: Passive push mirror only
-
-
 # Physical boards — connected to ecogrid via serial/USB/power through Labgrid exporter
 boards:
 
@@ -103,12 +100,12 @@ boards:
     connection: serial + power
 
   - id: board_3
-    label: OrangePi RV2
-    vendor: OrangePi
-    model: OrangePi RV2
-    url: http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-RV2.html
-    arch: riscv64 (RVA22 + RVV 1.0)
-    connection: serial + power
+    label: Milk-V Duo 256M
+    vendor: Milk-V
+    model: Milk-V Duo 256M
+    url: https://milkv.io/docs/duo/getting-started/duo256m
+    arch: riscv64 (RV64GCV)
+    connection: serial + power + sdmux
 
   - id: board_4
     label: K3 Pico-ITX
@@ -117,7 +114,7 @@ boards:
     url: https://sipeed.com/k3
     arch: riscv64 (RVA23)
     connection: serial + power
-    status: in progress
+    status: active
 
 # Explicit logical links (beyond implicit Tailnet connectivity)
 # type: physical | logical
@@ -199,13 +196,6 @@ links:
             url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
 
-  # Logical: mirror
-  - from: ecogrid
-    to: github
-    label: push mirror
-    type: logical
-    style: dashed
-
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
     to: ecogrid
@@ -236,12 +226,12 @@ links:
 
   - from: board_3
     to: ecogrid
-    label: kernel + dtb + Yocto initramfs
+    label: Yocto .wic image
     type: logical
     reverse: true
 
   - from: board_4
     to: ecogrid
-    label: kernel + dtb + onboard rootfs (Bianbu)
+    label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
