@@ -11,6 +11,7 @@ RUN apt-get update && \
     build-essential \
     bzip2 \
     ca-certificates \
+    cpio \
     flex \
     gcc-aarch64-linux-gnu \
     gcc-riscv64-linux-gnu \
