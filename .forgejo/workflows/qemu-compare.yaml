@@ -47,6 +47,12 @@ jobs:
         side: [base, test]
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/qemu-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        # Keep check-functional's downloaded assets across runs so each run
+        # doesn't re-fetch them from (sometimes flaky) upstream hosts.
+        QEMU_TEST_CACHE_DIR: "/buildcache/qemu-test"
     steps:
       - name: clone qemu
         env:
