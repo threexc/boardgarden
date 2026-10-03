@@ -1,0 +1,97 @@
+name: qemu-compare
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_remote:
+        description: 'Git remote for the baseline branch'
+        required: true
+        default: 'https://forgejo.baylibre.com/tgamblin/qemu.git'
+        type: string
+      base_branch:
+        description: 'Baseline branch'
+        required: true
+        default: 'master'
+        type: string
+      test_remote:
+        description: 'Git remote for the branch under test'
+        required: true
+        default: 'https://forgejo.baylibre.com/tgamblin/qemu.git'
+        type: string
+      test_branch:
+        description: 'Branch under test'
+        required: true
+        default: 'staging'
+        type: string
+      configure_args:
+        description: 'Extra ./configure arguments, e.g. --target-list=riscv64-softmmu (blank for all targets)'
+        required: false
+        default: ''
+        type: string
+
+defaults:
+  run:
+    # Explicit bash gets -eo pipefail, so a failing make isn't masked by tee.
+    shell: bash
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.side }}
+    runs-on: tgamblin-build
+    strategy:
+      fail-fast: false
+      # One side at a time, so the two runs don't compete for CPU and skew
+      # each other's timings.
+      max-parallel: 1
+      matrix:
+        side: [base, test]
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/qemu-builder
+    steps:
+      - name: clone qemu
+        env:
+          REMOTE: ${{ matrix.side == 'base' && inputs.base_remote || inputs.test_remote }}
+          BRANCH: ${{ matrix.side == 'base' && inputs.base_branch || inputs.test_branch }}
+        run: |
+          mkdir -p logs
+          git clone --depth=1 --branch "${BRANCH}" "${REMOTE}" qemu
+          git -C qemu log -1 --format='%H %s' | tee logs/commit.txt
+
+      - name: configure
+        working-directory: qemu
+        env:
+          CONFIGURE_ARGS: ${{ inputs.configure_args }}
+        run: |
+          # shellcheck disable=SC2086 # intentional word splitting of args
+          ./configure ${CONFIGURE_ARGS} 2>&1 | tee ../logs/configure.log
+
+      - name: make
+        id: build
+        working-directory: qemu
+        run: make -j"$(nproc)" 2>&1 | tee ../logs/make.log
+
+      # Each check runs as long as the build succeeded, even if an earlier
+      # check failed, so both sides always produce comparable results.
+      - name: make check
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: qemu
+        run: make -j"$(nproc)" check 2>&1 | tee ../logs/check.log
+
+      - name: make check-functional
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: qemu
+        run: make -j"$(nproc)" check-functional 2>&1 | tee ../logs/check-functional.log
+
+      - name: make check-tcg
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: qemu
+        run: make -j"$(nproc)" check-tcg 2>&1 | tee ../logs/check-tcg.log
+
+      - name: upload logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-logs-${{ matrix.side }}
+          path: |
+            logs/
+            qemu/build/meson-logs/
