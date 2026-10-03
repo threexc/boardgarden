@@ -25,6 +25,8 @@ jobs:
             dockerfile: ./.forgejo/dockerfiles/labgrid-operator/Dockerfile
           - name: kernel-builder
             dockerfile: ./.forgejo/dockerfiles/kernel-builder/Dockerfile
+          - name: qemu-builder
+            dockerfile: ./.forgejo/dockerfiles/qemu-builder/Dockerfile
 
     steps:
     - name: Checkout
