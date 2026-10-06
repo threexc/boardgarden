@@ -53,6 +53,7 @@
 |-----------|------|-------------|------|
 | power | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | Power control |
 | serial | [Raspberry Pi Debug Probe](https://www.raspberrypi.com/products/debug-probe/) | Debug_Probe__CMSIS-DAP_0101 | USB-to-UART bridge |
+| SD mux | [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html) | usb-sd-mux_rev4.0 | USB SD Mux controller |
 
 ### K3 Pico-ITX
 

@@ -18,7 +18,7 @@ flowchart LR
   %% ── Links ──
   ecogrid ==>|"power / serial / SD mux"| board_1
   ecogrid ==>|"power / serial"| board_2
-  ecogrid ==>|"power / serial"| board_3
+  ecogrid ==>|"power / serial / SD mux"| board_3
   ecogrid ==>|"power / serial"| board_4
   runner1 -->|"upload Yocto artifacts"| ecogrid
   runner2 -->|"acquire board, run tests"| ecogrid

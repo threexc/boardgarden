@@ -178,6 +178,12 @@ links:
             pn: Debug_Probe__CMSIS-DAP_0101
             url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
+      - label: SD mux
+        hardware:
+          - part: USB SD Mux
+            pn: usb-sd-mux_rev4.0
+            url: https://linux-automation.com/en/products/usb-sd-mux.html
+            role: USB SD Mux controller
 
   - from: ecogrid
     to: board_4
