@@ -86,7 +86,18 @@ jobs:
       - name: make check-functional
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: qemu
-        run: make -j"$(nproc)" check-functional 2>&1 | tee ../logs/check-functional.log
+        # Same as 'make check-functional', except that a failed asset download
+        # doesn't abort the whole step: upstream's precache stops at the first
+        # bad asset (e.g. a host serving a block page with a 200), so no tests
+        # would run at all. With -k 0 the rest still download, and tests whose
+        # assets are missing are skipped under QEMU_TEST_NO_DOWNLOAD=1.
+        run: |
+          {
+            ninja -C build -k 0 precache-functional \
+              || echo "::warning::some functional test assets failed to download; their tests will be skipped"
+            python3 scripts/clean_functional_cache.py
+            QEMU_TEST_NO_DOWNLOAD=1 make -j"$(nproc)" SPEED=thorough check-func check-func-quick
+          } 2>&1 | tee ../logs/check-functional.log
 
       - name: make check-tcg
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
