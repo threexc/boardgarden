@@ -1,6 +1,8 @@
 {#- Jinja2 template for a QEMU labgrid env.yaml. -#}
 {%- set n = manifest.name -%}
 {%- set strategy_class = manifest.strategy_class | default("QemuBootStrategy") -%}
+{#- virtio-mmio ("-device") for e.g. riscv/arm virt, "-pci" for x86 q35/pc -#}
+{%- set virtio = "pci" if manifest.qemu.virtio_bus | default("mmio") == "pci" else "device" -%}
 imports:
   - strategy.py
 
@@ -9,7 +11,9 @@ targets:
     drivers:
       QEMUDriver:
         qemu_bin: {{ manifest.qemu.binary }}
+{%- if manifest.images.bios is defined %}
         bios: {{ manifest.name }}_bios
+{%- endif %}
         kernel: {{ manifest.name }}_kernel
         cpu: '{{ manifest.qemu.cpu }}'
         memory: "{{ manifest.qemu.memory }}"
@@ -18,10 +22,10 @@ targets:
         boot_args: '{{ manifest.boot.bootargs }}'
         extra_args: >-
           -display none
-          -device virtio-net-device,netdev=net0,mac=52:54:00:12:35:02
+          -device virtio-net-{{ virtio }},netdev=net0,mac=52:54:00:12:35:02
           -netdev user,id=net0,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.ssh_port }}-:22,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.telnet_port }}-:23
           -object rng-random,filename=/dev/urandom,id=rng0
-          -device virtio-rng-device,rng=rng0
+          -device virtio-rng-{{ virtio }},rng=rng0
       ShellDriver:
         prompt: 'root@[a-zA-Z0-9]+:~#\s'
         login_prompt: ' login: '
@@ -30,6 +34,8 @@ targets:
       {{ strategy_class }}: {}
 
 images:
+{%- if manifest.images.bios is defined %}
   {{ manifest.name }}_bios: '{{ manifest.images.bios }}'
+{%- endif %}
   {{ manifest.name }}_ext4: '{{ manifest.images.ext4 }}'
   {{ manifest.name }}_kernel: '{{ manifest.images.kernel }}'

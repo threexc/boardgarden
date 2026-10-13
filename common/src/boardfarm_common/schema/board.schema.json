@@ -61,6 +61,7 @@
         "machine": { "type": "string" },
         "cpu": { "type": "string" },
         "memory": { "type": ["integer", "string"] },
+        "virtio_bus": { "enum": ["mmio", "pci"] },
         "ssh_port": { "type": "integer" },
         "telnet_port": { "type": "integer" }
       }
