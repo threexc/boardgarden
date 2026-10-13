@@ -26,7 +26,7 @@ testpaths = [
     "tests",
     "common/src/boardfarm_common/tests",
     "boards/bananapi-f3/pytest",
-    "boards/qemuriscv64/pytest",
+    "common/src/boardfarm_common/ptest",
 ]
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
