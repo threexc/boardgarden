@@ -1,0 +1,27 @@
+name: qemuarm64
+yocto_machine: qemuarm64
+strategy: qemu
+arch: aarch64
+description: QEMU Arm64 virt machine. Yocto image, no physical hardware
+
+boot:
+  method: qemu
+  bootargs: root=/dev/vda rw console=ttyAMA0
+
+qemu:
+  binary: qemu-system-aarch64
+  machine: virt
+  cpu: cortex-a57
+  memory: 8192
+  ssh_port: 2222
+  telnet_port: 2323
+
+images:
+  kernel: /home/labgrid/Image
+  ext4: /home/labgrid/ptest_image.ext4
+
+shell:
+  username: root
+  password: null
+
+strategy_class: QEMUArm64YoctoStrategy
