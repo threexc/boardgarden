@@ -1,0 +1,72 @@
+name: 'oe-selftest reproducible'
+description: >
+  Set up a poky build for a qemu machine with bitbake-setup and run oe-selftest's
+  reproducible build test against the given recipes. Each recipe is built
+  twice from scratch, with its DEPENDS pulled from sstate. diffoscope output
+  is uploaded on failure. Intended to be used inside a job with a
+  yocto-builder container. DL_DIR and SSTATE_DIR are written to local.conf
+  when set in the environment.
+
+inputs:
+  targets:
+    description: 'Space-separated recipes to test (OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS)'
+    required: true
+  machine:
+    description: 'MACHINE to build for'
+    required: false
+    default: 'qemuriscv64'
+  config_json:
+    description: >-
+      bitbake-setup config: a path or a default registry name (e.g. poky-master).
+      Must produce the bitbake-builds/poky-master setup dir.
+    required: false
+    default: 'poky-master'
+  source_override:
+    description: 'Named source override, see the bitbake-setup action'
+    required: false
+    default: 'none'
+  custom_sources:
+    description: 'Ad-hoc source overrides, see the bitbake-setup action'
+    required: false
+    default: ''
+  repo_owner:
+    description: 'Owner/org of the mirrored bitbake repo'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: configure bitbake and layers
+      uses: ./.forgejo/actions/bitbake-setup
+      with:
+        config_json: ${{ inputs.config_json }}
+        positions: |
+          poky
+          distro/poky
+          machine/${{ inputs.machine }}
+        source_override: ${{ inputs.source_override }}
+        custom_sources: ${{ inputs.custom_sources }}
+        repo_owner: ${{ inputs.repo_owner }}
+
+    - name: oe-selftest reproducible builds
+      shell: bash
+      env:
+        TARGETS: ${{ inputs.targets }}
+        OEQA_DEBUGGING_SAVED_OUTPUT: ${{ github.workspace }}/reproducible-output
+      run: |
+        set -euo pipefail
+        mkdir -p "${OEQA_DEBUGGING_SAVED_OUTPUT}"
+        . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
+        # Registry configs don't pass DL_DIR/SSTATE_DIR through from the env.
+        [ -n "${DL_DIR:-}" ] && echo "DL_DIR = \"${DL_DIR}\"" >> conf/local.conf
+        [ -n "${SSTATE_DIR:-}" ] && echo "SSTATE_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
+        echo "OEQA_REPRODUCIBLE_TEST_LEAF_TARGETS = \"${TARGETS}\"" >> conf/local.conf
+
+        oe-selftest -r reproducible.ReproducibleTests.test_reproducible_builds
+
+    - name: upload diffoscope output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: reproducible-output
+        path: ${{ github.workspace }}/reproducible-output
