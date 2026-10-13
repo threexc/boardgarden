@@ -1,0 +1,96 @@
+name: 'Build ptest image'
+description: >
+  Set up a poky build for a qemu machine with bitbake-setup, build
+  core-image-ptest-<package>, and upload the images listed in
+  boards/<machine>/board.yaml (named as listed there) as the
+  ptest_image_<package> artifact for run-qemu-ptest. Intended to be used
+  inside a job with a yocto-builder container. DL_DIR and SSTATE_DIR are
+  written to local.conf when set in the environment.
+
+inputs:
+  package:
+    description: 'Package whose ptest image (core-image-ptest-<package>) to build'
+    required: true
+  machine:
+    description: 'qemu MACHINE, with a matching boards/<machine>/board.yaml'
+    required: false
+    default: 'qemuriscv64'
+  config_json:
+    description: >-
+      bitbake-setup config: a path or a default registry name (e.g. poky-master).
+      Must produce the bitbake-builds/poky-master setup dir.
+    required: false
+    default: 'poky-master'
+  source_override:
+    description: 'Named source override, see the bitbake-setup action'
+    required: false
+    default: 'none'
+  custom_sources:
+    description: 'Ad-hoc source overrides, see the bitbake-setup action'
+    required: false
+    default: ''
+  repo_owner:
+    description: 'Owner/org of the mirrored bitbake repo'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: configure bitbake and layers
+      uses: ./.forgejo/actions/bitbake-setup
+      with:
+        config_json: ${{ inputs.config_json }}
+        positions: |
+          poky
+          distro/poky
+          machine/${{ inputs.machine }}
+        source_override: ${{ inputs.source_override }}
+        custom_sources: ${{ inputs.custom_sources }}
+        repo_owner: ${{ inputs.repo_owner }}
+
+    - name: build core-image-ptest-${{ inputs.package }}
+      shell: bash
+      env:
+        PTEST_PACKAGE: ${{ inputs.package }}
+      run: |
+        set -euo pipefail
+        . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
+        # Registry configs don't pass DL_DIR/SSTATE_DIR through from the env.
+        [ -n "${DL_DIR:-}" ] && echo "DL_DIR = \"${DL_DIR}\"" >> conf/local.conf
+        [ -n "${SSTATE_DIR:-}" ] && echo "SSTATE_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
+        echo 'IMAGE_FSTYPES += "ext4"' >> conf/local.conf
+
+        bitbake-config-build \
+          enable-fragment \
+          core/yocto/root-login-with-empty-password
+
+        bitbake "core-image-ptest-${PTEST_PACKAGE}"
+
+    - name: stage images
+      shell: bash
+      env:
+        MACHINE: ${{ inputs.machine }}
+        PTEST_PACKAGE: ${{ inputs.package }}
+      run: |
+        set -euo pipefail
+        DEPLOY="$GITHUB_WORKSPACE/bitbake-builds/poky-master/build/tmp/deploy/images/${MACHINE}"
+        STAGE="$GITHUB_WORKSPACE/ptest-images"
+        mkdir -p "${STAGE}"
+        # board.yaml's images: "<key>: <path>" lines, e.g. "kernel: /home/labgrid/Image"
+        awk '/^images:/{f=1; next} /^[^[:space:]]/{f=0} f && NF==2 {print $1, $2}' \
+          "$GITHUB_WORKSPACE/boards/${MACHINE}/board.yaml" |
+        while read -r key path; do
+          if [ "${key}" = "ext4:" ]; then
+            src="${DEPLOY}/core-image-ptest-${PTEST_PACKAGE}-${MACHINE}.rootfs.ext4"
+          else
+            src="${DEPLOY}/$(basename "${path}")"
+          fi
+          cp -L "${src}" "${STAGE}/$(basename "${path}")"
+        done
+        ls -l "${STAGE}"
+
+    - name: archive images
+      uses: actions/upload-artifact@v4
+      with:
+        name: ptest_image_${{ inputs.package }}
+        path: ${{ github.workspace }}/ptest-images
