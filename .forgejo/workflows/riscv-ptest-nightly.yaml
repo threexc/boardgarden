@@ -46,55 +46,15 @@ jobs:
       env:
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
         DL_DIR: "/buildcache/downloads"
-        RISCV_MACHINE: "qemuriscv64"
-        PTEST_PACKAGE: ${{ matrix.package }}
         SSTATE_DIR: "/buildcache/sstate-cache"
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: configure bitbake and layers
-        uses: ./.forgejo/actions/bitbake-setup
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/build-ptest-image
         with:
+          package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
-          positions: |
-            poky
-            distro/poky
-            machine/${{ env.RISCV_MACHINE }}
           source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
           repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
-
-      - name: build core-image-ptest image
-        working-directory: /home/yoctouser/yocto-build
-        run: |
-          . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
-          echo "IMAGE_FSTYPES += \" ext4\"" >> conf/local.conf
-
-          bitbake-config-build \
-            enable-fragment \
-            core/yocto/root-login-with-empty-password
-
-          bitbake core-image-ptest-${PTEST_PACKAGE}
-        env:
-          PTEST_PACKAGE: ${{ matrix.package }}
-
-      - name: Archive qemuriscv64 bios
-        uses: actions/upload-artifact@v4
-        with:
-          name: ptest_image_bios_${{ matrix.package }}
-          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/fw_jump.elf
-
-      - name: Archive qemuriscv64 kernel
-        uses: actions/upload-artifact@v4
-        with:
-          name: ptest_image_kernel_${{ matrix.package }}
-          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/Image
-
-      - name: Archive qemuriscv64 ext4 rootfs
-        uses: actions/upload-artifact@v4
-        with:
-          name: ptest_image_ext4_${{ matrix.package }}
-          path: ${{ github.workspace }}/bitbake-builds/poky-master/build/tmp/deploy/images/qemuriscv64/core-image-ptest-*-qemuriscv64.rootfs-*.ext4
 
   run-ptests:
     runs-on: tgamblin-qemu
@@ -112,67 +72,10 @@ jobs:
       env:
         TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
     steps:
-      - name: Download qemuriscv64 bios
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/run-qemu-ptest
         with:
-          name: ptest_image_bios_${{ matrix.package }}
-          path: /home/labgrid/bios_download
-      - name: Rename bios
-        run: |
-          mv /home/labgrid/bios_download/fw_jump.elf /home/labgrid/fw_jump.elf
-      - name: Download qemuriscv64 kernel
-        uses: actions/download-artifact@v4
-        with:
-          name: ptest_image_kernel_${{ matrix.package }}
-          path: /home/labgrid/kernel_download
-      - name: Rename kernel
-        run: |
-          mv /home/labgrid/kernel_download/Image /home/labgrid/Image
-      - name: Download qemuriscv64 ext4 rootfs
-        uses: actions/download-artifact@v4
-        with:
-          name: ptest_image_ext4_${{ matrix.package }}
-          path: /home/labgrid/ext4_download
-      - name: Rename ext4 image
-        run: |
-          mv /home/labgrid/ext4_download/*.ext4 /home/labgrid/ptest_image.ext4
-
-      - name: clone boardgarden
-        uses: ./.forgejo/actions/git-clone
-        with:
-          url: ${{ github.server_url }}/${{ vars.BOARDGARDEN_OWNER }}/boardgarden.git
-          path: /home/labgrid/boardgarden
-
-      - name: install uv
-        working-directory: /home/labgrid
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-
-      - name: run uv sync
-        working-directory: /home/labgrid/boardgarden
-        run: |
-          uv sync
-
-      - name: run labgrid-client
-        working-directory: /home/labgrid/boardgarden
-        run: |
-          uv run pytest -vv --html=report.html --self-contained-html \
-            --lg-env boards/qemuriscv64/env.yaml \
-            boards/qemuriscv64/pytest/test_ptests.py
-
-      - name: install report SSH key
-        if: ${{ !cancelled() }}
-        uses: ./.forgejo/actions/setup-ssh
-        with:
-          ssh_private_key: ${{ secrets.REPORT_SSH_KEY }}
+          package: ${{ matrix.package }}
+          report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
-
-      - name: Deploy report
-        if: ${{ !cancelled() }}
-        run: |
-          REPORT_DIR="yocto/oe-core/${{ matrix.package }}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
-          RSH="ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=accept-new"
-          ${RSH} "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
-          rsync -avz --omit-link-times -e "${RSH}" \
-            /home/labgrid/boardgarden/report.html \
-            "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
+          tftp_server: ${{ vars.TFTP_SERVER_HOST }}
