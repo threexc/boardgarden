@@ -14,6 +14,14 @@ inputs:
     description: 'Source override name (looked up in overrides_dir). Use "none" or leave empty to skip.'
     required: false
     default: 'none'
+  custom_sources:
+    description: >-
+      Ad-hoc source overrides, one per line as "<source> <git uri> <branch>"
+      (e.g. "openembedded-core https://git.openembedded.org/openembedded-core master-next"),
+      where <source> is a key under "sources" in config_json. Takes
+      precedence over source_override when non-empty.
+    required: false
+    default: ''
   overrides_dir:
     description: 'Directory holding *-override.json files.'
     required: false
@@ -53,6 +61,7 @@ runs:
         CONFIG_JSON: ${{ inputs.config_json }}
         POSITIONS: ${{ inputs.positions }}
         SOURCE_OVERRIDE: ${{ inputs.source_override }}
+        CUSTOM_SOURCES: ${{ inputs.custom_sources }}
         OVERRIDES_DIR: ${{ inputs.overrides_dir }}
         BITBAKE_SETUP_BIN: ${{ inputs.bitbake_setup_bin }}
       run: |
@@ -60,7 +69,26 @@ runs:
 
         override_arg=()
         config_json="${CONFIG_JSON}"
-        if [ "${SOURCE_OVERRIDE}" != "none" ] && [ -n "${SOURCE_OVERRIDE}" ]; then
+        if [ -n "${CUSTOM_SOURCES//[[:space:]]/}" ]; then
+          override_file="$(mktemp --suffix=-override.json)"
+          python3 - > "${override_file}" <<'EOF'
+        import json, os
+        sources = {}
+        for line in os.environ["CUSTOM_SOURCES"].splitlines():
+            if not line.strip():
+                continue
+            name, uri, branch = line.split()
+            sources[name] = {"git-remote": {
+                "branch": branch,
+                "rev": branch,
+                "remotes": {"origin": {"uri": uri}},
+            }}
+        print(json.dumps({"description": "custom source overrides",
+                          "sources": sources, "version": "1.0"}, indent=4))
+        EOF
+          cat "${override_file}"
+          override_arg=(--source-override "${override_file}")
+        elif [ "${SOURCE_OVERRIDE}" != "none" ] && [ -n "${SOURCE_OVERRIDE}" ]; then
           override_file="${OVERRIDES_DIR}/${SOURCE_OVERRIDE}-override.json"
           override_arg=(--source-override "${override_file}")
 
