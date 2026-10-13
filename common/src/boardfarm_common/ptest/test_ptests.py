@@ -1,6 +1,6 @@
 """ptest-runner suite for any qemu board, e.g.
 
-    uv run pytest --lg-env boards/qemux86-64/env.yaml common/src/boardfarm_common/ptest
+uv run pytest --lg-env boards/qemux86-64/env.yaml common/src/boardfarm_common/ptest
 """
 
 import os
