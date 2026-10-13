@@ -1,0 +1,113 @@
+name: python3-ptest-reproducible
+
+on:
+  schedule:
+    - cron: '0 6 * * 6'
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'QEMU machine to build for and boot'
+        required: true
+        default: 'qemuriscv64'
+        type: choice
+        options:
+          - qemuriscv64
+          - qemux86-64
+          - qemuarm64
+      oe_core_remote:
+        description: 'openembedded-core git remote (mirror or fork)'
+        required: true
+        default: 'https://git.openembedded.org/openembedded-core'
+        type: string
+      oe_core_branch:
+        description: 'openembedded-core branch'
+        required: true
+        default: 'master-next'
+        type: string
+      bitbake_remote:
+        description: 'bitbake git remote (mirror or fork)'
+        required: true
+        default: 'https://git.openembedded.org/bitbake'
+        type: string
+      bitbake_branch:
+        description: 'bitbake branch'
+        required: true
+        default: 'master'
+        type: string
+      meta_yocto_remote:
+        description: 'meta-yocto git remote (mirror or fork)'
+        required: true
+        default: 'https://git.yoctoproject.org/meta-yocto'
+        type: string
+      meta_yocto_branch:
+        description: 'meta-yocto branch'
+        required: true
+        default: 'master'
+        type: string
+
+env:
+  PACKAGE: python3
+  MACHINE: ${{ inputs.machine || 'qemuriscv64' }}
+  # Scheduled runs have no inputs, so fall back to the dispatch defaults.
+  CUSTOM_SOURCES: |
+    openembedded-core ${{ inputs.oe_core_remote || 'https://git.openembedded.org/openembedded-core' }} ${{ inputs.oe_core_branch || 'master-next' }}
+    bitbake ${{ inputs.bitbake_remote || 'https://git.openembedded.org/bitbake' }} ${{ inputs.bitbake_branch || 'master' }}
+    meta-yocto ${{ inputs.meta_yocto_remote || 'https://git.yoctoproject.org/meta-yocto' }} ${{ inputs.meta_yocto_branch || 'master' }}
+
+jobs:
+  build-ptest-image:
+    runs-on: tgamblin-qemu
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/build-ptest-image
+        with:
+          package: ${{ env.PACKAGE }}
+          machine: ${{ env.MACHINE }}
+          custom_sources: ${{ env.CUSTOM_SOURCES }}
+          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
+
+  run-ptest:
+    runs-on: tgamblin-qemu
+    needs: build-ptest-image
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/run-qemu-ptest
+        with:
+          package: ${{ env.PACKAGE }}
+          machine: ${{ env.MACHINE }}
+          # python3's ptest is long, especially under TCG emulation.
+          ptest_timeout: '10800'
+          report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          tftp_server: ${{ vars.TFTP_SERVER_HOST }}
+
+  # Runs after the ptest, pass or fail, rather than alongside it.
+  reproducible:
+    runs-on: tgamblin-build
+    needs: run-ptest
+    if: ${{ !cancelled() }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/oe-selftest-reproducible
+        with:
+          targets: ${{ env.PACKAGE }}
+          machine: ${{ env.MACHINE }}
+          custom_sources: ${{ env.CUSTOM_SOURCES }}
+          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
