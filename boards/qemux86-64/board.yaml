@@ -1,0 +1,28 @@
+name: qemux86-64
+yocto_machine: qemux86-64
+strategy: qemu
+arch: x86_64
+description: QEMU x86-64 q35 machine. Yocto image, no physical hardware
+
+boot:
+  method: qemu
+  bootargs: root=/dev/vda rw console=ttyS0
+
+qemu:
+  binary: qemu-system-x86_64
+  machine: q35
+  cpu: Skylake-Client
+  memory: 8192
+  virtio_bus: pci
+  ssh_port: 2222
+  telnet_port: 2323
+
+images:
+  kernel: /home/labgrid/bzImage
+  ext4: /home/labgrid/ptest_image.ext4
+
+shell:
+  username: root
+  password: null
+
+strategy_class: QEMUX86_64YoctoStrategy
