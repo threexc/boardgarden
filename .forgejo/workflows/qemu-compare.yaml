@@ -106,7 +106,7 @@ jobs:
 
       - name: upload logs
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: qemu-logs-${{ matrix.side }}
           path: |

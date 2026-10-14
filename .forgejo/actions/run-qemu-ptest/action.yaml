@@ -32,7 +32,7 @@ runs:
   steps:
     # build-ptest-image already named these as board.yaml's images expect.
     - name: download images
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v3
       with:
         name: ptest_image_${{ inputs.package }}
         path: /home/labgrid

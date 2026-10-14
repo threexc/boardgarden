@@ -100,7 +100,7 @@ runs:
         ls -l "${STAGE}"
 
     - name: archive images
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: ptest_image_${{ inputs.package }}
         path: ${{ github.workspace }}/ptest-images
