@@ -9,7 +9,7 @@ description: >
 
 inputs:
   package:
-    description: 'Package whose ptest image (core-image-ptest-<package>) to build'
+    description: 'Recipe with a ptest whose image (core-image-ptest-<package>) to build'
     required: true
   machine:
     description: 'qemu MACHINE, with a matching boards/<machine>/board.yaml'
@@ -59,6 +59,15 @@ runs:
         [ -n "${DL_DIR:-}" ] && echo "DL_DIR = \"${DL_DIR}\"" >> conf/local.conf
         [ -n "${SSTATE_DIR:-}" ] && echo "SSTATE_DIR = \"${SSTATE_DIR}\"" >> conf/local.conf
         echo 'IMAGE_FSTYPES += "ext4"' >> conf/local.conf
+
+        # core-image-ptest-<recipe> only exists for recipes in oe-core's
+        # PTESTS_FAST/PTESTS_SLOW lists; add any other ptest recipe to them.
+        packagelists=$(find "$GITHUB_WORKSPACE"/bitbake-builds/poky-master \
+          -path '*/meta/conf/distro/include/ptest-packagelists.inc' -print -quit)
+        if ! grep -oE '[A-Za-z0-9.+_-]+' "${packagelists}" | grep -qxF "${PTEST_PACKAGE}"; then
+          echo "::notice::${PTEST_PACKAGE} not in ptest-packagelists.inc, adding it to PTESTS_FAST"
+          echo "PTESTS_FAST:append = \" ${PTEST_PACKAGE}\"" >> conf/local.conf
+        fi
 
         bitbake-config-build \
           enable-fragment \
