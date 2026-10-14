@@ -11,7 +11,10 @@ boot:
 qemu:
   binary: qemu-system-x86_64
   machine: q35
-  cpu: Skylake-Client
+  # KVM when /dev/kvm is usable, else TCG; "max" is host passthrough under
+  # KVM and every emulated feature under TCG.
+  accel: [kvm, tcg]
+  cpu: max
   memory: 8192
   virtio_bus: pci
   ssh_port: 2222
