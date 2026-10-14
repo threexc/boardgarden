@@ -1,0 +1,302 @@
+name: recipe-upgrade
+
+# Auto-upgrade-helper style check for meta-riscv BSP recipes: look for a newer
+# upstream tag, bump the recipe, refresh its patches, then build and boot-test
+# every board that uses it. The resulting layer patches (marked WIP if
+# anything failed) and failure logs are published as one artifact.
+#
+# One recipe per run, so runs for different recipes never race each other
+# for the same board's TFTP directory. Scheduled runs pick the recipe from the
+# weekday (Wed: linux-mainline, Sat: u-boot, Sun: opensbi).
+
+on:
+  schedule:
+    - cron: '0 12 * * 0,3,6'
+  workflow_dispatch:
+    inputs:
+      recipe:
+        description: 'Recipe to upgrade'
+        required: true
+        default: 'linux-mainline'
+        type: choice
+        options:
+          - linux-mainline
+          - u-boot
+          - opensbi
+      version:
+        description: 'Target upstream version (empty for the newest tag)'
+        required: false
+        default: ''
+        type: string
+      bitbake_setup_override:
+        description: 'bitbake-setup source override to apply (none for default)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - meta-riscv-tgamblin-review
+          - meta-riscv-tgamblin-fixes
+      image:
+        description: 'Image to build'
+        required: true
+        default: 'core-image-minimal'
+        type: choice
+        options:
+          - core-image-minimal
+          - core-image-full-cmdline
+      machines:
+        description: 'JSON array of candidate machines, or "auto"'
+        required: true
+        default: 'auto'
+        type: string
+
+env:
+  TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
+  TFTP_USER: "auto"
+
+jobs:
+  discover:
+    runs-on: ["tgamblin-maintenance", "khilman-build"]
+    outputs:
+      recipe: ${{ steps.recipe.outputs.recipe }}
+      matrix: ${{ steps.disc.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: recipe
+        env:
+          RECIPE: ${{ inputs.recipe }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RECIPE}" ]; then
+            case "$(date -u +%u)" in
+              3) RECIPE=linux-mainline ;;
+              6) RECIPE=u-boot ;;
+              7) RECIPE=opensbi ;;
+              *) echo "::error::no recipe scheduled for today"; exit 1 ;;
+            esac
+          fi
+          echo "recipe=${RECIPE}" >> "$GITHUB_OUTPUT"
+      - id: disc
+        uses: ./.forgejo/actions/discover-machines
+
+  prepare:
+    needs: discover
+    runs-on: ["tgamblin-build", "khilman-build"]
+    outputs:
+      status: ${{ steps.upgrade.outputs.status }}
+      old_version: ${{ steps.upgrade.outputs.old_version }}
+      new_version: ${{ steps.upgrade.outputs.new_version }}
+      machines: ${{ steps.upgrade.outputs.machines }}
+      refresh_failed: ${{ steps.upgrade.outputs.refresh_failed }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - id: upgrade
+        uses: ./.forgejo/actions/prepare-recipe-upgrade
+        with:
+          recipe: ${{ needs.discover.outputs.recipe }}
+          version: ${{ inputs.version }}
+          machines: >-
+            ${{
+              inputs.machines != '' && inputs.machines != 'auto'
+                && inputs.machines
+                || needs.discover.outputs.matrix
+            }}
+          bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
+          out_dir: /tmp/upgrade
+      - if: ${{ steps.upgrade.outputs.status == 'upgraded' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: upgrade-patches
+          path: /tmp/upgrade
+
+  build:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.status == 'upgraded' }}
+    runs-on: ["tgamblin-build", "khilman-build"]
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: ${{ fromJSON(needs.prepare.outputs.machines) }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: upgrade-patches
+          path: /tmp/upgrade
+      - id: build
+        uses: ./.forgejo/actions/build-yocto-image
+        with:
+          machine: ${{ matrix.machine }}
+          image: ${{ inputs.image || 'core-image-minimal' }}
+          bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
+          layer_patches: /tmp/upgrade
+      - uses: ./.forgejo/actions/deploy-to-tftp
+        with:
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          tftp_user: ${{ env.TFTP_USER }}
+          board: ${{ steps.build.outputs.board }}
+          machine: ${{ matrix.machine }}
+          image: ${{ inputs.image || 'core-image-minimal' }}
+          images_path: ${{ steps.build.outputs.images_path }}
+          deploy_wic: ${{ steps.build.outputs.deploy_wic }}
+      - name: record build success and kernel version
+        env:
+          KERNEL_VERSION: ${{ steps.build.outputs.kernel_version }}
+        run: echo "${KERNEL_VERSION}" > /tmp/build-ok
+      - uses: actions/upload-artifact@v3
+        with:
+          name: built-machine-${{ matrix.machine }}
+          path: /tmp/build-ok
+      # bitbake prints "Logfile of failure stored in: <path>" for every failed
+      # task; keep those plus the cooker console logs.
+      - name: collect build failure logs
+        if: ${{ failure() }}
+        run: |
+          BUILD="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/build"
+          mkdir -p /tmp/logs
+          cp -r "${BUILD}/tmp/log/cooker" /tmp/logs/ 2>/dev/null || true
+          grep -rhoE 'Logfile of failure stored in: \S+' "${BUILD}/tmp/log/cooker" 2>/dev/null \
+            | awk '{print $NF}' | sort -u \
+            | xargs -r -I{} cp --parents {} /tmp/logs/ || true
+      - if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs-build-${{ matrix.machine }}
+          path: /tmp/logs
+
+  collect_built_machines:
+    needs: build
+    if: ${{ !cancelled() && needs.build.result != 'skipped' }}
+    runs-on: ["tgamblin-maintenance", "khilman-build"]
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+      versions: ${{ steps.collect.outputs.versions }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - id: collect
+        run: |
+          set -euo pipefail
+          python3 - >> "$GITHUB_OUTPUT" <<'EOF'
+          import json, pathlib
+          versions = {p.parent.name.removeprefix("built-machine-"): p.read_text().strip()
+                      for p in pathlib.Path("artifacts").glob("built-machine-*/build-ok")}
+          print("matrix=" + json.dumps(sorted(versions)))
+          print("versions=" + json.dumps(versions))
+          EOF
+
+  test:
+    needs: collect_built_machines
+    if: ${{ needs.collect_built_machines.outputs.matrix != '[]' }}
+    runs-on: tgamblin-board-test
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: ${{ fromJSON(needs.collect_built_machines.outputs.matrix) }}
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      options: --add-host ${{ vars.LG_COORDINATOR_HOST }}:${{ vars.LG_COORDINATOR_IP }} --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      env:
+        LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/run-board-tests
+        with:
+          machine: ${{ matrix.machine }}
+          kernel_version: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
+          lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
+          tftp_server_ssh_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
+          report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          tftp_server: ${{ env.TFTP_SERVER }}
+          tftp_user: ${{ env.TFTP_USER }}
+          lg_coordinator: ${{ vars.LG_COORDINATOR_HOST }}
+          reports_root: yocto/recipe-upgrade
+      - run: touch /tmp/test-ok
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tested-machine-${{ matrix.machine }}
+          path: /tmp/test-ok
+      - if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs-test-${{ matrix.machine }}
+          path: ${{ github.workspace }}/report.html
+
+  # Bundle the layer patches with per-machine results and failure logs. Any
+  # failed refresh, build, or boot test marks the patches WIP.
+  report:
+    needs: [discover, prepare, build, test]
+    if: ${{ !cancelled() && needs.prepare.outputs.status == 'upgraded' }}
+    runs-on: ["tgamblin-maintenance", "khilman-build"]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - id: report
+        env:
+          RECIPE: ${{ needs.discover.outputs.recipe }}
+          OLD: ${{ needs.prepare.outputs.old_version }}
+          NEW: ${{ needs.prepare.outputs.new_version }}
+          MACHINES: ${{ needs.prepare.outputs.machines }}
+          REFRESH_FAILED: ${{ needs.prepare.outputs.refresh_failed }}
+        run: |
+          set -euo pipefail
+          OUT="recipe-upgrade-${RECIPE}-${NEW}"
+          mkdir -p "${OUT}/logs"
+          cp -r artifacts/upgrade-patches/. "${OUT}/"
+          for d in artifacts/logs-*/; do
+            [ -d "$d" ] && cp -r "$d" "${OUT}/logs/"
+          done
+
+          WIP="${REFRESH_FAILED}"
+          {
+            echo "# ${RECIPE}: ${OLD} -> ${NEW}"
+            echo
+            echo "| machine | build | boot test |"
+            echo "|---|---|---|"
+            for m in $(echo "${MACHINES}" | tr -d '[]"' | tr ',' ' '); do
+              b=fail; t=fail
+              [ -d "artifacts/built-machine-${m}" ] && b=pass
+              [ -d "artifacts/tested-machine-${m}" ] && t=pass
+              [ "$b" = pass ] || t=skipped
+              [ "$b$t" = passpass ] || WIP=true
+              echo "| ${m} | ${b} | ${t} |"
+            done
+            echo
+            echo '```'
+            cat "${OUT}/refresh.log"
+            echo '```'
+          } > "${OUT}/RESULTS.md"
+
+          if [ "${WIP}" = true ]; then
+            find "${OUT}" -name '*.patch' -exec sed -i '0,/^Subject: \[PATCH\] /s//&WIP: /' {} +
+            echo "::warning::${RECIPE} ${OLD} -> ${NEW} needs manual work, see ${OUT}/RESULTS.md"
+          fi
+          cat "${OUT}/RESULTS.md"
+          echo "out=${OUT}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.report.outputs.out }}
+          path: ${{ steps.report.outputs.out }}
