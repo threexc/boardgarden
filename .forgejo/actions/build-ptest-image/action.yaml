@@ -53,7 +53,8 @@ runs:
       env:
         PTEST_PACKAGE: ${{ inputs.package }}
       run: |
-        set -euo pipefail
+        # No -u: oe-init-build-env reads unset vars (e.g. BBSERVER).
+        set -eo pipefail
         . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
         # Registry configs don't pass DL_DIR/SSTATE_DIR through from the env.
         [ -n "${DL_DIR:-}" ] && echo "DL_DIR = \"${DL_DIR}\"" >> conf/local.conf
@@ -64,7 +65,7 @@ runs:
         # PTESTS_FAST/PTESTS_SLOW lists; add any other ptest recipe to them.
         packagelists=$(find "$GITHUB_WORKSPACE"/bitbake-builds/poky-master \
           -path '*/meta/conf/distro/include/ptest-packagelists.inc' -print -quit)
-        if ! grep -oE '[A-Za-z0-9.+_-]+' "${packagelists}" | grep -qxF "${PTEST_PACKAGE}"; then
+        if ! grep -oE '[A-Za-z0-9.+_-]+' "${packagelists}" | grep -xF "${PTEST_PACKAGE}" >/dev/null; then
           echo "::notice::${PTEST_PACKAGE} not in ptest-packagelists.inc, adding it to PTESTS_FAST"
           echo "PTESTS_FAST:append = \" ${PTEST_PACKAGE}\"" >> conf/local.conf
         fi
