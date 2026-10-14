@@ -18,11 +18,11 @@ on:
       machine:
         description: 'QEMU machine to build for and boot'
         required: true
-        default: 'qemuriscv64'
+        default: 'qemux86-64'
         type: choice
         options:
-          - qemuriscv64
           - qemux86-64
+          - qemuriscv64
           - qemuarm64
       oe_core_remote:
         description: 'openembedded-core git remote (mirror or fork)'
@@ -57,7 +57,9 @@ on:
 
 env:
   PACKAGE: ${{ inputs.package || 'python3' }}
-  MACHINE: ${{ inputs.machine || 'qemuriscv64' }}
+  # Not MACHINE: oe-init-build-env passes that env var through to bitbake,
+  # where it clashes with bitbake-setup's machine/<name> fragment.
+  QEMU_MACHINE: ${{ inputs.machine || 'qemux86-64' }}
   # Scheduled runs have no inputs, so fall back to the dispatch defaults.
   CUSTOM_SOURCES: |
     openembedded-core ${{ inputs.oe_core_remote || 'https://git.openembedded.org/openembedded-core' }} ${{ inputs.oe_core_branch || 'master-next' }}
@@ -79,7 +81,7 @@ jobs:
       - uses: ./.forgejo/actions/build-ptest-image
         with:
           package: ${{ env.PACKAGE }}
-          machine: ${{ env.MACHINE }}
+          machine: ${{ env.QEMU_MACHINE }}
           custom_sources: ${{ env.CUSTOM_SOURCES }}
           repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
@@ -91,13 +93,13 @@ jobs:
       # qemux86-64 boots with KVM; needs /dev/kvm on the runner host.
       options: >-
         --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
-        ${{ inputs.machine == 'qemux86-64' && '--device /dev/kvm' || '' }}
+        ${{ (inputs.machine || 'qemux86-64') == 'qemux86-64' && '--device /dev/kvm' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.forgejo/actions/run-qemu-ptest
         with:
           package: ${{ env.PACKAGE }}
-          machine: ${{ env.MACHINE }}
+          machine: ${{ env.QEMU_MACHINE }}
           ptest_timeout: ${{ inputs.ptest_timeout || '10800' }}
           report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
@@ -120,6 +122,6 @@ jobs:
       - uses: ./.forgejo/actions/oe-selftest-reproducible
         with:
           targets: ${{ env.PACKAGE }}
-          machine: ${{ env.MACHINE }}
+          machine: ${{ env.QEMU_MACHINE }}
           custom_sources: ${{ env.CUSTOM_SOURCES }}
           repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
