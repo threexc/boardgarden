@@ -26,6 +26,9 @@ targets:
           -netdev user,id=net0,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.ssh_port }}-:22,hostfwd=tcp:127.0.0.1:{{ manifest.qemu.telnet_port }}-:23
           -object rng-random,filename=/dev/urandom,id=rng0
           -device virtio-rng-{{ virtio }},rng=rng0
+{%- for accel in manifest.qemu.accel | default([]) %}
+          -accel {{ accel }}
+{%- endfor %}
       ShellDriver:
         prompt: 'root@[a-zA-Z0-9]+:~#\s'
         login_prompt: ' login: '
