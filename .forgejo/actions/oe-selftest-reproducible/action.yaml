@@ -54,7 +54,8 @@ runs:
         TARGETS: ${{ inputs.targets }}
         OEQA_DEBUGGING_SAVED_OUTPUT: ${{ github.workspace }}/reproducible-output
       run: |
-        set -euo pipefail
+        # No -u: oe-init-build-env reads unset vars (e.g. BBSERVER).
+        set -eo pipefail
         mkdir -p "${OEQA_DEBUGGING_SAVED_OUTPUT}"
         . "$GITHUB_WORKSPACE"/bitbake-builds/poky-master/build/init-build-env
         # Registry configs don't pass DL_DIR/SSTATE_DIR through from the env.
