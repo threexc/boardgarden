@@ -1,10 +1,20 @@
-name: python3-ptest-reproducible
+name: ptest-reproducible
 
 on:
   schedule:
     - cron: '0 6 * * 6'
   workflow_dispatch:
     inputs:
+      package:
+        description: 'Recipe with a ptest to build, boot and test, and check for reproducibility'
+        required: true
+        default: 'python3'
+        type: string
+      ptest_timeout:
+        description: 'Seconds to wait for ptest-runner to finish'
+        required: true
+        default: '10800'
+        type: string
       machine:
         description: 'QEMU machine to build for and boot'
         required: true
@@ -46,7 +56,7 @@ on:
         type: string
 
 env:
-  PACKAGE: python3
+  PACKAGE: ${{ inputs.package || 'python3' }}
   MACHINE: ${{ inputs.machine || 'qemuriscv64' }}
   # Scheduled runs have no inputs, so fall back to the dispatch defaults.
   CUSTOM_SOURCES: |
@@ -78,15 +88,17 @@ jobs:
     needs: build-ptest-image
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
-      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+      # qemux86-64 boots with KVM; needs /dev/kvm on the runner host.
+      options: >-
+        --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+        ${{ inputs.machine == 'qemux86-64' && '--device /dev/kvm' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.forgejo/actions/run-qemu-ptest
         with:
           package: ${{ env.PACKAGE }}
           machine: ${{ env.MACHINE }}
-          # python3's ptest is long, especially under TCG emulation.
-          ptest_timeout: '10800'
+          ptest_timeout: ${{ inputs.ptest_timeout || '10800' }}
           report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
           tftp_server: ${{ vars.TFTP_SERVER_HOST }}
