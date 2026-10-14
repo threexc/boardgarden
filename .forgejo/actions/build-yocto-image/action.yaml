@@ -24,6 +24,13 @@ inputs:
   boardgarden_owner:
     description: 'Owner/org of the mirrored bitbake repo'
     required: true
+  layer_patches:
+    description: >
+      Optional directory of <layer>/*.patch files (e.g. from
+      prepare-recipe-upgrade) to git am onto the matching checkout under
+      layers/ before building
+    required: false
+    default: ''
 
 outputs:
   board:
@@ -57,6 +64,20 @@ runs:
           machine/${{ inputs.machine }}
         source_override: ${{ inputs.bitbake_setup_override }}
         repo_owner: ${{ inputs.boardgarden_owner }}
+
+    - name: apply layer patches
+      if: ${{ inputs.layer_patches != '' }}
+      shell: bash
+      env:
+        LAYER_PATCHES: ${{ inputs.layer_patches }}
+      run: |
+        set -euo pipefail
+        LAYERS="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/layers"
+        for d in "${LAYER_PATCHES}"/*/; do
+          git -C "${LAYERS}/$(basename "$d")" \
+            -c user.name=boardgarden -c user.email=boardgarden@localhost \
+            am "$d"*.patch
+        done
 
     - name: build image
       shell: bash
