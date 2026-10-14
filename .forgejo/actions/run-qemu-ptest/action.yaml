@@ -54,6 +54,9 @@ runs:
         MACHINE: ${{ inputs.machine }}
         PTEST_TIMEOUT: ${{ inputs.ptest_timeout }}
       run: |
+        if grep -q -- '-accel kvm' "boards/${MACHINE}/env.yaml" && [ ! -w /dev/kvm ]; then
+          echo "::warning::/dev/kvm not usable in this container, ${MACHINE} falls back to TCG"
+        fi
         uv sync
         uv run pytest -vv --html=report.html --self-contained-html \
           --lg-env "boards/${MACHINE}/env.yaml" \
