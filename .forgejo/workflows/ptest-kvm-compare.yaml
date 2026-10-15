@@ -93,6 +93,12 @@ jobs:
           PTEST_BOARD_USER: ${{ vars.PTEST_BOARD_USER }}
         run: |
           set -euo pipefail
+          # An empty HostName makes ssh reject the whole config, breaking
+          # labgrid's own ssh to the exporter too - fail clearly instead.
+          if [ -z "${PTEST_BOARD_HOST}" ]; then
+            echo "::error::repo variable PTEST_BOARD_HOST is not set"
+            exit 1
+          fi
           mkdir -p ~/.ssh
           umask 077
           printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
