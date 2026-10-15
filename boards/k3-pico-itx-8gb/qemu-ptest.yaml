@@ -1,0 +1,45 @@
+# Labgrid env for booting a qemuriscv64 ptest image *on* this board, using
+# the qemu-system-riscv64 installed in its eMMC OS, over SSH. Used by the
+# ptest-kvm-compare workflow; the board itself must already be up (no
+# power/U-Boot handling here).
+#
+# Expects in the environment:
+#   - an ~/.ssh/config Host entry named "ptest-board" for the board
+#   - LG_QEMU_DIR:   board-side dir holding Image, fw_jump.elf, ptest_image.ext4
+#   - LG_QEMU_ACCEL: accelerator/CPU/firmware args, e.g.
+#                    "-accel kvm,kernel-irqchip=split -cpu host" or
+#                    "-accel tcg -cpu max -bios fw_jump.elf"
+#   - LG_QEMU_SMP, LG_QEMU_MEMORY: guest vCPUs / MiB
+#
+# ssh -tt: qemu gets a pty, so it's SIGHUP'd when labgrid closes the console.
+# -snapshot: every run starts from the pristine rootfs.
+# aia=aplic: the vendor kernel's KVM lacks the IMSIC ioctls, so KVM needs
+# APLIC-only AIA with kernel-irqchip=split (=on is unstable, aplic-imsic fails
+# with "KVM AIA: failed to set number of msi"). TCG uses the same machine so
+# the two runs differ only in the accelerator. See
+# https://blog.ludovic.dev/2026/06/17/running-vms-on-riscv-hardware.html
+targets:
+  main:
+    drivers:
+      ExternalConsoleDriver:
+        cmd: !template >-
+          ssh -tt -o BatchMode=yes -o ServerAliveInterval=30 ptest-board
+          cd $LG_QEMU_DIR && exec qemu-system-riscv64
+          -machine virt,aia=aplic $LG_QEMU_ACCEL
+          -smp $LG_QEMU_SMP -m $LG_QEMU_MEMORY
+          -nographic -snapshot
+          -kernel Image
+          -append "'root=/dev/vda rw console=ttyS0 earlycon'"
+          -drive file=ptest_image.ext4,if=virtio,format=raw
+          -object rng-random,filename=/dev/urandom,id=rng0
+          -device virtio-rng-device,rng=rng0
+      ShellDriver:
+        prompt: 'root@[a-zA-Z0-9]+:~#\s'
+        login_prompt: ' login: '
+        username: 'root'
+        # TCG boots on a K1 are slow
+        login_timeout: 900
+      ExternalQemuStrategy: {}
+
+imports:
+  - boardfarm_common.strategies.qemu

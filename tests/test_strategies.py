@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
-from boardfarm_common.strategies.qemu import QemuBootStrategy, QemuStatus
+from boardfarm_common.strategies.qemu import ExternalQemuStrategy, QemuBootStrategy, QemuStatus
 from boardfarm_common.strategies.sdmux import SdMuxBootStrategy, SdMuxStatus
 from boardfarm_common.strategies.tftp import TftpBootStrategy, TftpStatus
 from labgrid.strategy.common import StrategyError
@@ -180,3 +180,20 @@ def test_qemu_transition_rejects_shell_directly_from_booting(qemu_strategy):
 def test_qemu_transition_rejects_status_with_no_handler(qemu_strategy):
     with pytest.raises(StrategyError):
         qemu_strategy.transition("unknown")
+
+
+# ---- ExternalQemuStrategy ---------------------------------------------------
+
+
+def test_external_qemu_shell_then_off():
+    strategy = ExternalQemuStrategy(target=FakeTarget(), name="ext-qemu-test")
+    _mock_drivers(strategy, "console", "shell")
+
+    strategy.transition("shell")
+    assert strategy.target.activated == [strategy.console, strategy.shell]
+    strategy.transition("shell")  # already there: no re-activation
+    assert len(strategy.target.activated) == 2
+
+    strategy.transition("off")
+    assert strategy.status == QemuStatus.off
+    assert strategy.target.deactivated == [strategy.console]

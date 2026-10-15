@@ -1,6 +1,7 @@
 import enum
 
 import attr
+from labgrid.factory import target_factory
 from labgrid.step import step
 from labgrid.strategy.common import StrategyError
 
@@ -48,3 +49,38 @@ class QemuBootStrategy(BoardStrategy):
             self.status = QemuStatus.shell
         else:
             raise StrategyError(f"Unknown status {status}")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class ExternalQemuStrategy(BoardStrategy):
+    """Drive a QEMU guest whose serial console is a subprocess's stdio.
+
+    Used with ``ExternalConsoleDriver`` when QEMU runs somewhere labgrid's
+    ``QEMUDriver`` can't reach, e.g. ``ssh -tt <board> qemu-system-* -nographic``.
+    Activating the console starts the subprocess (boots the guest);
+    deactivating it kills the subprocess (and, via SIGHUP, the guest).
+    """
+
+    bindings = {
+        "console": "ConsoleProtocol",
+        "shell": "ShellDriver",
+    }
+
+    status = attr.ib(default=QemuStatus.unknown)
+
+    @step(title="transition")
+    def transition(self, status):
+        if not isinstance(status, QemuStatus):
+            status = QemuStatus[status]
+
+        if status == QemuStatus.off:
+            self.target.deactivate(self.console)
+        elif status == QemuStatus.shell:
+            if self.status == QemuStatus.shell:
+                return
+            self.target.activate(self.console)
+            self.target.activate(self.shell)
+        else:
+            raise StrategyError(f"can not transition to {status}")
+        self.status = status
