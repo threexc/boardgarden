@@ -2,7 +2,8 @@
 # Boot every staged ptest image under the board's qemu-system-riscv64 in one
 # mode (kvm or tcg) via qemu-ptest.yaml, writing logs/<pkg>/<mode>/.
 # Used by the ptest-kvm-compare workflow; expects BOARD_DIR, TCG_CPU,
-# LG_QEMU_SMP, LG_QEMU_MEMORY and PTEST_TIMEOUT in the environment.
+# LG_QEMU_SMP, LG_QEMU_MEMORY and PTEST_TIMEOUT (optionally PTEST_RUNNER_TIMEOUT)
+# in the environment.
 set -uo pipefail
 
 mode=$1
@@ -28,11 +29,16 @@ for dir in $(ssh ptest-board "ls -d ${BOARD_DIR}/*/"); do
   out="logs/${pkg}/${mode}"
   mkdir -p "$out"
   echo "::group::${pkg} (${mode})"
+  # ShellDriver.run() prints nothing until ptest-runner exits; follow the
+  # guest console (written live by --lg-log) so progress shows in the job log.
+  tail -F -n +1 "$out/console_main" 2>/dev/null &
+  tail_pid=$!
   uv run pytest -vv \
     --lg-env boards/k3-pico-itx-8gb/qemu-ptest.yaml \
     --lg-log "$out" \
     --junitxml "$out/junit.xml" \
     common/src/boardfarm_common/ptest 2>&1 | tee "$out/pytest.log" || failed=1
+  kill "$tail_pid" 2>/dev/null
   # Belt and braces: never leave a guest running into the next run.
   ssh ptest-board 'pkill -f qemu-system-riscv64' || true
   echo "::endgroup::"

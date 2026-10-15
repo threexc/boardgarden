@@ -20,5 +20,9 @@ class TestPtests:
 
     def test_ptests(self, shell):
         timeout = int(os.environ.get("PTEST_TIMEOUT", 1200))
-        stdout, stderr, rc = shell.run("ptest-runner", timeout=timeout)
+        cmd = "ptest-runner"
+        # ptest-runner kills a ptest silent for this long (its default: 300s)
+        if runner_timeout := os.environ.get("PTEST_RUNNER_TIMEOUT"):
+            cmd += f" -t {int(runner_timeout)}"
+        stdout, stderr, rc = shell.run(cmd, timeout=timeout)
         assert rc == 0

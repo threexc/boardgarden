@@ -40,6 +40,11 @@ on:
         required: true
         default: '14400'
         type: string
+      ptest_runner_timeout:
+        description: 'ptest-runner -t: seconds a ptest may go without output before it is killed (same for both runs)'
+        required: true
+        default: '3600'
+        type: string
 
 defaults:
   run:
@@ -170,6 +175,7 @@ jobs:
           LG_QEMU_SMP: ${{ inputs.smp }}
           LG_QEMU_MEMORY: ${{ inputs.memory }}
           PTEST_TIMEOUT: ${{ inputs.ptest_timeout }}
+          PTEST_RUNNER_TIMEOUT: ${{ inputs.ptest_runner_timeout }}
         run: boards/k3-pico-itx-8gb/run-qemu-ptests.sh kvm
 
       - name: run ptests (TCG)
@@ -179,6 +185,7 @@ jobs:
           LG_QEMU_SMP: ${{ inputs.smp }}
           LG_QEMU_MEMORY: ${{ inputs.memory }}
           PTEST_TIMEOUT: ${{ inputs.ptest_timeout }}
+          PTEST_RUNNER_TIMEOUT: ${{ inputs.ptest_runner_timeout }}
         run: boards/k3-pico-itx-8gb/run-qemu-ptests.sh tcg
 
       - name: power off and release board
