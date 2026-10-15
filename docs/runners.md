@@ -6,7 +6,7 @@
 |---|---|---|
 | `tgamblin-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/auto/runner/buildcache` bind-mount |
 | `tgamblin-qemu` | `riscv-ptest-nightly` | Same as `tgamblin-build`; runs QEMU |
-| `tgamblin-board-test` | `yocto-build-and-test` (via `run-board-tests`) | Docker, network route to Labgrid coordinator + TFTP server |
+| `tgamblin-board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to Labgrid coordinator + TFTP server |
 | `tgamblin-maintenance` | `meta-riscv-check-layer`, `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
 
 ## Host containers
@@ -35,6 +35,8 @@ Set these in Settings → Actions → Variables.
 | `LG_COORDINATOR_IP` | `192.168.40.166` | LAN address for the coordinator. Right half of `--add-host` |
 | `TFTP_SERVER_HOST` | `ecogrid` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid coordinator/exporter on `ecogrid` for now; may separate |
 | `TFTP_SERVER_IP` | `192.168.40.166` | LAN address for the TFTP server. Right half of `--add-host` |
+| `PTEST_BOARD_HOST` | `k3-pico-itx-8gb` | Hostname/IP of the k3-pico-itx-8gb's eMMC OS, reachable by SSH from `tgamblin-board-test`. Used by `ptest-kvm-compare` |
+| `PTEST_BOARD_USER` | `admin` | SSH user on `PTEST_BOARD_HOST` (defaults to `admin`). Key auth only; needs to run `qemu-system-riscv64` and write `/dev/kvm` (e.g. `kvm` group) and `/var/tmp` |
 
 ## Repo secrets
 
@@ -48,6 +50,7 @@ Set these in Settings → Actions → Secrets.
 | `RENOVATE_TOKEN` | `renovate` | Forgejo bot PAT with `read:repository`, `write:repository`, `write:issue` |
 | `REPORT_SSH_KEY` | `run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@ecogrid`. rsync of `report.html` to `/testresults/` |
 | `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, LG coordinator — all `ecogrid` today). Seed with `ssh-keyscan -H -T 10 <host>` |
+| `PTEST_BOARD_SSH_KEY` | `ptest-kvm-compare` | Private key for `PTEST_BOARD_USER@PTEST_BOARD_HOST` |
 | `TFTP_SERVER_SSH_KEY` | `deploy-to-tftp` → `setup-ssh`; `run-board-tests` | Private key for `auto@ecogrid`. rsync build artifacts into `/srv/tftp/<board>/` |
 
 ## Container `--add-host` mappings
