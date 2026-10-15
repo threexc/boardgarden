@@ -11,6 +11,9 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BOARDS_DIR = REPO_ROOT / "boards"
+# Every board dir with a manifest, so renaming/adding a board can't leave
+# these tests pointing at a stale list.
+REAL_BOARDS = sorted(p.parent.name for p in BOARDS_DIR.glob("*/board.yaml"))
 
 
 @pytest.fixture

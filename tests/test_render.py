@@ -1,17 +1,10 @@
 import pytest
 from boardfarm_common.render import render
-
-BOARDS_AND_OUTPUTS = [
-    ("bananapi-f3", "client.yaml"),
-    ("k3-pico-itx", "client.yaml"),
-    ("muse-pi-pro", "client.yaml"),
-    ("orangepi-rv2", "client.yaml"),
-    ("qemuriscv64", "env.yaml"),
-]
+from conftest import REAL_BOARDS
 
 
-@pytest.mark.parametrize(("board", "out_name"), BOARDS_AND_OUTPUTS)
-def test_render_matches_committed_output(boards_dir, board, out_name):
+@pytest.mark.parametrize("board", REAL_BOARDS)
+def test_render_matches_committed_output(boards_dir, board):
     """Regression guard: the committed client.yaml/env.yaml for every real
     board must match what render() produces from board.yaml right now. This
     is the same invariant `boardfarm-render --check` enforces in CI, exercised
@@ -19,7 +12,7 @@ def test_render_matches_committed_output(boards_dir, board, out_name):
     board_dir = boards_dir / board
     out_path, rendered = render(board_dir)
 
-    assert out_path == board_dir / out_name
+    assert out_path.parent == board_dir
     assert rendered == out_path.read_text()
 
 

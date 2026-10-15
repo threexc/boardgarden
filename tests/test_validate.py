@@ -2,8 +2,7 @@ import jsonschema
 import pytest
 from boardfarm_common.manifest import load_board
 from boardfarm_common.validate import main, validate_manifest
-
-REAL_BOARDS = ["bananapi-f3", "k3-pico-itx", "muse-pi-pro", "orangepi-rv2", "qemuriscv64"]
+from conftest import REAL_BOARDS
 
 
 @pytest.mark.parametrize("board", REAL_BOARDS)
