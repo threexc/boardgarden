@@ -18,7 +18,7 @@ on:
       packages:
         description: 'JSON array of ptest recipes'
         required: true
-        default: '["bzip2", "coreutils", "python3-cryptography", "xz"]'
+        default: '["bzip2", "coreutils", "parted", "xz"]'
         type: string
       tcg_cpu:
         description: 'Guest -cpu for the TCG runs (KVM always uses host)'
