@@ -12,6 +12,8 @@
 #   - LG_QEMU_SMP, LG_QEMU_MEMORY: guest vCPUs / MiB
 #
 # ssh -tt: qemu gets a pty, so it's SIGHUP'd when labgrid closes the console.
+# stty -onlcr: otherwise that pty turns the guest's \r\n into \r\r\n, and
+# ShellDriver.run() output lines end in a stray \r.
 # -snapshot: every run starts from the pristine rootfs.
 # aia=aplic: the vendor kernel's KVM lacks the IMSIC ioctls, so KVM needs
 # APLIC-only AIA with kernel-irqchip=split (=on is unstable, aplic-imsic fails
@@ -24,7 +26,7 @@ targets:
       ExternalConsoleDriver:
         cmd: !template >-
           ssh -tt -o BatchMode=yes -o ServerAliveInterval=30 ptest-board
-          cd $LG_QEMU_DIR && exec qemu-system-riscv64
+          cd $LG_QEMU_DIR && stty -onlcr && exec qemu-system-riscv64
           -machine virt,aia=aplic $LG_QEMU_ACCEL
           -smp $LG_QEMU_SMP -m $LG_QEMU_MEMORY
           -nographic -snapshot

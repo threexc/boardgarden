@@ -16,6 +16,7 @@ esac
 
 if [ "$mode" = kvm ] && ! ssh ptest-board 'test -w /dev/kvm'; then
   echo "::error::/dev/kvm not usable on the board"
+  ssh ptest-board 'id; ls -l /dev/kvm; lsmod | grep -w kvm || echo "kvm module not loaded"' || true
   exit 1
 fi
 
