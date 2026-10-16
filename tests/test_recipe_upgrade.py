@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).parents[1] / ".forgejo/actions/prepare-recipe-upgrade/upgrade.py"
+SCRIPT = Path(__file__).parents[1] / ".forgejo/actions/recipe-upgrade-prepare/upgrade.py"
 spec = importlib.util.spec_from_file_location("upgrade", SCRIPT)
 upgrade = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(upgrade)

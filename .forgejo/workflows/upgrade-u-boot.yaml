@@ -1,0 +1,132 @@
+name: upgrade-u-boot
+
+# Auto-upgrade-helper style check for one recipe: look for a newer upstream
+# tag, bump the recipe, refresh its patches, and build the recipe for every
+# meta-riscv machine that uses it. The layer patches (subjects prefixed
+# "WIP: " if any refresh or build failed), RESULTS.md and failure logs are
+# uploaded as a single artifact.
+#
+# upgrade-linux-mainline, upgrade-u-boot and upgrade-opensbi differ only in
+# RECIPE and the schedule; all logic lives in the recipe-upgrade-* actions.
+#
+# To run this from meta-riscv itself: copy it to .github/workflows/ and the
+# recipe-upgrade-* actions to .github/actions/, then edit the lines marked
+# "PORT:". The actions need no changes; from a layer checkout they build the
+# checked-out layer instead of upstream meta-riscv.
+
+on:
+  schedule:
+    - cron: '0 12 * * 6'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Target upstream version (empty for the newest tag)'
+        required: false
+        default: ''
+        type: string
+      machines:
+        description: 'Space-separated machines to consider (empty for all)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  RECIPE: u-boot
+
+jobs:
+  prepare:
+    runs-on: ["tgamblin-build", "khilman-build"]  # PORT: ubuntu-latest
+    # PORT: delete container (GitHub-hosted runners build on the host)
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    outputs:
+      status: ${{ steps.prepare.outputs.status }}
+      old_version: ${{ steps.prepare.outputs.old_version }}
+      new_version: ${{ steps.prepare.outputs.new_version }}
+      machines: ${{ steps.prepare.outputs.machines }}
+      refresh_failed: ${{ steps.prepare.outputs.refresh_failed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/recipe-upgrade-setup  # PORT: ./.github/actions/...
+      - id: prepare
+        uses: ./.forgejo/actions/recipe-upgrade-prepare  # PORT: ./.github/actions/...
+        with:
+          recipe: ${{ env.RECIPE }}
+          version: ${{ inputs.version }}
+          machines: ${{ inputs.machines }}
+          out_dir: ${{ runner.temp }}/upgrade
+      - if: ${{ steps.prepare.outputs.status == 'upgraded' }}
+        uses: actions/upload-artifact@v3  # PORT: @v4
+        with:
+          name: upgrade-patches
+          path: ${{ runner.temp }}/upgrade
+
+  build:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.status == 'upgraded' }}
+    runs-on: ["tgamblin-build", "khilman-build"]  # PORT: ubuntu-latest
+    # PORT: delete container
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: ${{ fromJSON(needs.prepare.outputs.machines) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3  # PORT: @v4
+        with:
+          name: upgrade-patches
+          path: ${{ runner.temp }}/upgrade
+      - uses: ./.forgejo/actions/recipe-upgrade-setup  # PORT: ./.github/actions/...
+        with:
+          machine: ${{ matrix.machine }}
+      - uses: ./.forgejo/actions/recipe-upgrade-build  # PORT: ./.github/actions/...
+        with:
+          recipe: ${{ env.RECIPE }}
+          machine: ${{ matrix.machine }}
+          patches_dir: ${{ runner.temp }}/upgrade
+          logs_dir: ${{ runner.temp }}/logs
+      - run: echo ok > "${RUNNER_TEMP}/built"
+      - uses: actions/upload-artifact@v3  # PORT: @v4
+        with:
+          name: built-${{ matrix.machine }}
+          path: ${{ runner.temp }}/built
+      - if: ${{ failure() }}
+        uses: actions/upload-artifact@v3  # PORT: @v4
+        with:
+          name: logs-${{ matrix.machine }}
+          path: ${{ runner.temp }}/logs
+
+  report:
+    needs: [prepare, build]
+    if: ${{ !cancelled() && needs.prepare.outputs.status == 'upgraded' }}
+    runs-on: ["tgamblin-maintenance", "khilman-build"]  # PORT: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3  # PORT: @v4
+        with:
+          path: ${{ runner.temp }}/artifacts
+      - uses: ./.forgejo/actions/recipe-upgrade-report  # PORT: ./.github/actions/...
+        with:
+          recipe: ${{ env.RECIPE }}
+          old_version: ${{ needs.prepare.outputs.old_version }}
+          new_version: ${{ needs.prepare.outputs.new_version }}
+          machines: ${{ needs.prepare.outputs.machines }}
+          refresh_failed: ${{ needs.prepare.outputs.refresh_failed }}
+          artifacts_dir: ${{ runner.temp }}/artifacts
+          out_dir: ${{ runner.temp }}/report
+      - uses: actions/upload-artifact@v3  # PORT: @v4
+        with:
+          name: upgrade-${{ env.RECIPE }}-${{ needs.prepare.outputs.new_version }}
+          path: ${{ runner.temp }}/report

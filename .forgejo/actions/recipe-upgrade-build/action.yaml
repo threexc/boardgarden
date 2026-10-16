@@ -1,0 +1,60 @@
+name: 'Recipe upgrade: build'
+description: >
+  Apply the layer patches from recipe-upgrade-prepare and build the recipe
+  for one MACHINE. On failure, copies the cooker console logs and every
+  failed task's log to logs_dir. Run after recipe-upgrade-setup.
+
+inputs:
+  recipe:
+    description: 'Recipe to build'
+    required: true
+  machine:
+    description: 'MACHINE to build for'
+    required: true
+  patches_dir:
+    description: 'recipe-upgrade-prepare out_dir (<layer>/*.patch)'
+    required: true
+  logs_dir:
+    description: 'Where to collect logs if the build fails'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: apply layer patches
+      shell: bash
+      env:
+        PATCHES_DIR: ${{ inputs.patches_dir }}
+      run: |
+        set -euo pipefail
+        for d in "${PATCHES_DIR}"/*/; do
+          git -C "${RECIPE_UPGRADE_BUILD_DIR}/../layers/$(basename "$d")" \
+            -c user.name=recipe-upgrade -c user.email=recipe-upgrade@localhost \
+            am "$d"*.patch
+        done
+
+    - name: build
+      shell: bash
+      env:
+        RECIPE: ${{ inputs.recipe }}
+        MACHINE_IN: ${{ inputs.machine }}
+      run: |
+        set -eo pipefail
+        . "${RECIPE_UPGRADE_BUILD_DIR}/init-build-env"
+        bitbake-config-build disable-fragment machine/
+        bitbake-config-build enable-fragment "machine/${MACHINE_IN}"
+        bitbake "${RECIPE}"
+
+    # bitbake prints "Logfile of failure stored in: <path>" for each failed task.
+    - name: collect failure logs
+      if: ${{ failure() }}
+      shell: bash
+      env:
+        LOGS_DIR: ${{ inputs.logs_dir }}
+      run: |
+        COOKER="${RECIPE_UPGRADE_BUILD_DIR}/tmp/log/cooker"
+        mkdir -p "${LOGS_DIR}"
+        cp -r "${COOKER}" "${LOGS_DIR}/" 2>/dev/null || true
+        grep -rhoE 'Logfile of failure stored in: \S+' "${COOKER}" 2>/dev/null \
+          | awk '{print $NF}' | sort -u \
+          | xargs -r -I{} cp {} "${LOGS_DIR}/" || true

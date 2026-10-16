@@ -1,0 +1,92 @@
+name: 'Recipe upgrade: setup'
+description: >
+  Create a meta-riscv bitbake-setup build tree outside the workspace for the
+  recipe-upgrade actions, and export its build directory as
+  RECIPE_UPGRADE_BUILD_DIR. When the workspace is itself a layer checkout
+  (conf/layer.conf at its root, e.g. these actions copied into meta-riscv's
+  .github/), it is used as that layer's source instead of a fresh clone, and
+  its own bitbake-registry/ config is used. Works on GitHub-hosted runners
+  (installs host dependencies) or inside a ready-made Yocto builder container.
+
+inputs:
+  machine:
+    description: 'Initial MACHINE (default: first machine option in the config)'
+    required: false
+    default: ''
+  config_name:
+    description: 'bitbake-setup config file name, looked up in bitbake-registry/'
+    required: false
+    default: 'meta-riscv-oe-nodistro-master.conf.json'
+  layer_source:
+    description: 'Source name in the config that a layer checkout workspace replaces'
+    required: false
+    default: 'meta-riscv'
+  registry_url:
+    description: 'Where to fetch config_name from when the workspace has no bitbake-registry/'
+    required: false
+    default: 'https://raw.githubusercontent.com/riscv/meta-riscv/master/bitbake-registry'
+  bitbake_url:
+    description: 'bitbake repository providing bitbake-setup'
+    required: false
+    default: 'https://git.openembedded.org/bitbake'
+
+runs:
+  using: composite
+  steps:
+    - name: prepare GitHub-hosted runner
+      if: ${{ runner.environment == 'github-hosted' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # A from-scratch toolchain + kernel build needs far more than the
+        # default free space.
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo apt-get update -q
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq \
+          build-essential chrpath cpio debianutils diffstat file gawk gcc git \
+          iputils-ping libacl1 lz4 locales python3 python3-git \
+          python3-jinja2 python3-pexpect python3-pip python3-subunit socat \
+          texinfo unzip wget xz-utils zstd
+        # Ubuntu 24.04 blocks the unprivileged user namespaces bitbake uses
+        # to isolate task networking.
+        sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+    - name: bitbake-setup init
+      shell: bash
+      env:
+        MACHINE_IN: ${{ inputs.machine }}
+        CONFIG_NAME: ${{ inputs.config_name }}
+        LAYER_SOURCE: ${{ inputs.layer_source }}
+        REGISTRY_URL: ${{ inputs.registry_url }}
+        BITBAKE_URL: ${{ inputs.bitbake_url }}
+      run: |
+        set -euo pipefail
+        # Outside the workspace so a layer checkout workspace stays clean.
+        TOP="${RUNNER_TEMP}/recipe-upgrade"
+        mkdir -p "${TOP}"
+        cd "${TOP}"
+
+        local_arg=()
+        if [ -f "${GITHUB_WORKSPACE}/conf/layer.conf" ]; then
+          local_arg=(-L "${LAYER_SOURCE}" "${GITHUB_WORKSPACE}")
+        fi
+        if [ -f "${GITHUB_WORKSPACE}/bitbake-registry/${CONFIG_NAME}" ]; then
+          cp "${GITHUB_WORKSPACE}/bitbake-registry/${CONFIG_NAME}" config.conf.json
+        else
+          curl -fsSL "${REGISTRY_URL}/${CONFIG_NAME}" -o config.conf.json
+        fi
+
+        MACHINE="${MACHINE_IN:-$(python3 -c '
+        import json
+        c = json.load(open("config.conf.json"))["bitbake-setup"]["configurations"][0]
+        print(c["oe-fragments-one-of"]["machine"]["options"][0]["name"].removeprefix("machine/"))
+        ')}"
+
+        git clone -q --depth 1 "${BITBAKE_URL}" bitbake-bbs
+        ./bitbake-bbs/bin/bitbake-setup init --non-interactive \
+          "${local_arg[@]}" config.conf.json nodistro "machine/${MACHINE}"
+
+        BUILD_DIR=$(echo "${TOP}"/bitbake-builds/*/build)
+        # Keep disk use bounded; failed tasks keep their work dirs and logs.
+        echo 'INHERIT += "rm_work"' >> "${BUILD_DIR}/conf/local.conf"
+        echo "RECIPE_UPGRADE_BUILD_DIR=${BUILD_DIR}" >> "$GITHUB_ENV"

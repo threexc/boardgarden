@@ -7,8 +7,9 @@ Similar in spirit to Yocto's auto-upgrade-helper, but without devtool: the
 version/SRCREV bump is a plain text edit and patches are refreshed with
 `git apply -3` against the new upstream tag.
 
-Must run inside an initialised bitbake build environment (after sourcing
-init-build-env). MACHINE is switched with bitbake-config-build.
+Must run from the build directory of a bitbake-setup tree, inside its build
+environment (after sourcing init-build-env). Layers are expected under
+../layers/. MACHINE is switched with bitbake-config-build.
 """
 
 import argparse
@@ -24,29 +25,32 @@ from pathlib import Path
 # version_var: where the current version lives. PV means it's in the recipe
 #   file name (foo_1.2.bb), anything else is a variable in the recipe file.
 # branch: optional SRC_URI branch name template, formatted with version parts.
-# select: variable deciding whether a MACHINE uses this recipe (its value must
-#   equal the recipe name). select_default: treat an unset value as a match.
+# select: whether a MACHINE uses the recipe, given that MACHINE's global
+#   bitbake environment (cheap: no recipe parsing).
 RECIPES = {
     "linux-mainline": {
         "tag": r"^v(\d+\.\d+\.\d+)$",
         "version_var": "LINUX_VERSION",
         "branch": "linux-{0}.{1}.y",
-        "select": "PREFERRED_PROVIDER_virtual/kernel",
+        "select": lambda e: e.get("PREFERRED_PROVIDER_virtual/kernel") == "linux-mainline",
     },
     "u-boot": {
         "tag": r"^v(\d{4}\.\d{2})$",
         "version_var": "PV",
-        "select": "PREFERRED_PROVIDER_virtual/bootloader",
+        "select": lambda e: e.get("PREFERRED_PROVIDER_virtual/bootloader") == "u-boot",
     },
     "opensbi": {
         "tag": r"^v(\d+\.\d+)$",
         "version_var": "PV",
-        "select": "PREFERRED_PROVIDER_opensbi",
-        "select_default": True,
+        "select": lambda e: (
+            "opensbi" in e.get("EXTRA_IMAGEDEPENDS", "").split()
+            and e.get("PREFERRED_PROVIDER_opensbi", "opensbi") == "opensbi"
+        ),
     },
 }
 
-GIT_ID = ["-c", "user.name=boardgarden", "-c", "user.email=boardgarden@localhost"]
+GIT_ID = ["-c", "user.name=recipe-upgrade", "-c", "user.email=recipe-upgrade@localhost"]
+LAYERS = Path.cwd().parent / "layers"
 
 
 def run(*cmd, cwd=None, check=True):
@@ -71,11 +75,22 @@ def vkey(version):
     return tuple(int(x) for x in re.findall(r"\d+", version))
 
 
-def bitbake_env(recipe, machine):
-    """Recipe environment for MACHINE, or {} if the recipe is skipped there."""
+def layer_name(repo):
+    """Name of the layers/ entry (possibly a symlink, see bitbake-setup -L) for repo."""
+    for d in LAYERS.iterdir():
+        if d.resolve() == repo.resolve():
+            return d.name
+    return repo.name
+
+
+def set_machine(machine):
     run("bitbake-config-build", "disable-fragment", "machine/")
     run("bitbake-config-build", "enable-fragment", f"machine/{machine}")
-    p = run("bitbake", "-e", recipe, check=False)
+
+
+def bitbake_env(recipe=None):
+    """Global (or recipe) environment, or {} if the recipe is skipped."""
+    p = run("bitbake", "-e", *([recipe] if recipe else []), check=False)
     if p.returncode:
         return {}
     return dict(re.findall(r'^(?:export )?([^\s#=]+)="(.*)"$', p.stdout, re.M))
@@ -184,20 +199,31 @@ def output(**kw):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--recipe", required=True, choices=RECIPES)
-    ap.add_argument("--machines", required=True, help="JSON array")
+    ap.add_argument(
+        "--machines",
+        default="",
+        help="space-separated candidate machines (default: all in --machine-layer)",
+    )
+    ap.add_argument("--machine-layer", default="meta-riscv", help="layer under ../layers")
     ap.add_argument("--version", default="", help="target version (default: newest tag)")
     ap.add_argument("--out", required=True, type=Path)
     a = ap.parse_args()
     spec = RECIPES[a.recipe]
-    machines = json.loads(a.machines)
+    machines = a.machines.split() or sorted(
+        f.stem
+        for f in (LAYERS / a.machine_layer / "conf/machine").glob("*.conf")
+        if not f.stem.startswith("baremetal-")
+    )
 
     # Patch series per MACHINE. Evaluated before the bump; SRC_URI and
     # FILESPATH don't depend on the version for any recipe in RECIPES.
     env, series = {}, {}
     for m in machines:
-        menv = bitbake_env(a.recipe, m)
-        provider = menv.get(spec["select"], "")
-        if menv and (provider == a.recipe or (not provider and spec.get("select_default"))):
+        set_machine(m)
+        if not spec["select"](bitbake_env()):
+            continue
+        menv = bitbake_env(a.recipe)
+        if menv:
             env = env or menv
             series[m] = patches(menv)
     print("machines using recipe:", " ".join(series) or "none")
@@ -292,11 +318,12 @@ def main():
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "refresh.log").write_text(msg)
     for repo in sorted(touched):
-        git(repo, "add", "-A")
+        # -u: never pick up untracked files, e.g. a build tree inside the checkout.
+        git(repo, "add", "-u")
         if git(repo, "diff", "--cached", "--quiet", check=False).returncode == 0:
             continue
         git(repo, "commit", "-qm", msg)
-        git(repo, "format-patch", "-q", "-1", "-o", str(a.out / repo.name))
+        git(repo, "format-patch", "-q", "-1", "-o", str(a.out / layer_name(repo)))
 
     output(
         status="upgraded",
