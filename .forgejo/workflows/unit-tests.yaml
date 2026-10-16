@@ -9,7 +9,7 @@ on:
       - 'boards/**/env.yaml'
       - 'boards/families/**'
       - 'tests/**'
-      - '.forgejo/actions/prepare-recipe-upgrade/**'
+      - '.forgejo/actions/recipe-upgrade-prepare/**'
       - 'common/pyproject.toml'
       - 'pyproject.toml'
   pull_request:
