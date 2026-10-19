@@ -1,4 +1,5 @@
 import enum
+import subprocess
 import time
 from pathlib import Path
 
@@ -66,6 +67,21 @@ class FastbootFlashStrategy(BoardStrategy):
         time.sleep(press)
         self.recovery.set(False)
 
+    def _stage(self, remote_path: str):
+        fb = self.manifest["fastboot"]
+        retries = fb.get("stage_retries", 5)
+        # After a continue, the previous stage's USB device lingers until the
+        # next one (e.g. FSBL, after DDR training) re-enumerates, and writes to
+        # it fail. fastboot waits for a missing device but not a stale one.
+        for attempt in range(retries):
+            try:
+                self.fastboot("stage", remote_path)
+                return
+            except subprocess.CalledProcessError:
+                if attempt == retries - 1:
+                    raise
+                time.sleep(fb.get("continue_delay", 3))
+
     def _flash(self):
         fb = self.manifest["fastboot"]
         # Copy staged images to the exporter up front: the boot ROM's download
@@ -78,10 +94,8 @@ class FastbootFlashStrategy(BoardStrategy):
         self._enter_download_mode()
         self.target.activate(self.fastboot)
         for remote_path in staged:
-            self.fastboot("stage", remote_path)
+            self._stage(remote_path)
             self.fastboot.continue_boot()
-            # The device re-enumerates as the staged image comes up; fastboot
-            # waits for it, but talking to the old instance too early fails.
             time.sleep(fb.get("continue_delay", 3))
         for partition, image in fb["flash"].items():
             self.fastboot.flash(partition, self._image(image))

@@ -69,7 +69,8 @@
         "flash": { "type": "object", "additionalProperties": { "type": "string" } },
         "press_time": { "type": "number" },
         "power_on_delay": { "type": "number" },
-        "continue_delay": { "type": "number" }
+        "continue_delay": { "type": "number" },
+        "stage_retries": { "type": "integer" }
       }
     },
     "qemu": {

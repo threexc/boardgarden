@@ -4,6 +4,7 @@ fake labgrid Target that just records activate()/deactivate() calls, so no
 real hardware, serial console, or labgrid environment file is needed.
 """
 
+import subprocess
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
@@ -198,6 +199,17 @@ def test_fastboot_transition_to_shell_boots(fastboot_strategy):
     # once to power up for flashing, once to boot what was flashed
     assert fastboot_strategy.power.cycle.call_count == 2
     assert fastboot_strategy.target.activated[-1] is fastboot_strategy.shell
+
+
+def test_fastboot_stage_retries_stale_device(fastboot_strategy):
+    s = fastboot_strategy
+    s.fastboot.side_effect = [subprocess.CalledProcessError(1, "fastboot"), None]
+    s._stage("/r/u-boot.itb")
+    assert s.fastboot.call_args_list == [call("stage", "/r/u-boot.itb")] * 2
+
+    s.fastboot.side_effect = subprocess.CalledProcessError(1, "fastboot")
+    with pytest.raises(subprocess.CalledProcessError):
+        s._stage("/r/u-boot.itb")
 
 
 def test_fastboot_force_rejects_flashed(fastboot_strategy):
