@@ -8,25 +8,25 @@ bf-k3-pico-itx-8gb:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
-      '@ID_SERIAL_SHORT': 'DU0ET82D'
+      '@ID_SERIAL_SHORT': 'DU0ET816'
     pin: 0
   k3-pico-itx-8gb-pwr-gpio-1:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
-      '@ID_SERIAL_SHORT': 'DU0ET82D'
+      '@ID_SERIAL_SHORT': 'DU0ET816'
     pin: 1
   k3-pico-itx-8gb-fdl-gpio-1:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
-      '@ID_SERIAL_SHORT': 'DU0ET82D'
+      '@ID_SERIAL_SHORT': 'DU0ET816'
     pin: 2
   k3-pico-itx-8gb-rst-gpio-1:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
-      '@ID_SERIAL_SHORT': 'DU0ET82D'
+      '@ID_SERIAL_SHORT': 'DU0ET816'
     pin: 3
   ## SpacemiT fastboot download mode on the DRD Type-C port. 361c:1001 is
   ## U-Boot's gadget ID; the boot ROM and FSBL must enumerate the same way.
