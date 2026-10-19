@@ -20,8 +20,8 @@ class FastbootStatus(enum.Enum):
 class FastbootFlashStrategy(BoardStrategy):
     """Flash a physical board's storage over USB fastboot, then boot it.
 
-    With the board powered on, holding the ``recovery`` button while pulsing
-    ``reset`` drops it into USB download mode. Each ``fastboot.stage`` image is
+    Holding the ``recovery`` button while power comes up, then pulsing
+    ``reset``, drops the board into USB download mode. Each ``fastboot.stage`` image is
     then staged and continued in order (e.g. SPL, then a fastboot-capable
     U-Boot), and each ``fastboot.flash`` partition is written. File names are
     relative to ``fastboot.image_dir``.
@@ -46,11 +46,19 @@ class FastbootFlashStrategy(BoardStrategy):
         return str(Path(self.manifest["fastboot"]["image_dir"]) / name)
 
     def _enter_download_mode(self):
-        press = self.manifest["fastboot"].get("press_time", 1)
+        fb = self.manifest["fastboot"]
+        press = fb.get("press_time", 1)
         self.target.activate(self.recovery)
         self.target.activate(self.reset)
+        self.target.activate(self.power)
+        # Hold recovery across power-up (enters download mode if the board
+        # starts on power) and a reset pulse (if it was already running).
         self.recovery.set(True)
         time.sleep(press)
+        # cycle(), not on(): transition(off) only just cut power, and a relay
+        # flipped back within milliseconds never actually drops the board.
+        self.power.cycle()
+        time.sleep(fb.get("power_on_delay", 2))
         self.reset.set(True)
         time.sleep(press)
         self.reset.set(False)
@@ -67,11 +75,6 @@ class FastbootFlashStrategy(BoardStrategy):
             mf = ManagedFile(self._image(image), self.fastboot.fastboot)
             mf.sync_to_resource()
             staged.append(mf.get_remote_path())
-        # cycle(), not on(): transition(off) only just cut power, and a relay
-        # flipped back within milliseconds never actually drops the board.
-        self.target.activate(self.power)
-        self.power.cycle()
-        time.sleep(fb.get("power_on_delay", 2))
         self._enter_download_mode()
         self.target.activate(self.fastboot)
         for remote_path in staged:
