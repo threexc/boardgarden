@@ -9,7 +9,7 @@
     "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
     "arch": { "type": "string" },
     "description": { "type": "string" },
-    "strategy": { "enum": ["tftp", "sdmux", "qemu"] },
+    "strategy": { "enum": ["tftp", "sdmux", "fastboot", "qemu"] },
     "remote_place": { "type": "string" },
     "image_source": { "type": "string" },
     "inherits": {
@@ -54,6 +54,24 @@
       }
     },
     "tools": { "type": "object" },
+    "buttons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Relay-driven buttons, each exported as <name>-<button>-gpio-1"
+    },
+    "fastboot": {
+      "type": "object",
+      "properties": {
+        "image_dir": { "type": "string" },
+        "recovery_button": { "type": "string" },
+        "reset_button": { "type": "string" },
+        "stage": { "type": "array", "items": { "type": "string" } },
+        "flash": { "type": "object", "additionalProperties": { "type": "string" } },
+        "press_time": { "type": "number" },
+        "power_on_delay": { "type": "number" },
+        "continue_delay": { "type": "number" }
+      }
+    },
     "qemu": {
       "type": "object",
       "properties": {
@@ -91,6 +109,15 @@
         "required": ["image"],
         "properties": {
           "image": { "required": ["label", "path"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "strategy": { "const": "fastboot" } }, "required": ["strategy"] },
+      "then": {
+        "required": ["fastboot", "buttons"],
+        "properties": {
+          "fastboot": { "required": ["image_dir", "recovery_button", "reset_button", "flash"] }
         }
       }
     },

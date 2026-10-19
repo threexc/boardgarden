@@ -106,6 +106,45 @@ runs:
         ln -sf ${LATEST_WIC} ${TFTP_SUBDIR}.rootfs-latest.wic.gz
         ln -sf ${LATEST_BMAP} ${TFTP_SUBDIR}.rootfs-latest.wic.bmap
 
+    - name: Fetch latest fastboot images
+      shell: bash
+      working-directory: /home/labgrid
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+        TFTP_USER: ${{ inputs.tftp_user }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+      run: |
+        # The TFTP subdir comes from the first board for this machine, as in
+        # build-yocto-image; any board sharing the machine may be the one
+        # flashed over fastboot.
+        BOARD=""
+        FASTBOOT_BOARD=""
+        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
+          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
+          [ "$m" = "$RISCV_MACHINE" ] || continue
+          [ -n "$BOARD" ] || BOARD=$(basename "$(dirname "$f")")
+          if grep -q '^strategy:[[:space:]]*fastboot' "$f"; then
+            FASTBOOT_BOARD=$(basename "$(dirname "$f")")
+          fi
+        done
+        if [ -z "${FASTBOOT_BOARD}" ]; then
+          exit 0
+        fi
+        set -euo pipefail
+
+        TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' \
+          "${GITHUB_WORKSPACE}/boards/${BOARD}/board.yaml")
+        [ -n "${TFTP_SUBDIR}" ] || TFTP_SUBDIR="${BOARD}"
+        FASTBOOT_DIR="${GITHUB_WORKSPACE}/boards/${FASTBOOT_BOARD}"
+        IMAGE_DIR=$(awk -F: '/^[[:space:]]*image_dir:/{gsub(/[ \t]/,"",$2); print $2; exit}' \
+          "${FASTBOOT_DIR}/board.yaml")
+
+        mkdir -p "${IMAGE_DIR}"
+        rsync -avz -e "ssh -i ~/.ssh/id_rsa_tftp" \
+          "${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${TFTP_SUBDIR}/fastboot/" "${IMAGE_DIR}/"
+        # Partition layouts aren't build output; they live in the board dir.
+        cp "${FASTBOOT_DIR}"/*.json "${IMAGE_DIR}/"
+
     - name: run labgrid-client
       shell: bash
       working-directory: ${{ github.workspace }}

@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from boardfarm_common.strategies.fastboot import FastbootFlashStrategy
 from boardfarm_common.strategies.sdmux import SdMuxBootStrategy
 from boardfarm_common.strategies.tftp import TftpBootStrategy
 
@@ -61,6 +62,13 @@ def sd(strategy, target):
     if not isinstance(strategy, SdMuxBootStrategy):
         pytest.skip("board does not use SD-mux boot strategy")
     return _transition(strategy, target, "sd")
+
+
+@pytest.fixture(scope="module")
+def fastboot(strategy, target):
+    if not isinstance(strategy, FastbootFlashStrategy):
+        pytest.skip("board does not use fastboot flash strategy")
+    return _transition(strategy, target, "shell")
 
 
 @pytest.fixture(scope="module")

@@ -8,10 +8,29 @@ bf-k3-pico-itx-8gb:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
-      '@ID_SERIAL_SHORT': 'D30HF051'
+      '@ID_SERIAL_SHORT': 'DU0ET82D'
     pin: 0
-  k3-pico-itx-8gb-tftp-1:
-    cls: 'RemoteTFTPProvider'
-    host: '192.168.40.166'
-    internal: '/srv/tftp/k3-pico-itx/'
-    external: 'k3-pico-itx/'
+  k3-pico-itx-8gb-pwr-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'DU0ET82D'
+    pin: 1
+  k3-pico-itx-8gb-fdl-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'DU0ET82D'
+    pin: 2
+  k3-pico-itx-8gb-rst-gpio-1:
+    cls: 'MatchedSysfsGPIO'
+    match:
+      '@SUBSYSTEM': usb
+      '@ID_SERIAL_SHORT': 'DU0ET82D'
+    pin: 3
+  ## SpacemiT fastboot download mode on the DRD Type-C port. 361c:1001 is
+  ## U-Boot's gadget ID; the boot ROM and FSBL must enumerate the same way.
+  k3-pico-itx-8gb-fastboot-1:
+    cls: 'AndroidUSBFastboot'
+    usb_vendor_id: '361c'
+    usb_product_id: '1001'

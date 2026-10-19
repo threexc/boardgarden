@@ -1,0 +1,55 @@
+{#- Jinja2 template for a fastboot-flash labgrid client.yaml. -#}
+{%- set n = manifest.name -%}
+{%- set fb = manifest.fastboot -%}
+{%- set strategy_class = manifest.strategy_class | default("FastbootFlashStrategy") -%}
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: {{ manifest.remote_place }}
+    drivers:
+      - SerialDriver:
+          name: '{{ n }}-console-1'
+          bindings:
+            port: '{{ n }}-serial-port-1'
+      - GpioDigitalOutputDriver:
+          name: '{{ n }}-power-gpio-1'
+          bindings:
+            gpio: '{{ n }}-power-gpio-1'
+      - DigitalOutputPowerDriver:
+          name: '{{ n }}-power-1'
+          bindings:
+            output: '{{ n }}-power-gpio-1'
+{%- for button in manifest.buttons %}
+      - GpioDigitalOutputDriver:
+          name: '{{ n }}-{{ button }}-gpio-1'
+          bindings:
+            gpio: '{{ n }}-{{ button }}-gpio-1'
+{%- endfor %}
+      - AndroidFastbootDriver:
+          name: '{{ n }}-fastboot-1'
+          bindings:
+            fastboot: '{{ n }}-fastboot-1'
+      - ShellDriver:
+          prompt: '{{ manifest.shell.prompt }}'
+          login_prompt: '{{ manifest.shell.login_prompt }}'
+          login_timeout: 120
+          username: '{{ manifest.shell.username }}'
+          {%- if manifest.shell.password %}
+          password: '{{ manifest.shell.password }}'
+          {%- endif %}
+          name: '{{ n }}-shell-1'
+          bindings:
+            console: '{{ n }}-console-1'
+      - {{ strategy_class }}:
+          name: '{{ n }}-strategy-1'
+          bindings:
+            power: '{{ n }}-power-1'
+            console: '{{ n }}-console-1'
+            shell: '{{ n }}-shell-1'
+            fastboot: '{{ n }}-fastboot-1'
+            recovery: '{{ n }}-{{ fb.recovery_button }}-gpio-1'
+            reset: '{{ n }}-{{ fb.reset_button }}-gpio-1'
+
+imports:
+  - strategy.py

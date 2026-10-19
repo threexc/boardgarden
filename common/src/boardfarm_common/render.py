@@ -17,6 +17,7 @@ from boardfarm_common.manifest import load_board
 _STRATEGY_TO_TEMPLATE = {
     "tftp": ("client-tftp.yaml.j2", "client.yaml"),
     "sdmux": ("client-sdmux.yaml.j2", "client.yaml"),
+    "fastboot": ("client-fastboot.yaml.j2", "client.yaml"),
     "qemu": ("client-qemu.yaml.j2", "env.yaml"),
 }
 

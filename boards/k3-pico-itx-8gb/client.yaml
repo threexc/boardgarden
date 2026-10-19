@@ -16,26 +16,26 @@ targets:
           name: 'k3-pico-itx-8gb-power-1'
           bindings:
             output: 'k3-pico-itx-8gb-power-gpio-1'
-      - TFTPProviderDriver:
-          name: 'k3-pico-itx-8gb-tftp-1'
+      - GpioDigitalOutputDriver:
+          name: 'k3-pico-itx-8gb-pwr-gpio-1'
           bindings:
-            provider: 'k3-pico-itx-8gb-tftp-1'
-      - UBootDriver:
-          prompt: '=> '
-          autoboot: 'Autoboot in 5 seconds'
-          interrupt: 's'
-          name: 'k3-pico-itx-8gb-uboot-1'
-          boot_commands:
-            emmc: 'boot'
-            tftp: 'booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r'
+            gpio: 'k3-pico-itx-8gb-pwr-gpio-1'
+      - GpioDigitalOutputDriver:
+          name: 'k3-pico-itx-8gb-fdl-gpio-1'
           bindings:
-            console: 'k3-pico-itx-8gb-console-1'
-          login_timeout: 30
-          boot_timeout: 30
-          strip_timestamp: True
+            gpio: 'k3-pico-itx-8gb-fdl-gpio-1'
+      - GpioDigitalOutputDriver:
+          name: 'k3-pico-itx-8gb-rst-gpio-1'
+          bindings:
+            gpio: 'k3-pico-itx-8gb-rst-gpio-1'
+      - AndroidFastbootDriver:
+          name: 'k3-pico-itx-8gb-fastboot-1'
+          bindings:
+            fastboot: 'k3-pico-itx-8gb-fastboot-1'
       - ShellDriver:
-          prompt: '~ #\s*'
+          prompt: '(\x1b\[\?2004h)?root@[\w-]+:[^ ]+[#$] '
           login_prompt: '[-\w]+ login: '
+          login_timeout: 120
           username: 'root'
           name: 'k3-pico-itx-8gb-shell-1'
           bindings:
@@ -45,9 +45,10 @@ targets:
           bindings:
             power: 'k3-pico-itx-8gb-power-1'
             console: 'k3-pico-itx-8gb-console-1'
-            uboot: 'k3-pico-itx-8gb-uboot-1'
             shell: 'k3-pico-itx-8gb-shell-1'
-            tftp: 'k3-pico-itx-8gb-tftp-1'
+            fastboot: 'k3-pico-itx-8gb-fastboot-1'
+            recovery: 'k3-pico-itx-8gb-fdl-gpio-1'
+            reset: 'k3-pico-itx-8gb-rst-gpio-1'
 
 imports:
   - strategy.py

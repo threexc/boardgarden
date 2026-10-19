@@ -1,7 +1,7 @@
 name: 'Deploy Artifacts to TFTP Server'
 description: >
   Rsyncs kernel, DTB, extlinux.conf, initramfs (if built), and (optionally)
-  wic flash images to the TFTP server for a given board.
+  wic or fastboot flash images to the TFTP server for a given board.
 
 inputs:
   tftp_user:
@@ -26,6 +26,10 @@ inputs:
     required: true
   deploy_wic:
     description: 'Whether to also rsync wic flash images and update latest symlinks'
+    required: false
+    default: 'false'
+  deploy_fastboot:
+    description: 'Whether to also rsync fastboot flash images into a fastboot/ subdir'
     required: false
     default: 'false'
 
@@ -82,3 +86,29 @@ runs:
           ln -sf \$(ls -1t ${IMAGE}-${BOARD}.rootfs-*.wic.gz  | head -1) ${BOARD}.rootfs-latest.wic.gz
           ln -sf \$(ls -1t ${IMAGE}-${BOARD}.rootfs-*.wic.bmap | head -1) ${BOARD}.rootfs-latest.wic.bmap
         "
+
+    - name: rsync fastboot flash images
+      if: inputs.deploy_fastboot == 'true'
+      shell: bash
+      env:
+        TFTP_USER: ${{ inputs.tftp_user }}
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+        BOARD: ${{ inputs.board }}
+        MACHINE: ${{ inputs.machine }}
+        IMAGE: ${{ inputs.image }}
+        IMAGES_PATH: ${{ inputs.images_path }}
+      run: |
+        set -euo pipefail
+        SRC="${IMAGES_PATH}/${MACHINE}"
+        DST="${TFTP_USER}@${TFTP_SERVER}:/srv/tftp/${BOARD}/fastboot"
+        RSH="ssh -o StrictHostKeyChecking=accept-new"
+        # -L: several of these are symlinks into the deploy dir. The rootfs is
+        # renamed so board.yaml can name it independently of the image built.
+        rsync -avzL -e "${RSH}" \
+          "${SRC}"/FSBL.bin \
+          "${SRC}"/u-boot.itb \
+          "${SRC}"/bootfs.ext4 \
+          "${DST}/"
+        rsync -avzL -e "${RSH}" \
+          "${SRC}/${IMAGE}-${MACHINE}.rootfs.ext4" \
+          "${DST}/rootfs.ext4"

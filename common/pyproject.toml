@@ -31,4 +31,5 @@ boardfarm_common = "boardfarm_common.fixtures"
 [project.entry-points."boardfarm.strategies"]
 tftp = "boardfarm_common.strategies.tftp:TftpBootStrategy"
 sdmux = "boardfarm_common.strategies.sdmux:SdMuxBootStrategy"
+fastboot = "boardfarm_common.strategies.fastboot:FastbootFlashStrategy"
 qemu = "boardfarm_common.strategies.qemu:QemuBootStrategy"

@@ -1,31 +1,34 @@
 name: k3-pico-itx-8gb
 yocto_machine: k3-pico-itx
-strategy: tftp
-description: K3 Pico-ITX (SpacemiT K1) RISC-V SBC
+strategy: fastboot
+description: K3 Pico-ITX (SpacemiT K3) RISC-V SBC. Flashed over USB fastboot
 remote_place: bf-k3-pico-itx-8gb
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml
 
-boot:
-  method: tftp
-  bootargs: console=ttyS0,115200 shell
-  dtb_addr: $fdt_addr_r
-  ramdisk_addr: $ramdisk_addr_r
+# Relay-driven buttons: PWR power, FDL flashing (download mode), RST reset
+buttons: [pwr, fdl, rst]
 
-tftp:
-  subdir: k3-pico-itx
-  dtb: k3-pico-itx.dtb
-  initramfs: uRamdisk
-
-uboot:
-  autoboot: 'Autoboot in 5 seconds'
-  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
+# Vendor user guide, 3.1.2 "Device Powered by a Full-Featured Type-C Cable or
+# ATX Power Supply (Powered On)": hold FDL, press RST, release FDL. The boot
+# ROM then takes FSBL, which takes a fastboot-capable U-Boot. Firmware stays
+# on SPI-NOR; U-Boot flashes these GPT partitions to the first block device
+# it finds (NVMe, then UFS) and later boots them by name.
+fastboot:
+  image_dir: /home/labgrid/k3-pico-itx-fastboot
+  recovery_button: fdl
+  reset_button: rst
+  stage:
+    - FSBL.bin
+    - u-boot.itb
+  flash:
+    gpt: partition_universal.json
+    bootfs: bootfs.ext4
+    rootfs: rootfs.ext4
 
 shell:
   username: root
   password: null
-  # initramfs-module-debug drops straight to a busybox shell, no login prompt.
-  prompt: '~ #\s*'
 
 strategy_class: K3PicoItxBootStrategy

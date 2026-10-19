@@ -5,9 +5,10 @@ real hardware, serial console, or labgrid environment file is needed.
 """
 
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call, patch
 
 import pytest
+from boardfarm_common.strategies.fastboot import FastbootFlashStrategy, FastbootStatus
 from boardfarm_common.strategies.qemu import ExternalQemuStrategy, QemuBootStrategy, QemuStatus
 from boardfarm_common.strategies.sdmux import SdMuxBootStrategy, SdMuxStatus
 from boardfarm_common.strategies.tftp import TftpBootStrategy, TftpStatus
@@ -143,6 +144,64 @@ def test_sdmux_transition_to_sd_boots(sdmux_strategy):
 def test_sdmux_force_rejects_unknown(sdmux_strategy):
     with pytest.raises(StrategyError):
         sdmux_strategy.force("unknown")
+
+
+# ---- FastbootFlashStrategy -------------------------------------------------
+
+
+@pytest.fixture
+def fastboot_strategy():
+    strategy = FastbootFlashStrategy(target=FakeTarget(), name="fastboot-test")
+    _mock_drivers(strategy, "power", "console", "shell", "fastboot", "recovery", "reset")
+    strategy.manifest = {
+        "fastboot": {
+            "image_dir": "/images",
+            "recovery_button": "fdl",
+            "reset_button": "rst",
+            "stage": ["FSBL.bin", "u-boot.itb"],
+            "flash": {"gpt": "parts.json", "rootfs": "rootfs.ext4"},
+            "press_time": 0,
+            "power_on_delay": 0,
+            "continue_delay": 0,
+        }
+    }
+    return strategy
+
+
+def test_fastboot_transition_to_flashed_flashes_once(fastboot_strategy):
+    s = fastboot_strategy
+    with patch("boardfarm_common.strategies.fastboot.ManagedFile") as mf:
+        mf.return_value.get_remote_path.side_effect = ["/r/FSBL.bin", "/r/u-boot.itb"]
+        s.transition("flashed")
+        s.transition("shell")
+        s.transition("flashed")
+
+    # recovery held across the reset pulse
+    s.recovery.set.assert_has_calls([call(True), call(False)])
+    s.reset.set.assert_has_calls([call(True), call(False)])
+    assert s.fastboot.call_args_list == [
+        call("stage", "/r/FSBL.bin"),
+        call("stage", "/r/u-boot.itb"),
+    ]
+    assert s.fastboot.continue_boot.call_count == 2
+    assert s.fastboot.flash.call_args_list == [
+        call("gpt", "/images/parts.json"),
+        call("rootfs", "/images/rootfs.ext4"),
+    ]
+    assert s.status == FastbootStatus.flashed
+
+
+def test_fastboot_transition_to_shell_boots(fastboot_strategy):
+    with patch("boardfarm_common.strategies.fastboot.ManagedFile"):
+        fastboot_strategy.transition("shell")
+    assert fastboot_strategy.status == FastbootStatus.shell
+    fastboot_strategy.power.cycle.assert_called_once()
+    assert fastboot_strategy.target.activated[-1] is fastboot_strategy.shell
+
+
+def test_fastboot_force_rejects_flashed(fastboot_strategy):
+    with pytest.raises(StrategyError):
+        fastboot_strategy.force("flashed")
 
 
 # ---- QemuBootStrategy -------------------------------------------------------

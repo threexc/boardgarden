@@ -89,6 +89,7 @@ jobs:
           image: ${{ inputs.image || 'core-image-minimal' }}
           images_path: ${{ steps.build.outputs.images_path }}
           deploy_wic: ${{ steps.build.outputs.deploy_wic }}
+          deploy_fastboot: ${{ steps.build.outputs.deploy_fastboot }}
       # Marks this specific matrix entry as a successful build and records the
       # kernel version it produced, only if the build succeeded. Matrix job
       # outputs can't be aggregated directly, but artifacts can.

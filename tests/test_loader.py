@@ -1,5 +1,6 @@
 import pytest
 from boardfarm_common.loader import UnknownStrategy, available_strategies, strategy_for
+from boardfarm_common.strategies.fastboot import FastbootFlashStrategy
 from boardfarm_common.strategies.qemu import QemuBootStrategy
 from boardfarm_common.strategies.sdmux import SdMuxBootStrategy
 from boardfarm_common.strategies.tftp import TftpBootStrategy
@@ -9,6 +10,7 @@ def test_available_strategies_lists_builtin_families():
     strategies = available_strategies()
     assert strategies["tftp"] == "boardfarm_common.strategies.tftp:TftpBootStrategy"
     assert strategies["sdmux"] == "boardfarm_common.strategies.sdmux:SdMuxBootStrategy"
+    assert strategies["fastboot"] == "boardfarm_common.strategies.fastboot:FastbootFlashStrategy"
     assert strategies["qemu"] == "boardfarm_common.strategies.qemu:QemuBootStrategy"
 
 
@@ -17,6 +19,7 @@ def test_available_strategies_lists_builtin_families():
     [
         ("tftp", TftpBootStrategy),
         ("sdmux", SdMuxBootStrategy),
+        ("fastboot", FastbootFlashStrategy),
         ("qemu", QemuBootStrategy),
     ],
 )
