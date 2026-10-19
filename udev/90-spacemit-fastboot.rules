@@ -1,0 +1,5 @@
+# SpacemiT download mode changes USB IDs between stages (boot ROM 361c:0008,
+# then FSBL/U-Boot). labgrid's AndroidUSBFastboot matches one vendor/product
+# pair unless the device has adb_user=yes, so flag every SpacemiT device and
+# let exporter.yaml pin the port with sys_name.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="361c", ENV{adb_user}="yes"
