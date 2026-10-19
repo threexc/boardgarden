@@ -32,9 +32,10 @@ bf-k3-pico-itx-8gb:
       '@ID_SERIAL_SHORT': 'DU0ET816'
       'LABGRID_SYSFS_GPIOCHIP': '1'
     pin: 3
-  ## SpacemiT fastboot download mode on the DRD Type-C port. 361c:1001 is
-  ## U-Boot's gadget ID; the boot ROM and FSBL must enumerate the same way.
+  ## SpacemiT download mode on the DRD Type-C port. The USB ID changes between
+  ## stages (boot ROM is 361c:0008), so udev/90-spacemit-fastboot.rules flags
+  ## every SpacemiT device for labgrid and this pins the port instead.
   k3-pico-itx-8gb-fastboot-1:
     cls: 'AndroidUSBFastboot'
-    usb_vendor_id: '361c'
-    usb_product_id: '1001'
+    match:
+      sys_name: '2-3.2.1'

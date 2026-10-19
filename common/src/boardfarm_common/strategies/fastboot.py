@@ -59,15 +59,20 @@ class FastbootFlashStrategy(BoardStrategy):
 
     def _flash(self):
         fb = self.manifest["fastboot"]
+        # Copy staged images to the exporter up front: the boot ROM's download
+        # mode doesn't wait around for slow transfers.
+        staged = []
+        for image in fb.get("stage", []):
+            mf = ManagedFile(self._image(image), self.fastboot.fastboot)
+            mf.sync_to_resource()
+            staged.append(mf.get_remote_path())
         self.target.activate(self.power)
         self.power.on()
         time.sleep(fb.get("power_on_delay", 2))
         self._enter_download_mode()
         self.target.activate(self.fastboot)
-        for image in fb.get("stage", []):
-            mf = ManagedFile(self._image(image), self.fastboot.fastboot)
-            mf.sync_to_resource()
-            self.fastboot("stage", mf.get_remote_path())
+        for remote_path in staged:
+            self.fastboot("stage", remote_path)
             self.fastboot.continue_boot()
             # The device re-enumerates as the staged image comes up; fastboot
             # waits for it, but talking to the old instance too early fails.
