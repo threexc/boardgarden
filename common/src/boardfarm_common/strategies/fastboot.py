@@ -46,15 +46,16 @@ class FastbootFlashStrategy(BoardStrategy):
         return str(Path(self.manifest["fastboot"]["image_dir"]) / name)
 
     def _enter_download_mode(self):
-        fb = self.manifest["fastboot"]
+        press = self.manifest["fastboot"].get("press_time", 1)
         self.target.activate(self.recovery)
         self.target.activate(self.reset)
         self.recovery.set(True)
+        time.sleep(press)
         self.reset.set(True)
-        time.sleep(fb.get("press_time", 0.5))
+        time.sleep(press)
         self.reset.set(False)
         # Keep holding recovery until the boot ROM has sampled it.
-        time.sleep(fb.get("press_time", 0.5))
+        time.sleep(press)
         self.recovery.set(False)
 
     def _flash(self):
@@ -66,8 +67,10 @@ class FastbootFlashStrategy(BoardStrategy):
             mf = ManagedFile(self._image(image), self.fastboot.fastboot)
             mf.sync_to_resource()
             staged.append(mf.get_remote_path())
+        # cycle(), not on(): transition(off) only just cut power, and a relay
+        # flipped back within milliseconds never actually drops the board.
         self.target.activate(self.power)
-        self.power.on()
+        self.power.cycle()
         time.sleep(fb.get("power_on_delay", 2))
         self._enter_download_mode()
         self.target.activate(self.fastboot)

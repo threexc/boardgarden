@@ -195,7 +195,8 @@ def test_fastboot_transition_to_shell_boots(fastboot_strategy):
     with patch("boardfarm_common.strategies.fastboot.ManagedFile"):
         fastboot_strategy.transition("shell")
     assert fastboot_strategy.status == FastbootStatus.shell
-    fastboot_strategy.power.cycle.assert_called_once()
+    # once to power up for flashing, once to boot what was flashed
+    assert fastboot_strategy.power.cycle.call_count == 2
     assert fastboot_strategy.target.activated[-1] is fastboot_strategy.shell
 
 
