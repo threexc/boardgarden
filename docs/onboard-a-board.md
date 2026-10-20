@@ -131,6 +131,41 @@ Available templates live at
 `common/src/boardfarm_common/templates/client-<family>.yaml.j2`.
 Extend them there — not in per-board files.
 
+Rendering also refreshes `boards/machines.tsv`, a flat index of every board's
+Yocto MACHINE(s) that the CI workflows read (via
+`.forgejo/scripts/machine-info`) to decide what to build, deploy, reserve and
+test. Commit it along with `client.yaml`.
+
+### Variants: more than one way to boot a board
+
+A board can boot more than one way, each tied to its own Yocto MACHINE. For
+example, `k3-pico-itx-8gb` flashes the vendor BSP over fastboot by default,
+and TFTP-boots the mainline-kernel BSP. Declare the extra boot methods under
+`variants:`. Each entry is deep-merged over the rest of `board.yaml` and
+rendered to `client-<variant>.yaml`:
+
+```yaml
+variants:
+  mainline:
+    yocto_machine: my-board-mainline
+    strategy: tftp
+    strategy_class: MyBoardMainlineBootStrategy
+    exclude_from_nightly: true   # manual dispatch only; drop for nightly
+    boot: { ... }
+    tftp: { ... }
+```
+
+Give each variant its own `strategy_class` and add it to `strategy.py`, loading
+the variant's manifest:
+
+```python
+    manifest = load_board(Path(__file__).parent, variant="mainline")
+```
+
+CI reserves a variant's place by name (a place carries only one `machine` tag)
+and runs the tests with `client-<variant>.yaml`. The exporter config must
+include the resources every variant needs.
+
 ## 5. Validate
 
 ```
@@ -175,6 +210,7 @@ Files that make up a new board:
 boards/my-board/board.yaml
 boards/my-board/strategy.py
 boards/my-board/client.yaml        # generated
+boards/machines.tsv                # generated
 boards/my-board/pytest/conftest.py
 boards/my-board/pytest/test_tftp.py
 systemd_services/labgrid-exporter-my-board.service   # if physical
