@@ -107,6 +107,10 @@ runs:
         rsync -avzL -e "${RSH}" \
           "${SRC}"/FSBL.bin \
           "${SRC}"/u-boot.itb \
+          "${SRC}"/bootinfo_spinor.bin \
+          "${SRC}"/u-boot-env-default.bin \
+          "${SRC}"/esos.itb \
+          "${SRC}"/fw_dynamic.itb \
           "${SRC}"/bootfs.ext4 \
           "${DST}/"
         rsync -avzL -e "${RSH}" \
