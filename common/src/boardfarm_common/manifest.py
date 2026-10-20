@@ -2,6 +2,11 @@
 
 ``inherits:`` in a board.yaml lists paths (relative to the board dir) to
 defaults files. Files are deep-merged in order; the board.yaml wins.
+
+``variants:`` maps a name to overrides describing another way to boot the same
+board, usually for a different Yocto MACHINE (e.g. a mainline-kernel BSP that
+TFTP-boots while the default flashes storage). A variant is deep-merged over
+the base manifest.
 """
 
 from copy import deepcopy
@@ -26,8 +31,9 @@ def _deep_merge(base: dict, over: dict) -> dict:
     return out
 
 
-def load_board(board_dir: str | Path) -> dict:
-    """Load ``board.yaml`` from a board directory, applying ``inherits:`` defaults."""
+def load_board(board_dir: str | Path, variant: str | None = None) -> dict:
+    """Load ``board.yaml`` from a board directory, applying ``inherits:`` defaults
+    and, if given, the named ``variants:`` entry. The result has no ``variants``."""
     board_dir = Path(board_dir)
     board_yaml = _read_yaml(board_dir / "board.yaml")
 
@@ -36,4 +42,12 @@ def load_board(board_dir: str | Path) -> dict:
         merged = _deep_merge(merged, _read_yaml((board_dir / rel).resolve()))
     merged = _deep_merge(merged, board_yaml)
     merged.pop("inherits", None)
+    variants = merged.pop("variants", {})
+    if variant is not None:
+        merged = _deep_merge(merged, variants[variant])
     return merged
+
+
+def board_variants(board_dir: str | Path) -> list[str]:
+    """Names of the ``variants:`` declared in a board's ``board.yaml``."""
+    return list(_read_yaml(Path(board_dir) / "board.yaml").get("variants", {}))

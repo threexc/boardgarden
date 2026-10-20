@@ -14,7 +14,7 @@ from pathlib import Path
 import jsonschema
 
 from boardfarm_common.loader import strategy_for
-from boardfarm_common.manifest import load_board
+from boardfarm_common.manifest import board_variants, load_board
 
 
 def _schema() -> dict:
@@ -58,8 +58,8 @@ def main(argv: list[str] | None = None) -> int:
     failures = 0
     for board_dir in targets:
         try:
-            manifest = load_board(board_dir)
-            validate_manifest(manifest)
+            for variant in [None, *board_variants(board_dir)]:
+                validate_manifest(load_board(board_dir, variant))
         except Exception as exc:  # noqa: BLE001
             failures += 1
             print(f"FAIL  {board_dir}/board.yaml: {exc}", file=sys.stderr)

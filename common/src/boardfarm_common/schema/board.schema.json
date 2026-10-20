@@ -12,6 +12,8 @@
     "strategy": { "enum": ["tftp", "sdmux", "fastboot", "qemu"] },
     "remote_place": { "type": "string" },
     "image_source": { "type": "string" },
+    "yocto_machine": { "type": "string" },
+    "exclude_from_nightly": { "type": "boolean" },
     "inherits": {
       "type": "array",
       "items": { "type": "string" },
