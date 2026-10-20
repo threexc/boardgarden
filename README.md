@@ -108,16 +108,16 @@ settings (such as autoboot wait times) that you may want to change before
 deployment - please ensure that you review them.
 
 As an example, once you have created a place called
-`bf-muse-pi-pro` and exported the corresponding resources in
+`tg-muse-pi-pro` and exported the corresponding resources in
 `boards/muse-pi-pro/exporter.yaml` with an appropriate matching pattern, you
 should be able to invoke the labgrid CLI using `uv run`, e.g.:
 
-1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
-2. `uv run labgrid-client -p bf-muse-pi-pro -c boards/muse-pi-pro/client.yaml -s tftp con`
+1. `uv run labgrid-client -p tg-muse-pi-pro acquire`
+2. `uv run labgrid-client -p tg-muse-pi-pro -c boards/muse-pi-pro/client.yaml -s tftp con`
 
 Or, if you want to run the test suite, you can do:
 
-1. `uv run labgrid-client -p bf-muse-pi-pro acquire`
+1. `uv run labgrid-client -p tg-muse-pi-pro acquire`
 2. `uv run pytest -vvv --html=report.html --self-contained-html boards/muse-pi-pro`
 
 These same general concepts are employed by the pipelines inside the
