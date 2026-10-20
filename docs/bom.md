@@ -3,15 +3,15 @@
 ## Network
 
 **Project:** boardgarden  
-**Tailnet:** oryx-coho.ts.net  
+**Tailnet:** tailscale.baylibre.com  
 
 ## Machines
 
 | ID | Hostname | Tailscale FQDN | OS | Model | Specs | Status |
 |----|----------|----------------|----|-------|-------|--------|
-| `ecogrid` | ecogrid | ecogrid.oryx-coho.ts.net | Debian 13 ("Trixie") | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
-| `runner1` | blacksmith | blacksmith.oryx-coho.ts.net | Debian 13 | ThinkCentre M720q | Intel i9-9900T<br/>64 GB DDR4 RAM | active |
-| `runner2` | microlith | microlith.oryx-coho.ts.net | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
+| `halifax` | halifax | halifax.tailscale.baylibre.com | Debian 13 ("Trixie") | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
+| `runner1` | blacksmith | blacksmith.tailscale.baylibre.com | Debian 13 | ThinkCentre M720q | Intel i9-9900T<br/>64 GB DDR4 RAM | active |
+| `runner2` | microlith | microlith.tailscale.baylibre.com | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
 
 ## Services
 

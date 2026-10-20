@@ -1,7 +1,7 @@
 %%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "Liberation Sans"}} }%%
 flowchart LR
   subgraph tailnet["🔒 Tailnet"]
-    ecogrid["<b>Labgrid</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>ecogrid"]
+    halifax["<b>Labgrid</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>halifax"]
     runner1["<b>Forgejo Runner (Large)</b><br/>blacksmith"]
     runner2["<b>Forgejo Runner (Small)</b><br/>microlith"]
     subgraph boards["Test Targets"]
@@ -16,20 +16,20 @@ flowchart LR
   %% ── Hosted-on relationships ──
 
   %% ── Links ──
-  ecogrid ==>|"power / serial / SD mux"| board_1
-  ecogrid ==>|"power / serial"| board_2
-  ecogrid ==>|"power / serial / SD mux"| board_3
-  ecogrid ==>|"power / serial"| board_4
-  runner1 -->|"upload Yocto artifacts"| ecogrid
-  runner2 -->|"acquire board, run tests"| ecogrid
-  runner2 -->|"upload hardware test results"| ecogrid
-  ecogrid -->|"Yocto .wic image"| board_1
-  ecogrid -->|"kernel + dtb + Yocto initramfs"| board_2
-  ecogrid -->|"Yocto .wic image"| board_3
-  ecogrid -->|"kernel + dtb + Yocto initramfs"| board_4
+  halifax ==>|"power / serial / SD mux"| board_1
+  halifax ==>|"power / serial"| board_2
+  halifax ==>|"power / serial / SD mux"| board_3
+  halifax ==>|"power / serial"| board_4
+  runner1 -->|"upload Yocto artifacts"| halifax
+  runner2 -->|"acquire board, run tests"| halifax
+  runner2 -->|"upload hardware test results"| halifax
+  halifax -->|"Yocto .wic image"| board_1
+  halifax -->|"kernel + dtb + Yocto initramfs"| board_2
+  halifax -->|"Yocto .wic image"| board_3
+  halifax -->|"kernel + dtb + Yocto initramfs"| board_4
 
   %% ── Styles ──
   classDef machine fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-  class ecogrid,runner1,runner2 machine
+  class halifax,runner1,runner2 machine
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
   class board_1,board_2,board_3,board_4 board

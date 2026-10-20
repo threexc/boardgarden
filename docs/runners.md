@@ -31,9 +31,9 @@ Set these in Settings → Actions → Variables.
 |---|---|---|
 | `BOARDGARDEN_HOST` | `forgejo.example.ts.net` | Hostname of the Forgejo container registry (no scheme) |
 | `BOARDGARDEN_OWNER` | `tgamblin` | Owner/org of the `boardgarden`, `bitbake`, `openembedded-core`, `meta-riscv` mirrors |
-| `LG_COORDINATOR_HOST` | `ecogrid` | Short hostname of the Labgrid coordinator (also the exporter host). Used as `LG_COORDINATOR`, ssh target, and left half of `--add-host` |
+| `LG_COORDINATOR_HOST` | `halifax` | Short hostname of the Labgrid coordinator (also the exporter host). Used as `LG_COORDINATOR`, ssh target, and left half of `--add-host` |
 | `LG_COORDINATOR_IP` | `192.168.40.166` | LAN address for the coordinator. Right half of `--add-host` |
-| `TFTP_SERVER_HOST` | `ecogrid` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid coordinator/exporter on `ecogrid` for now; may separate |
+| `TFTP_SERVER_HOST` | `halifax` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid coordinator/exporter on `halifax` for now; may separate |
 | `TFTP_SERVER_IP` | `192.168.40.166` | LAN address for the TFTP server. Right half of `--add-host` |
 | `PTEST_BOARD_HOST` | `k3-pico-itx-8gb` | Hostname/IP of the k3-pico-itx-8gb's eMMC OS, reachable by SSH from `tgamblin-board-test`. Used by `ptest-kvm-compare` |
 | `PTEST_BOARD_USER` | `admin` | SSH user on `PTEST_BOARD_HOST` (defaults to `admin`). Key auth only; needs to run `qemu-system-riscv64` and write `/dev/kvm` (e.g. `kvm` group) and `/var/tmp` |
@@ -44,14 +44,14 @@ Set these in Settings → Actions → Secrets.
 
 | Secret | Used by | What it is |
 |---|---|---|
-| `LG_EXPORTER_SSH_KEY` | `run-board-tests` | Private key granting the runner login as `labgrid@` on the exporter host (`ecogrid`) |
+| `LG_EXPORTER_SSH_KEY` | `run-board-tests` | Private key granting the runner login as `labgrid@` on the exporter host (`halifax`) |
 | `REGISTRY_TOKEN` | `build-push-containers` | Forgejo container registry token (paired with `REGISTRY_USERNAME`) |
 | `REGISTRY_USERNAME` | `build-push-containers` | Forgejo user or bot with `write:package` scope |
 | `RENOVATE_TOKEN` | `renovate` | Forgejo bot PAT with `read:repository`, `write:repository`, `write:issue` |
-| `REPORT_SSH_KEY` | `run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@ecogrid`. rsync of `report.html` to `/testresults/` |
-| `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, LG coordinator — all `ecogrid` today). Seed with `ssh-keyscan -H -T 10 <host>` |
+| `REPORT_SSH_KEY` | `run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@halifax`. rsync of `report.html` to `/testresults/` |
+| `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, LG coordinator — all `halifax` today). Seed with `ssh-keyscan -H -T 10 <host>` |
 | `PTEST_BOARD_SSH_KEY` | `ptest-kvm-compare` | Private key for `PTEST_BOARD_USER@PTEST_BOARD_HOST` |
-| `TFTP_SERVER_SSH_KEY` | `deploy-to-tftp` → `setup-ssh`; `run-board-tests` | Private key for `auto@ecogrid`. rsync build artifacts into `/srv/tftp/<board>/` |
+| `TFTP_SERVER_SSH_KEY` | `deploy-to-tftp` → `setup-ssh`; `run-board-tests` | Private key for `auto@halifax`. rsync build artifacts into `/srv/tftp/<board>/` |
 
 ## Container `--add-host` mappings
 

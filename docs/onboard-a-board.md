@@ -29,7 +29,7 @@ this in CI.
 name: my-board
 strategy: tftp
 description: Vendor Foo, Widget-1
-remote_place: bf-my-board
+remote_place: tg-my-board
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml   # optional; drop if no matching family
@@ -66,7 +66,7 @@ If you're onboarding a board with a shared SoC/family, add a
 name: my-sdmux-board
 strategy: sdmux
 description: Vendor Bar, SBC-2 (SD boot via SD-Mux)
-remote_place: bf-my-sdmux-board
+remote_place: tg-my-sdmux-board
 arch: aarch64
 image_source: yocto
 
@@ -223,9 +223,9 @@ the PR.
 ## 9. Smoke test on hardware
 
 ```
-uv run labgrid-client -p bf-my-board acquire
+uv run labgrid-client -p tg-my-board acquire
 uv run pytest -vvv boards/my-board/pytest/
-uv run labgrid-client -p bf-my-board release
+uv run labgrid-client -p tg-my-board release
 ```
 
 ---

@@ -4,19 +4,19 @@
 
 network:
   name: boardgarden
-  tailnet_domain: oryx-coho.ts.net
+  tailnet_domain: tailscale.baylibre.com
 
 machines:
 
-  - id: ecogrid
-    label: "ecogrid"
+  - id: halifax
+    label: "halifax"
     hide_tailnet: true
     role:
       - "Labgrid"
       - "Forgejo"
       - "TFTP Server"
       - "Test Results"
-    tailscale_name: ecogrid
+    tailscale_name: halifax
     os: Debian 13 ("Trixie")
     hardware:
       hide_details: true
@@ -80,7 +80,7 @@ machines:
         - AMD Ryzen 5 PRO 3400GE
         - 16 GB DDR4 RAM
 
-# Physical boards — connected to ecogrid via serial/USB/power through Labgrid exporter
+# Physical boards — connected to halifax via serial/USB/power through Labgrid exporter
 boards:
 
   - id: board_1
@@ -122,7 +122,7 @@ boards:
 links:
 
   # Physical board connections (real cables)
-  - from: ecogrid
+  - from: halifax
     to: board_1
     type: physical
     interfaces:
@@ -145,7 +145,7 @@ links:
             url: https://linux-automation.com/en/products/usb-sd-mux.html
             role: USB SD Mux controller
 
-  - from: ecogrid
+  - from: halifax
     to: board_2
     type: physical
     interfaces:
@@ -162,7 +162,7 @@ links:
             url: https://www.raspberrypi.com/products/debug-probe/
             role: USB-to-UART bridge
 
-  - from: ecogrid
+  - from: halifax
     to: board_3
     type: physical
     interfaces:
@@ -185,7 +185,7 @@ links:
             url: https://linux-automation.com/en/products/usb-sd-mux.html
             role: USB SD Mux controller
 
-  - from: ecogrid
+  - from: halifax
     to: board_4
     type: physical
     interfaces:
@@ -204,40 +204,40 @@ links:
 
   # Logical: test harness interactions (what the runners/boards actually call)
   - from: runner1
-    to: ecogrid
+    to: halifax
     label: upload Yocto artifacts
     type: logical
 
   - from: runner2
-    to: ecogrid
+    to: halifax
     label: acquire board, run tests
     type: logical
 
   - from: runner2
-    to: ecogrid
+    to: halifax
     label: upload hardware test results
     type: logical
 
   - from: board_1
-    to: ecogrid
+    to: halifax
     label: Yocto .wic image
     type: logical
     reverse: true
 
   - from: board_2
-    to: ecogrid
+    to: halifax
     label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
 
   - from: board_3
-    to: ecogrid
+    to: halifax
     label: Yocto .wic image
     type: logical
     reverse: true
 
   - from: board_4
-    to: ecogrid
+    to: halifax
     label: kernel + dtb + Yocto initramfs
     type: logical
     reverse: true
