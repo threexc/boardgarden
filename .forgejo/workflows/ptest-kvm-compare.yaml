@@ -84,7 +84,7 @@ jobs:
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
     env:
-      PLACE: bf-k3-pico-itx-8gb
+      PLACE: tg-k3-pitx-8gb
       BOARD_DIR: /var/tmp/ptest-kvm-compare
     steps:
       - uses: actions/checkout@v4
