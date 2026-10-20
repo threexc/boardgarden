@@ -27,7 +27,7 @@ the coordinator's hostname. Override either by dropping a
 
 ```
 BOARDGARDEN_ROOT=/home/labgrid/boardgarden
-LG_COORDINATOR=ecogrid
+LG_COORDINATOR=halifax
 ```
 
 The file is optional (`EnvironmentFile=-...`) — omit it if the defaults
