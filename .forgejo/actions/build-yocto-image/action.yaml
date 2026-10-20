@@ -110,10 +110,8 @@ runs:
         # way, so build whatever any of them needs.
         HAS_INITRAMFS="false"
         HAS_FULL="false"
-        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
-          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
-          [ "$m" = "$RISCV_MACHINE" ] || continue
-          if grep -q '^\s*initramfs:' "$f"; then
+        for initramfs in $("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info initramfs "$RISCV_MACHINE"); do
+          if [ "$initramfs" = "yes" ]; then
             HAS_INITRAMFS="true"
           else
             HAS_FULL="true"
@@ -142,33 +140,19 @@ runs:
           echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
           exit 1
         fi
-        BOARD=""
-        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
-          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
-          [ "$m" = "$RISCV_MACHINE" ] && BOARD=$(basename "$(dirname "$f")") && break
-        done
-        BOARD_YAML="$GITHUB_WORKSPACE/boards/${BOARD}/board.yaml"
+        # Any board (or variant) using this machine may need the wic or the
+        # fastboot images.
+        STRATEGIES=$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info strategy "$RISCV_MACHINE")
         DEPLOY_WIC="false"
-        if [ -f "${BOARD_YAML}" ] && grep -q '^strategy:[[:space:]]*sdmux' "${BOARD_YAML}"; then
-          DEPLOY_WIC="true"
-        fi
-        # Any board sharing this machine may be flashed over fastboot, not
-        # just the first one found above.
+        grep -qx sdmux <<< "$STRATEGIES" && DEPLOY_WIC="true"
         DEPLOY_FASTBOOT="false"
-        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
-          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
-          if [ "$m" = "$RISCV_MACHINE" ] && grep -q '^strategy:[[:space:]]*fastboot' "$f"; then
-            DEPLOY_FASTBOOT="true"
-          fi
-        done
+        grep -qx fastboot <<< "$STRATEGIES" && DEPLOY_FASTBOOT="true"
         # TFTP subdir is a board.yaml field, not necessarily the board dir name
         # (a board dir can be renamed - e.g. for a RAM-variant suffix - while
         # still sharing the same on-server TFTP subdir as other variants).
-        TFTP_SUBDIR=""
-        if [ -f "${BOARD_YAML}" ]; then
-          TFTP_SUBDIR=$(awk -F: '/^[[:space:]]*subdir:/{gsub(/[ \t]/,"",$2); print $2; exit}' "${BOARD_YAML}")
-        fi
-        [ -z "${TFTP_SUBDIR}" ] && TFTP_SUBDIR="${BOARD}"
+        # The first board for the machine decides.
+        TFTP_SUBDIR=$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info tftp_subdir "$RISCV_MACHINE" | sed -n 1p)
+        [ -n "${TFTP_SUBDIR}" ] || TFTP_SUBDIR="${RISCV_MACHINE}"
         echo "images_path=${IMAGES_PATH}" >> "$GITHUB_OUTPUT"
         echo "board=${TFTP_SUBDIR}" >> "$GITHUB_OUTPUT"
         echo "deploy_wic=${DEPLOY_WIC}" >> "$GITHUB_OUTPUT"
@@ -211,14 +195,7 @@ runs:
         RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
         IMAGES_PATH: ${{ steps.locate.outputs.images_path }}
       run: |
-        HAS_INITRAMFS="false"
-        for f in "$GITHUB_WORKSPACE"/boards/*/board.yaml; do
-          m=$(awk -F: '/^yocto_machine:/{gsub(/[ \t]/,"",$2); print $2; exit}' "$f")
-          if [ "$m" = "$RISCV_MACHINE" ] && grep -q '^\s*initramfs:' "$f"; then
-            HAS_INITRAMFS="true"
-          fi
-        done
-        [ "${HAS_INITRAMFS}" = "true" ] || exit 0
+        grep -qx yes <<< "$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info initramfs "$RISCV_MACHINE")" || exit 0
 
         # boot_cmd uses $ramdisk_addr_r:$filesize (explicit size), which
         # skips legacy-uImage header auto-detection in U-Boot - it loads
