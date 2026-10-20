@@ -12,9 +12,11 @@ buttons: [pwr, fdl, rst]
 
 # Vendor user guide, 3.1.2 "Device Powered by a Full-Featured Type-C Cable or
 # ATX Power Supply (Powered On)": hold FDL, press RST, release FDL. The boot
-# ROM then takes FSBL, which takes a fastboot-capable U-Boot. Firmware stays
-# on SPI-NOR; U-Boot flashes these GPT partitions to the first block device
-# it finds (NVMe, then UFS) and later boots them by name.
+# ROM then takes FSBL, which takes a fastboot-capable U-Boot, all in RAM.
+# Flashing follows meta-riscv's docs/k3-pico-itx.md, in order: the boot
+# firmware to SPI-NOR (where the boot ROM loads it from), then the GPT,
+# bootfs and rootfs to the first block device U-Boot finds (NVMe, then UFS).
+# A bad firmware write is recoverable: download mode is in the boot ROM.
 fastboot:
   image_dir: /home/labgrid/k3-pico-itx-fastboot
   recovery_button: fdl
@@ -23,7 +25,14 @@ fastboot:
     - FSBL.bin
     - u-boot.itb
   flash:
-    gpt: partition_universal.json
+    mtd: partition_nor.json
+    bootinfo: bootinfo_spinor.bin
+    fsbl: FSBL.bin
+    env: u-boot-env-default.bin
+    esos: esos.itb
+    opensbi: fw_dynamic.itb
+    uboot: u-boot.itb
+    gpt: partition_yocto.json
     bootfs: bootfs.ext4
     rootfs: rootfs.ext4
 

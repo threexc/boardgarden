@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "format": "gpt",
+  "partitions": [
+    { "name": "env",      "offset": "640K",  "size": "64K",  "hidden": true },
+    { "name": "bootinfo", "offset": "1M",    "size": "128K", "hidden": true },
+    { "name": "fsbl",     "offset": "1536K", "size": "512K", "hidden": true },
+    { "name": "esos",     "offset": "4M",    "size": "3M",   "hidden": true },
+    { "name": "opensbi",  "offset": "7M",    "size": "1M",   "hidden": true },
+    { "name": "uboot",    "offset": "8M",    "size": "4M",   "hidden": true },
+    { "name": "bootfs",   "offset": "12M",   "size": "256M" },
+    { "name": "rootfs",   "offset": "268M",  "size": "-" }
+  ]
+}

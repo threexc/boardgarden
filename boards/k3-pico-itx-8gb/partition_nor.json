@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "format": "mtd",
+  "partitions": [
+    { "name": "bootinfo", "offset": "0",     "size": "128K" },
+    { "name": "fsbl",     "offset": "128K",  "size": "512K" },
+    { "name": "env",      "offset": "640K",  "size": "64K" },
+    { "name": "esos",     "offset": "704K",  "size": "1M" },
+    { "name": "opensbi",  "offset": "1728K", "size": "384K" },
+    { "name": "uboot",    "offset": "2112K", "size": "-" }
+  ]
+}
