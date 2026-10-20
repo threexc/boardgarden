@@ -1,21 +1,21 @@
-bf-bananapi-f3:
+tg-bpi-f3:
   location: ecoforge
-  bananapi-f3-serial-port-1:
+  serial:
     cls: 'USBSerialPort'
     match:
       '@ID_SERIAL_SHORT': 'E663AC91D35CA332'
-  bananapi-f3-power-gpio-1:
+  power-gpio:
     cls: 'MatchedSysfsGPIO'
     match:
       '@SUBSYSTEM': usb
       '@ID_SERIAL_SHORT': 'D30HE1U6'
     pin: 0
-  bananapi-f3-tftp-1:
+  tftp:
     cls: 'RemoteTFTPProvider'
     host: '192.168.40.166'
     internal: '/srv/tftp/bananapi-f3/'
     external: 'bananapi-f3/'
-  bananapi-f3-sdmux-1:
+  sdmux:
     cls: 'USBSDMuxDevice'
     match:
       ID_SERIAL_SHORT: '000000001034'

@@ -3,7 +3,7 @@ yocto_machine: orangepi-rv2-mainline
 exclude_from_nightly: true
 strategy: tftp
 description: OrangePi RV2 (SpacemiT K1) RISC-V SBC. Yocto initramfs root
-remote_place: bf-orangepi-rv2
+remote_place: tg-opi-rv2
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml

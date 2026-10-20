@@ -2,16 +2,16 @@ targets:
   main:
     resources:
       RemotePlace:
-        name: bf-muse-pi-pro
+        name: tg-muse-pi-pro
     drivers:
       - SerialDriver:
           name: 'muse-pi-pro-console-1'
           bindings:
-            port: 'muse-pi-pro-serial-port-1'
+            port: 'serial'
       - GpioDigitalOutputDriver:
           name: 'muse-pi-pro-power-gpio-1'
           bindings:
-            gpio: 'muse-pi-pro-power-gpio-1'
+            gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
           name: 'muse-pi-pro-power-1'
           bindings:
@@ -19,7 +19,7 @@ targets:
       - TFTPProviderDriver:
           name: 'muse-pi-pro-tftp-1'
           bindings:
-            provider: 'muse-pi-pro-tftp-1'
+            provider: 'tftp'
       - UBootDriver:
           prompt: '=> '
           autoboot: 'Hit any key to stop autoboot'

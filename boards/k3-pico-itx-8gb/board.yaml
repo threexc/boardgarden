@@ -2,7 +2,7 @@ name: k3-pico-itx-8gb
 yocto_machine: k3-pico-itx
 strategy: fastboot
 description: K3 Pico-ITX (SpacemiT K3) RISC-V SBC. Flashed over USB fastboot
-remote_place: bf-k3-pico-itx-8gb
+remote_place: tg-k3-pitx-8gb
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml

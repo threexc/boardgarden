@@ -2,16 +2,16 @@ targets:
   main:
     resources:
       RemotePlace:
-        name: wb-k3-pico-itx-32gb
+        name: tg-k3-pitx-32gb
     drivers:
       - SerialDriver:
           name: 'k3-pico-itx-32gb-console-1'
           bindings:
-            port: 'k3-pico-itx-32gb-serial-port-1'
+            port: 'serial'
       - GpioDigitalOutputDriver:
           name: 'k3-pico-itx-32gb-power-gpio-1'
           bindings:
-            gpio: 'k3-pico-itx-32gb-power-gpio-1'
+            gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
           name: 'k3-pico-itx-32gb-power-1'
           bindings:
@@ -19,7 +19,7 @@ targets:
       - TFTPProviderDriver:
           name: 'k3-pico-itx-32gb-tftp-1'
           bindings:
-            provider: 'k3-pico-itx-32gb-tftp-1'
+            provider: 'tftp'
       - UBootDriver:
           prompt: '=> '
           autoboot: 'Autoboot in 5 seconds'

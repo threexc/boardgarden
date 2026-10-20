@@ -2,7 +2,7 @@ name: muse-pi-pro
 yocto_machine: muse-pi-pro
 strategy: tftp
 description: Muse Pi Pro (SpacemiT K1) RISC-V SBC. Yocto initramfs boot
-remote_place: bf-muse-pi-pro
+remote_place: tg-muse-pi-pro
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml

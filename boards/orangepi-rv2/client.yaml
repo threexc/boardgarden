@@ -2,16 +2,16 @@ targets:
   main:
     resources:
       RemotePlace:
-        name: bf-orangepi-rv2
+        name: tg-opi-rv2
     drivers:
       - SerialDriver:
           name: 'orangepi-rv2-console-1'
           bindings:
-            port: 'orangepi-rv2-serial-port-1'
+            port: 'serial'
       - GpioDigitalOutputDriver:
           name: 'orangepi-rv2-power-gpio-1'
           bindings:
-            gpio: 'orangepi-rv2-power-gpio-1'
+            gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
           name: 'orangepi-rv2-power-1'
           bindings:
@@ -19,7 +19,7 @@ targets:
       - TFTPProviderDriver:
           name: 'orangepi-rv2-tftp-1'
           bindings:
-            provider: 'orangepi-rv2-tftp-1'
+            provider: 'tftp'
       - UBootDriver:
           prompt: '=> '
           autoboot: 'Autoboot in 5 seconds'

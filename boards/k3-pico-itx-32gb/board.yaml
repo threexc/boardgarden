@@ -2,7 +2,7 @@ name: k3-pico-itx-32gb
 yocto_machine: k3-pico-itx
 strategy: tftp
 description: K3 Pico-ITX (SpacemiT K1) RISC-V SBC
-remote_place: wb-k3-pico-itx-32gb
+remote_place: tg-k3-pitx-32gb
 image_source: yocto
 inherits:
   - ../families/spacemit-k1/defaults.yaml
