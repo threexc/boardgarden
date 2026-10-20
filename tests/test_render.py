@@ -30,7 +30,7 @@ def test_machine_index_has_a_row_per_variant(tmp_path):
         "name: my-board\n"
         "yocto_machine: my-machine\n"
         "strategy: qemu\n"
-        "remote_place: bf-my-board\n"
+        "remote_place: tg-my-board\n"
         "variants:\n"
         "  mainline:\n"
         "    yocto_machine: my-machine-mainline\n"
