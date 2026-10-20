@@ -2,6 +2,7 @@ on:
   push:
     paths:
       - 'boards/**/board.yaml'
+      - 'boards/machines.tsv'
       - 'boards/families/**'
       - 'common/src/boardfarm_common/schema/**'
       - 'common/src/boardfarm_common/templates/**'
