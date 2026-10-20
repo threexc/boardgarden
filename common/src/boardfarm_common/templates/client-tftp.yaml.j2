@@ -10,11 +10,11 @@ targets:
       - SerialDriver:
           name: '{{ n }}-console-1'
           bindings:
-            port: '{{ n }}-serial-port-1'
+            port: 'serial'
       - GpioDigitalOutputDriver:
           name: '{{ n }}-power-gpio-1'
           bindings:
-            gpio: '{{ n }}-power-gpio-1'
+            gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
           name: '{{ n }}-power-1'
           bindings:
@@ -22,7 +22,7 @@ targets:
       - TFTPProviderDriver:
           name: '{{ n }}-tftp-1'
           bindings:
-            provider: '{{ n }}-tftp-1'
+            provider: 'tftp'
       - UBootDriver:
           prompt: '{{ manifest.uboot.prompt }}'
           autoboot: '{{ manifest.uboot.autoboot }}'

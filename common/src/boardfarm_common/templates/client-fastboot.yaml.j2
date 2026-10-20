@@ -11,11 +11,11 @@ targets:
       - SerialDriver:
           name: '{{ n }}-console-1'
           bindings:
-            port: '{{ n }}-serial-port-1'
+            port: 'serial'
       - GpioDigitalOutputDriver:
           name: '{{ n }}-power-gpio-1'
           bindings:
-            gpio: '{{ n }}-power-gpio-1'
+            gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
           name: '{{ n }}-power-1'
           bindings:
@@ -24,12 +24,12 @@ targets:
       - GpioDigitalOutputDriver:
           name: '{{ n }}-{{ button }}-gpio-1'
           bindings:
-            gpio: '{{ n }}-{{ button }}-gpio-1'
+            gpio: '{{ button }}-gpio'
 {%- endfor %}
       - AndroidFastbootDriver:
           name: '{{ n }}-fastboot-1'
           bindings:
-            fastboot: '{{ n }}-fastboot-1'
+            fastboot: 'fastboot'
       - ShellDriver:
           prompt: '{{ manifest.shell.prompt }}'
           login_prompt: '{{ manifest.shell.login_prompt }}'
