@@ -1,4 +1,4 @@
-from boardfarm_common.manifest import _deep_merge, load_board
+from boardfarm_common.manifest import _deep_merge, board_variants, load_board
 
 
 def test_deep_merge_overlays_nested_dicts():
@@ -52,3 +52,27 @@ def test_load_board_real_board_picks_up_family_defaults(boards_dir):
     # `inherits: [../families/spacemit-k1/defaults.yaml]`.
     assert merged["arch"] == "riscv64"
     assert merged["name"] == "orangepi-rv2"
+
+
+def test_load_board_variant_merges_over_base(tmp_path):
+    (tmp_path / "board.yaml").write_text(
+        "name: my-board\n"
+        "strategy: fastboot\n"
+        "shell:\n"
+        "  username: root\n"
+        "variants:\n"
+        "  mainline:\n"
+        "    strategy: tftp\n"
+        "    shell:\n"
+        "      prompt: '# '\n"
+    )
+
+    base = load_board(tmp_path)
+    mainline = load_board(tmp_path, variant="mainline")
+
+    assert board_variants(tmp_path) == ["mainline"]
+    assert base["strategy"] == "fastboot"
+    assert "variants" not in base
+    assert mainline["strategy"] == "tftp"
+    assert mainline["shell"] == {"username": "root", "prompt": "# "}
+    assert "variants" not in mainline
