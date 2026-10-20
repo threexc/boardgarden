@@ -1,7 +1,8 @@
 %%{init: {"theme": "default", "flowchart": {"htmlLabels": true, "nodeSpacing": 30, "rankSpacing": 60, "defaultRenderer": "elk"}, "themeVariables": {"fontSize": "18px", "fontFamily": "Liberation Sans"}} }%%
 flowchart LR
   subgraph tailnet["🔒 Tailnet"]
-    halifax["<b>Labgrid</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>halifax"]
+    halifax["<b>Labgrid Exporters</b><br/><b>Forgejo</b><br/><b>TFTP Server</b><br/><b>Test Results</b><br/>halifax"]
+    coordinator["<b>Labgrid Coordinator</b><br/>labgrid-coordinator"]
     runner1["<b>Forgejo Runner (Large)</b><br/>blacksmith"]
     runner2["<b>Forgejo Runner (Small)</b><br/>microlith"]
     subgraph boards["Test Targets"]
@@ -21,7 +22,8 @@ flowchart LR
   halifax ==>|"power / serial / SD mux"| board_3
   halifax ==>|"power / serial"| board_4
   runner1 -->|"upload Yocto artifacts"| halifax
-  runner2 -->|"acquire board, run tests"| halifax
+  runner2 -->|"acquire board"| coordinator
+  runner2 -->|"run tests via exporter"| halifax
   runner2 -->|"upload hardware test results"| halifax
   halifax -->|"Yocto .wic image"| board_1
   halifax -->|"kernel + dtb + Yocto initramfs"| board_2
@@ -30,6 +32,6 @@ flowchart LR
 
   %% ── Styles ──
   classDef machine fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-  class halifax,runner1,runner2 machine
+  class halifax,coordinator,runner1,runner2 machine
   classDef board fill:#fce7f3,stroke:#ec4899,color:#831843
   class board_1,board_2,board_3,board_4 board

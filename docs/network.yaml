@@ -12,7 +12,7 @@ machines:
     label: "halifax"
     hide_tailnet: true
     role:
-      - "Labgrid"
+      - "Labgrid Exporters"
       - "Forgejo"
       - "TFTP Server"
       - "Test Results"
@@ -26,13 +26,6 @@ machines:
         - 16 GB DDR4 RAM
 
     software:
-      - name: Labgrid Coordinator
-        package: labgrid
-        version: "25.1.dev273"
-        role: Board resource coordinator
-        protocol: gRPC
-        port: 20408
-        note: Co-located with exporter for now; may separate
       - name: BananaPi F3 Exporter
         package: labgrid
         version: "25.1.dev273"
@@ -51,6 +44,20 @@ machines:
       - name: TFTP Server
         package: tftpd-hpa
         role: Serves kernel/DTB/initramfs/wic images to boards; migrated from ecovault (same paths, users, permissions)
+
+  - id: coordinator
+    label: "labgrid-coordinator"
+    hide_tailnet: true
+    role:
+      - "Labgrid Coordinator"
+    tailscale_name: labgrid-coordinator
+    software:
+      - name: Labgrid Coordinator
+        package: labgrid
+        version: "25.1.dev273"
+        role: Board resource coordinator
+        protocol: gRPC
+        port: 20408
 
   - id: runner1
     label: "blacksmith"
@@ -209,8 +216,13 @@ links:
     type: logical
 
   - from: runner2
+    to: coordinator
+    label: acquire board
+    type: logical
+
+  - from: runner2
     to: halifax
-    label: acquire board, run tests
+    label: run tests via exporter
     type: logical
 
   - from: runner2

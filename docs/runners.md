@@ -6,7 +6,7 @@
 |---|---|---|
 | `tgamblin-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/auto/runner/buildcache` bind-mount |
 | `tgamblin-qemu` | `riscv-ptest-nightly` | Same as `tgamblin-build`; runs QEMU |
-| `tgamblin-board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to Labgrid coordinator + TFTP server |
+| `tgamblin-board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to the exporter/TFTP server |
 | `tgamblin-maintenance` | `meta-riscv-check-layer`, `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
 
 ## Host containers
@@ -31,9 +31,8 @@ Set these in Settings → Actions → Variables.
 |---|---|---|
 | `BOARDGARDEN_HOST` | `forgejo.example.ts.net` | Hostname of the Forgejo container registry (no scheme) |
 | `BOARDGARDEN_OWNER` | `tgamblin` | Owner/org of the `boardgarden`, `bitbake`, `openembedded-core`, `meta-riscv` mirrors |
-| `LG_COORDINATOR_HOST` | `halifax` | Short hostname of the Labgrid coordinator (also the exporter host). Used as `LG_COORDINATOR`, ssh target, and left half of `--add-host` |
-| `LG_COORDINATOR_IP` | `192.168.40.166` | LAN address for the coordinator. Right half of `--add-host` |
-| `TFTP_SERVER_HOST` | `halifax` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid coordinator/exporter on `halifax` for now; may separate |
+| `LG_COORDINATOR_HOST` | `labgrid-coordinator.example.ts.net` | Hostname of the Labgrid coordinator, used as `LG_COORDINATOR`. Resolved on the `LG_PROXY` host, not the runner (see below) |
+| `TFTP_SERVER_HOST` | `halifax` | Short hostname of the TFTP + report server. Used as `TFTP_SERVER`, rsync target, and left half of `--add-host`. Co-located with the Labgrid exporters on `halifax`, so it is also the host labgrid ssh's to for exporter access, and `LG_PROXY` |
 | `TFTP_SERVER_IP` | `192.168.40.166` | LAN address for the TFTP server. Right half of `--add-host` |
 | `PTEST_BOARD_HOST` | `k3-pico-itx-8gb` | Hostname/IP of the k3-pico-itx-8gb's eMMC OS, reachable by SSH from `tgamblin-board-test`. Used by `ptest-kvm-compare` |
 | `PTEST_BOARD_USER` | `admin` | SSH user on `PTEST_BOARD_HOST` (defaults to `admin`). Key auth only; needs to run `qemu-system-riscv64` and write `/dev/kvm` (e.g. `kvm` group) and `/var/tmp` |
@@ -49,7 +48,7 @@ Set these in Settings → Actions → Secrets.
 | `REGISTRY_USERNAME` | `build-push-containers` | Forgejo user or bot with `write:package` scope |
 | `RENOVATE_TOKEN` | `renovate` | Forgejo bot PAT with `read:repository`, `write:repository`, `write:issue` |
 | `REPORT_SSH_KEY` | `run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@halifax`. rsync of `report.html` to `/testresults/` |
-| `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, LG coordinator — all `halifax` today). Seed with `ssh-keyscan -H -T 10 <host>` |
+| `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, Labgrid exporter host — all `halifax` today; the coordinator needs no ssh). Seed with `ssh-keyscan -H -T 10 <host>` |
 | `PTEST_BOARD_SSH_KEY` | `ptest-kvm-compare` | Private key for `PTEST_BOARD_USER@PTEST_BOARD_HOST` |
 | `TFTP_SERVER_SSH_KEY` | `deploy-to-tftp` → `setup-ssh`; `run-board-tests` | Private key for `auto@halifax`. rsync build artifacts into `/srv/tftp/<board>/` |
 
@@ -60,9 +59,18 @@ container can reach the Labgrid coordinator / TFTP server on the private
 network. Composed from the repo variables above:
 
 ```
---add-host ${LG_COORDINATOR_HOST}:${LG_COORDINATOR_IP}
 --add-host ${TFTP_SERVER_HOST}:${TFTP_SERVER_IP}
 ```
+
+## Coordinator access via `LG_PROXY`
+
+Board-test containers set `LG_PROXY` to the exporter host, so
+`labgrid-client` tunnels its coordinator connection over the same
+`labgrid@` ssh login it already uses for exporter resources. Runners never
+connect to the coordinator directly; only the exporter host needs to
+resolve and reach `LG_COORDINATOR_HOST` (gRPC, port 20408). The `labgrid`
+user's sshd config and `authorized_keys` entry on the exporter host must
+allow TCP forwarding.
 
 ## SSH_KNOWN_HOSTS
 
@@ -76,7 +84,6 @@ Regenerate contents:
 ```bash
 {
   ssh-keyscan -H -T 10 <TFTP_SERVER_HOST>
-  ssh-keyscan -H -T 10 <LG_COORDINATOR_HOST>
 } > known_hosts.new
 ```
 

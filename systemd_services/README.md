@@ -4,7 +4,7 @@ Unit files for running the Labgrid coordinator and per-board exporters as
 persistent system services. Install on whichever host(s) sit on the same
 network as your boards (coordinator and exporters can share a host or be
 split across several — see [docs/runners.md](../docs/runners.md) for how
-these map to `LG_COORDINATOR_HOST`/`LG_COORDINATOR_IP` in CI).
+these map to `LG_COORDINATOR_HOST`/`LG_PROXY` in CI).
 
 ## Files
 
@@ -27,7 +27,7 @@ the coordinator's hostname. Override either by dropping a
 
 ```
 BOARDGARDEN_ROOT=/home/labgrid/boardgarden
-LG_COORDINATOR=halifax
+LG_COORDINATOR=labgrid-coordinator.tailscale.baylibre.com
 ```
 
 The file is optional (`EnvironmentFile=-...`) — omit it if the defaults

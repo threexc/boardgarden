@@ -10,6 +10,7 @@
 | ID | Hostname | Tailscale FQDN | OS | Model | Specs | Status |
 |----|----------|----------------|----|-------|-------|--------|
 | `halifax` | halifax | halifax.tailscale.baylibre.com | Debian 13 ("Trixie") | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
+| `coordinator` | labgrid-coordinator | labgrid-coordinator.tailscale.baylibre.com | — | — | — | active |
 | `runner1` | blacksmith | blacksmith.tailscale.baylibre.com | Debian 13 | ThinkCentre M720q | Intel i9-9900T<br/>64 GB DDR4 RAM | active |
 | `runner2` | microlith | microlith.tailscale.baylibre.com | Fedora 44 | ThinkCentre M75q-1 | AMD Ryzen 5 PRO 3400GE<br/>16 GB DDR4 RAM | active |
 

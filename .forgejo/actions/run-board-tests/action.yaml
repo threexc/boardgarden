@@ -12,7 +12,7 @@ inputs:
     description: 'Expected kernel version string, checked against `uname -a` on target'
     required: true
   lg_exporter_ssh_key:
-    description: 'Private key for labgrid@<coordinator>'
+    description: 'Private key for labgrid@<exporter host>'
     required: true
   tftp_server_ssh_key:
     description: 'Private key for <tftp_user>@<tftp_server>'
@@ -30,7 +30,7 @@ inputs:
     description: 'SSH user on the TFTP server'
     required: true
   lg_coordinator:
-    description: 'Hostname of the labgrid coordinator/exporter'
+    description: 'Hostname of the labgrid coordinator'
     required: true
   reports_root:
     description: 'Subdirectory prefix under /testresults/ on the report server'
