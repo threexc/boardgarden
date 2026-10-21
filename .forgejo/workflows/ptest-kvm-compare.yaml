@@ -1,8 +1,10 @@
 name: ptest-kvm-compare
 
-# Builds qemuriscv64 ptest images, then boots each one under the
-# k3-pico-itx-8gb's own qemu-system-riscv64 (eMMC OS) with KVM, and
-# optionally again with TCG to compare how long ptest-runner takes.
+# Builds testv-image-kvm-test (meta-testv: core-image-full-cmdline plus qemu
+# and room for a ptest image) for the k3-pico-itx-8gb, then qemuriscv64 ptest
+# images. Flashes the host image to the board over fastboot, then boots each
+# ptest image, in random order, under the board's qemu-system-riscv64 with
+# KVM, and optionally again with TCG to compare how long ptest-runner takes.
 
 on:
   workflow_dispatch:
@@ -55,8 +57,54 @@ defaults:
   run:
     shell: bash
 
+env:
+  HOST_MACHINE: k3-pico-itx
+  HOST_IMAGE: testv-image-kvm-test
+
 jobs:
+  build-host:
+    runs-on: tgamblin-build
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      volumes:
+        - /auto/runner/buildcache:/buildcache
+      env:
+        DL_DIR: "/buildcache/downloads"
+        SSTATE_DIR: "/buildcache/sstate-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - id: build
+        uses: ./.forgejo/actions/build-yocto-image
+        with:
+          machine: ${{ env.HOST_MACHINE }}
+          image: ${{ env.HOST_IMAGE }}
+          config_json: .forgejo/bitbake-configs/meta-riscv-testv-master.conf.json
+          configuration: testv
+          setup_dir: testv-master-meta-riscv
+          bitbake_setup_override: ${{ inputs.bitbake_setup_override }}
+          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
+
+      # The files boards/k3-pico-itx-8gb/board.yaml flashes, named as there
+      # (as deploy-tftp-artifacts does for the nightly).
+      - name: stage fastboot images
+        env:
+          IMAGES_PATH: ${{ steps.build.outputs.images_path }}
+        run: |
+          set -euo pipefail
+          SRC="${IMAGES_PATH}/${HOST_MACHINE}"
+          STAGE="$GITHUB_WORKSPACE/host-images"
+          mkdir -p "${STAGE}"
+          cp -L "${SRC}"/{FSBL.bin,u-boot.itb,bootinfo_spinor.bin,u-boot-env-default.bin,esos.itb,fw_dynamic.itb,bootfs.ext4} "${STAGE}/"
+          cp -L "${SRC}/${HOST_IMAGE}-${HOST_MACHINE}.rootfs.ext4" "${STAGE}/rootfs.ext4"
+          ls -l "${STAGE}"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: kvm-host-image
+          path: ${{ github.workspace }}/host-images
+
   build:
+    needs: build-host
     runs-on: tgamblin-build
     strategy:
       fail-fast: false
@@ -79,9 +127,10 @@ jobs:
           repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
   compare:
-    needs: build
-    # Compare whatever did build, even if some packages failed.
-    if: ${{ !cancelled() }}
+    needs: [build-host, build]
+    # Compare whatever did build, even if some packages failed - but there's
+    # nothing to run them on without the host image.
+    if: ${{ !cancelled() && needs.build-host.result == 'success' }}
     runs-on: tgamblin-board-test
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
@@ -91,46 +140,28 @@ jobs:
         LG_PROXY: ${{ vars.TFTP_SERVER_HOST }}
     env:
       PLACE: tg-k3-pitx-8gb
-      BOARD_DIR: /var/tmp/ptest-kvm-compare
+      # On the rootfs (where the image's extra space is), not tmpfs /var/tmp.
+      BOARD_DIR: /home/root/ptest-kvm-compare
     steps:
       - uses: actions/checkout@v4
 
       - name: set up keys
         env:
           LG_EXPORTER_SSH_KEY: ${{ secrets.LG_EXPORTER_SSH_KEY }}
-          PTEST_BOARD_SSH_KEY: ${{ secrets.PTEST_BOARD_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-          PTEST_BOARD_HOST: ${{ vars.PTEST_BOARD_HOST }}
-          PTEST_BOARD_USER: ${{ vars.PTEST_BOARD_USER }}
         run: |
           set -euo pipefail
-          # An empty HostName makes ssh reject the whole config, breaking
-          # labgrid's own ssh to the exporter too - fail clearly instead.
-          if [ -z "${PTEST_BOARD_HOST}" ]; then
-            echo "::error::repo variable PTEST_BOARD_HOST is not set"
-            exit 1
-          fi
           mkdir -p ~/.ssh
           umask 077
           printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
-          printf '%s\n' "$PTEST_BOARD_SSH_KEY" > ~/.ssh/id_rsa_board
           printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
-          # The board's eMMC OS may be reflashed (new host key), so it gets
-          # its own known_hosts instead of SSH_KNOWN_HOSTS.
           cat > ~/.ssh/config <<EOF
-          Host ptest-board
-              HostName ${PTEST_BOARD_HOST}
-              User ${PTEST_BOARD_USER:-admin}
-              IdentityFile ~/.ssh/id_rsa_board
-              UserKnownHostsFile ~/.ssh/known_hosts_board
-              StrictHostKeyChecking accept-new
-              ConnectTimeout 10
           Host *
               StrictHostKeyChecking accept-new
           EOF
 
       # Without a name, each artifact lands in its own
-      # images/ptest_image_<package>/ subdir.
+      # images/<artifact>/ subdir.
       - uses: actions/download-artifact@v3
         with:
           path: /home/labgrid/images
@@ -145,8 +176,7 @@ jobs:
           working-directory: ${{ github.workspace }}
           enable-cache: true
 
-      # U-Boot's default autoboot is the eMMC OS, which has the qemu we want.
-      - name: reserve board and boot eMMC OS
+      - name: reserve board
         run: |
           set -euo pipefail
           uv sync
@@ -154,45 +184,61 @@ jobs:
           echo "LG_TOKEN=${LG_TOKEN}" >> "$GITHUB_ENV"
           uv run labgrid-client wait
           uv run labgrid-client -p "+" lock
-          uv run labgrid-client -p "+" -c boards/k3-pico-itx-8gb/client.yaml pw cycle
-          for _ in $(seq 60); do
+
+      # Same fastboot flash as the nightly's tests (K3PicoItxBootStrategy),
+      # then the board's address from its serial console for ssh.
+      - name: flash and boot testv-image-kvm-test
+        run: |
+          set -euo pipefail
+          IMAGE_DIR=/home/labgrid/k3-pico-itx-fastboot
+          mv /home/labgrid/images/kvm-host-image "${IMAGE_DIR}"
+          # Partition layouts aren't build output; they live in the board dir.
+          cp boards/k3-pico-itx-8gb/*.json "${IMAGE_DIR}/"
+          uv run python - <<'EOF'
+          import time
+          from labgrid import Environment
+
+          target = Environment("boards/k3-pico-itx-8gb/client.yaml").get_target()
+          target.get_driver("Strategy").transition("shell")
+          shell = target.get_driver("ShellDriver")
+          for _ in range(30):
+              out, _, _ = shell.run("ip -4 -o addr show scope global")
+              addrs = [l.split()[3].split("/")[0] for l in out if " inet " in l]
+              if addrs:
+                  break
+              time.sleep(5)
+          else:
+              raise SystemExit("board got no IPv4 address")
+          with open("/tmp/board-ip", "w") as f:
+              f.write(addrs[0])
+          EOF
+          # The image allows root login with an empty password; its host key
+          # is new on every flash.
+          cat >> ~/.ssh/config <<EOF
+          Host ptest-board
+              HostName $(cat /tmp/board-ip)
+              User root
+              UserKnownHostsFile /dev/null
+              StrictHostKeyChecking no
+              LogLevel ERROR
+              ConnectTimeout 10
+          EOF
+          for _ in $(seq 30); do
             ssh ptest-board true 2>/dev/null && break
             sleep 10
           done
-          ssh ptest-board 'uname -a; qemu-system-riscv64 --version; ls -l /dev/kvm || true'
+          ssh ptest-board 'uname -a; qemu-system-riscv64 --version; ls -l /dev/kvm || true; df -h /'
 
-      - name: stage images on board
-        id: stage
-        run: |
-          set -euo pipefail
-          ssh ptest-board "rm -rf ${BOARD_DIR}"
-          for d in /home/labgrid/images/ptest_image_*/; do
-            [ -d "$d" ] || continue
-            pkg=$(basename "$d" | sed 's/^ptest_image_//')
-            ssh ptest-board "mkdir -p ${BOARD_DIR}/${pkg}"
-            scp -q "$d"/* "ptest-board:${BOARD_DIR}/${pkg}/"
-          done
-
-      # Separate steps so each mode gets its own status and log; TCG (if
-      # enabled) still runs if KVM fails.
-      - name: run ptests (KVM)
-        if: ${{ !cancelled() && steps.stage.outcome == 'success' }}
+      - name: run ptests
+        id: ptests
         env:
-          LG_QEMU_SMP: ${{ inputs.smp }}
-          LG_QEMU_MEMORY: ${{ inputs.memory }}
-          PTEST_TIMEOUT: ${{ inputs.ptest_timeout }}
-          PTEST_RUNNER_TIMEOUT: ${{ inputs.ptest_runner_timeout }}
-        run: boards/k3-pico-itx-8gb/run-qemu-ptests.sh kvm
-
-      - name: run ptests (TCG)
-        if: ${{ !cancelled() && steps.stage.outcome == 'success' && inputs.tcg }}
-        env:
+          TCG: ${{ inputs.tcg }}
           TCG_CPU: ${{ inputs.tcg_cpu }}
           LG_QEMU_SMP: ${{ inputs.smp }}
           LG_QEMU_MEMORY: ${{ inputs.memory }}
           PTEST_TIMEOUT: ${{ inputs.ptest_timeout }}
           PTEST_RUNNER_TIMEOUT: ${{ inputs.ptest_runner_timeout }}
-        run: boards/k3-pico-itx-8gb/run-qemu-ptests.sh tcg
+        run: boards/k3-pico-itx-8gb/run-qemu-ptests.sh
 
       - name: power off and release board
         if: ${{ always() && env.LG_TOKEN != '' }}
@@ -201,12 +247,17 @@ jobs:
           uv run labgrid-client -p "+" release || true
           uv run labgrid-client cancel-reservation || true
 
-      - name: summarize durations
+      - name: summarize durations and results
         if: ${{ !cancelled() }}
         run: |
           mkdir -p logs
+          touch logs/order.txt
           python3 - <<'EOF' | tee logs/summary.md >> "$GITHUB_STEP_SUMMARY"
-          import pathlib, xml.etree.ElementTree as ET
+          import pathlib, re, xml.etree.ElementTree as ET
+
+          logs = pathlib.Path("logs")
+          order = logs.joinpath("order.txt").read_text().split()
+          modes = ["kvm"] + (["tcg"] if any((logs / p / "tcg").is_dir() for p in order) else [])
 
           def times(junit):
               if not junit.is_file():
@@ -216,10 +267,29 @@ jobs:
                   for tc in ET.parse(junit).iter("testcase")
               }
 
-          print("| package | boot KVM (s) | boot TCG (s) | ptest KVM (s) | ptest TCG (s) | TCG/KVM |")
-          print("|---|---|---|---|---|---|")
-          for pkg in sorted(p for p in pathlib.Path("logs").iterdir() if p.is_dir()):
-              t = {m: times(pkg / m / "junit.xml") for m in ("kvm", "tcg")}
+          def counts(console):
+              c = {"PASS": 0, "FAIL": 0, "SKIP": 0}
+              if console.is_file():
+                  for line in console.read_text(errors="replace").splitlines():
+                      if m := re.match(r"(PASS|FAIL|SKIP): ", line.strip()):
+                          c[m[1]] += 1
+              return "/".join(str(v) for v in c.values())
+
+          head = ["#", "package"]
+          for m in modes:
+              M = m.upper()
+              head += [f"boot {M} (s)", f"ptest {M} (s)", f"{M} pass/fail/skip"]
+          if "tcg" in modes:
+              head.append("TCG/KVM")
+          print("| " + " | ".join(head) + " |")
+          print("|" + "---|" * len(head))
+
+          for i, pkg in enumerate(order, 1):
+              row = [str(i), pkg]
+              if (logs / pkg / "stage-failed").exists():
+                  print("| " + " | ".join(row + ["staging failed"] + [""] * (len(head) - 3)) + " |")
+                  continue
+              t = {m: times(logs / pkg / m / "junit.xml") for m in modes}
 
               def cell(m, test):
                   if test not in t[m]:
@@ -227,13 +297,14 @@ jobs:
                   secs, ok = t[m][test]
                   return f"{secs:.0f}" + ("" if ok else " (fail)")
 
-              k = t["kvm"].get("test_ptests", (0,))[0]
-              g = t["tcg"].get("test_ptests", (0,))[0]
-              ratio = f"{g / k:.1f}x" if k and g else "-"
-              print(
-                  f"| {pkg.name} | {cell('kvm', 'test_system_booted')} | {cell('tcg', 'test_system_booted')} "
-                  f"| {cell('kvm', 'test_ptests')} | {cell('tcg', 'test_ptests')} | {ratio} |"
-              )
+              for m in modes:
+                  row += [cell(m, "test_system_booted"), cell(m, "test_ptests"),
+                          counts(logs / pkg / m / "console_main")]
+              if "tcg" in modes:
+                  k = t["kvm"].get("test_ptests", (0,))[0]
+                  g = t["tcg"].get("test_ptests", (0,))[0]
+                  row.append(f"{g / k:.1f}x" if k and g else "-")
+              print("| " + " | ".join(row) + " |")
           EOF
 
       - name: upload logs
@@ -242,4 +313,3 @@ jobs:
         with:
           name: ptest-kvm-compare-logs
           path: logs/
-
