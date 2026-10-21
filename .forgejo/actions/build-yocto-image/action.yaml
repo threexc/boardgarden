@@ -144,6 +144,11 @@ runs:
         # add buildinfo to the image
         echo "IMAGE_CLASSES += \"image-buildinfo\"" >> conf/local.conf
 
+        # fastboot sends images over the board's max-download-size as sparse
+        # images, which it can only build from whole 4 KiB blocks; OE only
+        # aligns rootfs images to 1 KiB by default.
+        echo 'IMAGE_ROOTFS_ALIGNMENT = "4"' >> conf/local.conf
+
         # Boards that boot via kernel+dtb+initramfs (board.yaml sets tftp.initramfs)
         # only need the initramfs image, with its debug module enabled so a shell
         # bootarg can drop to a shell; boards booting a full disk/wic image only
