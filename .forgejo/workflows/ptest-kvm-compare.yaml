@@ -232,8 +232,10 @@ jobs:
           done
           ssh ptest-board 'uname -a; qemu-system-riscv64 --version; ls -l /dev/kvm || true; df -h /'
 
+      # Failed ptests show up in the summary; don't fail the job over them.
       - name: run ptests
         id: ptests
+        continue-on-error: true
         env:
           TCG: ${{ inputs.tcg }}
           TCG_CPU: ${{ inputs.tcg_cpu }}
@@ -270,18 +272,27 @@ jobs:
                   for tc in ET.parse(junit).iter("testcase")
               }
 
+          # ptest-runner only sees run-ptest's exit status, which some ptests
+          # don't propagate (e.g. coreutils' make check stopping on a crashed
+          # test still "passes"), so also count error lines: ptest-runner's
+          # own, automake ERROR results, and make giving up.
+          ERROR = re.compile(r"(ERROR|TIMEOUT): |make(\[\d+\])?: \*\*\* ")
+
           def counts(console):
-              c = {"PASS": 0, "FAIL": 0, "SKIP": 0}
+              c = {"PASS": 0, "FAIL": 0, "SKIP": 0, "ERROR": 0}
               if console.is_file():
                   for line in console.read_text(errors="replace").splitlines():
-                      if m := re.match(r"(PASS|FAIL|SKIP): ", line.strip()):
+                      line = line.strip()
+                      if m := re.match(r"(PASS|FAIL|SKIP): ", line):
                           c[m[1]] += 1
+                      elif ERROR.match(line):
+                          c["ERROR"] += 1
               return "/".join(str(v) for v in c.values())
 
           head = ["#", "package"]
           for m in modes:
               M = m.upper()
-              head += [f"boot {M} (s)", f"ptest {M} (s)", f"{M} pass/fail/skip"]
+              head += [f"boot {M} (s)", f"ptest {M} (s)", f"{M} pass/fail/skip/error"]
           if "tcg" in modes:
               head.append("TCG/KVM")
           print("| " + " | ".join(head) + " |")
