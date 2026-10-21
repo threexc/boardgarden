@@ -1,0 +1,53 @@
+{
+    "description": "meta-riscv, meta-testv and oe-core - 'nodistro' configuration for testv images",
+    "sources": {
+        "bitbake": {
+            "git-remote": {
+                "uri": "https://git.openembedded.org/bitbake",
+                "branch": "master",
+                "rev": "master"
+            }
+        },
+        "openembedded-core": {
+            "git-remote": {
+                "uri": "https://git.openembedded.org/openembedded-core",
+                "branch": "master",
+                "rev": "master"
+            }
+        },
+        "meta-riscv": {
+            "git-remote": {
+                "uri": "https://github.com/riscv/meta-riscv.git",
+                "branch": "master",
+                "rev": "master"
+            }
+        },
+        "meta-testv": {
+            "git-remote": {
+                "uri": "https://forgejo.baylibre.com/tgamblin/meta-testv.git",
+                "branch": "main",
+                "rev": "main"
+            }
+        }
+    },
+    "bitbake-setup": {
+        "configurations": [
+        {
+            "name": "testv",
+            "description": "OpenEmbedded 'nodistro' with meta-testv",
+            "setup-dir-name": "testv-master-meta-riscv",
+            "bb-layers": ["openembedded-core/meta", "meta-riscv", "meta-testv"],
+            "bb-env-passthrough-additions": ["DL_DIR", "SSTATE_DIR"],
+            "oe-fragments-one-of": {
+                "machine": {
+                    "description": "Target machines",
+                    "options" : [
+                        { "name": "machine/k3-pico-itx", "description": "K3 Pico-ITX" }
+                    ]
+                }
+            }
+        }
+        ]
+    },
+    "version": "1.0"
+}
