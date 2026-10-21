@@ -9,6 +9,8 @@ name: ptest-kvm-compare
 on:
   workflow_dispatch:
     inputs:
+      # meta-riscv overrides only apply to the host image; the qemuriscv64
+      # ptest images are built from poky without meta-riscv.
       bitbake_setup_override:
         description: 'bitbake-setup source override to apply (none for default)'
         required: true
@@ -17,6 +19,8 @@ on:
         options:
           - none
           - oe-core-master-next
+          - meta-riscv-tgamblin-review
+          - meta-riscv-tgamblin-fixes
       packages:
         description: 'JSON array of ptest recipes'
         required: true
@@ -123,7 +127,7 @@ jobs:
         with:
           package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
-          source_override: ${{ inputs.bitbake_setup_override }}
+          source_override: ${{ startsWith(inputs.bitbake_setup_override, 'meta-riscv-') && 'none' || inputs.bitbake_setup_override }}
           repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
   compare:
