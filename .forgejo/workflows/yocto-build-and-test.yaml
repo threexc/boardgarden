@@ -14,6 +14,14 @@ on:
           - none
           - meta-riscv-tgamblin-review
           - meta-riscv-tgamblin-fixes
+      distro:
+        description: 'Distro: testv (meta-testv) or nodistro (oe-core)'
+        required: true
+        default: 'testv'
+        type: choice
+        options:
+          - testv
+          - nodistro
       image:
         description: 'Image to build'
         required: true
@@ -77,6 +85,7 @@ jobs:
           image: ${{ inputs.image || 'core-image-minimal' }}
           initramfs_image: ${{ inputs.initramfs_image || 'core-image-minimal-initramfs' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          distro: ${{ inputs.distro || 'testv' }}
           boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
       - uses: ./.forgejo/actions/deploy-to-tftp
         with:

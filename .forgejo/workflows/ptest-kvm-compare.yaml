@@ -1,10 +1,11 @@
 name: ptest-kvm-compare
 
 # Builds testv-image-kvm-test (meta-testv: core-image-full-cmdline plus qemu
-# and room for a ptest image) for the k3-pico-itx-8gb, then qemuriscv64 ptest
-# images. Flashes the host image to the board over fastboot, then boots each
-# ptest image, in random order, under the board's qemu-system-riscv64 with
-# KVM, and optionally again with TCG to compare how long ptest-runner takes.
+# and room for a ptest image) with the testv distro for the k3-pico-itx-8gb,
+# then qemuriscv64 ptest images. Flashes the host image to the board over
+# fastboot, then boots each ptest image, in random order, under the board's
+# qemu-system-riscv64 with KVM, and optionally again with TCG to compare how
+# long ptest-runner takes.
 
 on:
   workflow_dispatch:
@@ -82,9 +83,7 @@ jobs:
         with:
           machine: ${{ env.HOST_MACHINE }}
           image: ${{ env.HOST_IMAGE }}
-          config_json: .forgejo/bitbake-configs/meta-riscv-testv-master.conf.json
-          configuration: testv
-          setup_dir: testv-master-meta-riscv
+          distro: testv
           bitbake_setup_override: ${{ inputs.bitbake_setup_override }}
           boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
