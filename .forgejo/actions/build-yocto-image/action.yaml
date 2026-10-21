@@ -17,6 +17,18 @@ inputs:
       tftp.initramfs (e.g. core-image-minimal-initramfs)
     required: false
     default: 'core-image-minimal-initramfs'
+  config_json:
+    description: 'bitbake-setup config, producing bitbake-builds/<setup_dir>'
+    required: false
+    default: '.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json'
+  configuration:
+    description: 'bitbake-setup configuration in config_json to use'
+    required: false
+    default: 'nodistro'
+  setup_dir:
+    description: "That configuration's setup-dir-name"
+    required: false
+    default: 'oe-nodistro-master-meta-riscv'
   bitbake_setup_override:
     description: 'bitbake-setup source override (none for default)'
     required: false
@@ -60,10 +72,10 @@ runs:
     - name: configure bitbake and layers
       uses: ./.forgejo/actions/bitbake-setup
       with:
-        config_json: .forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+        config_json: ${{ inputs.config_json }}
         overrides_dir: .forgejo/bitbake-configs
         positions: |
-          nodistro
+          ${{ inputs.configuration }}
           machine/${{ inputs.machine }}
         source_override: ${{ inputs.bitbake_setup_override }}
         repo_owner: ${{ inputs.boardgarden_owner }}
@@ -73,9 +85,10 @@ runs:
       shell: bash
       env:
         LAYER_PATCHES: ${{ inputs.layer_patches }}
+        SETUP_DIR: ${{ inputs.setup_dir }}
       run: |
         set -euo pipefail
-        LAYERS="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/layers"
+        LAYERS="$GITHUB_WORKSPACE/bitbake-builds/${SETUP_DIR}/layers"
         for d in "${LAYER_PATCHES}"/*/; do
           git -C "${LAYERS}/$(basename "$d")" \
             -c user.name=boardgarden -c user.email=boardgarden@localhost \
@@ -88,8 +101,9 @@ runs:
         RISCV_IMAGE: ${{ inputs.image }}
         RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
         RISCV_MACHINE: ${{ inputs.machine }}
+        SETUP_DIR: ${{ inputs.setup_dir }}
       run: |
-        . "$GITHUB_WORKSPACE"/bitbake-builds/oe-nodistro-master-meta-riscv/build/init-build-env
+        . "$GITHUB_WORKSPACE/bitbake-builds/${SETUP_DIR}/build/init-build-env"
 
         bitbake-config-build \
           enable-fragment \
@@ -134,8 +148,9 @@ runs:
       shell: bash
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
+        SETUP_DIR: ${{ inputs.setup_dir }}
       run: |
-        IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/oe-nodistro-master-meta-riscv/build/tmp/deploy/images"
+        IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/${SETUP_DIR}/build/tmp/deploy/images"
         if [ ! -d "${IMAGES_PATH}/${RISCV_MACHINE}" ]; then
           echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
           exit 1
