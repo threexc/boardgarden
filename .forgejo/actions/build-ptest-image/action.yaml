@@ -5,7 +5,8 @@ description: >
   boards/<machine>/board.yaml (named as listed there) as the
   ptest_image_<package> artifact for run-qemu-ptest. Intended to be used
   inside a job with a yocto-builder container. DL_DIR and SSTATE_DIR are
-  written to local.conf when set in the environment.
+  written to local.conf when set in the environment, and TMPDIR is kept
+  under PERSISTENT_TMPDIR_BASE when that is set.
 
 inputs:
   package:
@@ -49,8 +50,10 @@ runs:
         repo_owner: ${{ inputs.repo_owner }}
 
     - name: build core-image-ptest-${{ inputs.package }}
+      id: bitbake
       shell: bash
       env:
+        MACHINE: ${{ inputs.machine }}
         PTEST_PACKAGE: ${{ inputs.package }}
       run: |
         # No -u: oe-init-build-env reads unset vars (e.g. BBSERVER).
@@ -74,16 +77,30 @@ runs:
           enable-fragment \
           core/yocto/root-login-with-empty-password
 
-        bitbake "core-image-ptest-${PTEST_PACKAGE}"
+        # See build-yocto-image. Keyed per package as well, so the package
+        # matrix still builds in parallel.
+        BUILD_TMPDIR="$GITHUB_WORKSPACE/bitbake-builds/poky-master/build/tmp"
+        LOCK=()
+        if [ -n "${PERSISTENT_TMPDIR_BASE:-}" ]; then
+          BUILD_TMPDIR="${PERSISTENT_TMPDIR_BASE}/poky-master-${MACHINE}-ptest-${PTEST_PACKAGE}"
+          mkdir -p "${BUILD_TMPDIR}"
+          touch "${BUILD_TMPDIR}"
+          echo "TMPDIR = \"${BUILD_TMPDIR}\"" >> conf/local.conf
+          LOCK=(flock "${BUILD_TMPDIR}.lock")
+        fi
+        echo "tmpdir=${BUILD_TMPDIR}" >> "$GITHUB_OUTPUT"
+
+        "${LOCK[@]}" bitbake "core-image-ptest-${PTEST_PACKAGE}"
 
     - name: stage images
       shell: bash
       env:
         MACHINE: ${{ inputs.machine }}
         PTEST_PACKAGE: ${{ inputs.package }}
+        BUILD_TMPDIR: ${{ steps.bitbake.outputs.tmpdir }}
       run: |
         set -euo pipefail
-        DEPLOY="$GITHUB_WORKSPACE/bitbake-builds/poky-master/build/tmp/deploy/images/${MACHINE}"
+        DEPLOY="${BUILD_TMPDIR}/deploy/images/${MACHINE}"
         STAGE="$GITHUB_WORKSPACE/ptest-images"
         mkdir -p "${STAGE}"
         # board.yaml's images: "<key>: <path>" lines, e.g. "kernel: /home/labgrid/Image"

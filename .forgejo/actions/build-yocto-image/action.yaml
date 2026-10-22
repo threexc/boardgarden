@@ -124,6 +124,7 @@ runs:
         done
 
     - name: build image
+      id: bitbake
       shell: bash
       env:
         RISCV_IMAGE: ${{ inputs.image }}
@@ -174,16 +175,31 @@ runs:
           EFFECTIVE_IMAGES="${EFFECTIVE_IMAGES} ${RISCV_IMAGE}"
         fi
 
-        bitbake ${EFFECTIVE_IMAGES}
+        # With PERSISTENT_TMPDIR_BASE set (and pruned by prune-yocto-buildcache),
+        # TMPDIR outlives the job, so an unchanged image costs nothing
+        # instead of a rootfs rebuild. Keyed by machine so concurrent matrix
+        # jobs don't share one; the lock serialises other runs of the same key.
+        BUILD_TMPDIR="$GITHUB_WORKSPACE/bitbake-builds/${SETUP_DIR}/build/tmp"
+        LOCK=()
+        if [ -n "${PERSISTENT_TMPDIR_BASE:-}" ]; then
+          BUILD_TMPDIR="${PERSISTENT_TMPDIR_BASE}/${SETUP_DIR}-${RISCV_MACHINE}"
+          mkdir -p "${BUILD_TMPDIR}"
+          touch "${BUILD_TMPDIR}"
+          echo "TMPDIR = \"${BUILD_TMPDIR}\"" >> conf/local.conf
+          LOCK=(flock "${BUILD_TMPDIR}.lock")
+        fi
+        echo "tmpdir=${BUILD_TMPDIR}" >> "$GITHUB_OUTPUT"
+
+        "${LOCK[@]}" bitbake ${EFFECTIVE_IMAGES}
 
     - name: locate and verify images deploy directory
       id: locate
       shell: bash
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
-        SETUP_DIR: ${{ steps.config.outputs.setup_dir }}
+        BUILD_TMPDIR: ${{ steps.bitbake.outputs.tmpdir }}
       run: |
-        IMAGES_PATH="$GITHUB_WORKSPACE/bitbake-builds/${SETUP_DIR}/build/tmp/deploy/images"
+        IMAGES_PATH="${BUILD_TMPDIR}/deploy/images"
         if [ ! -d "${IMAGES_PATH}/${RISCV_MACHINE}" ]; then
           echo "::error::Expected images directory not found: ${IMAGES_PATH}/${RISCV_MACHINE}"
           exit 1
@@ -220,17 +236,16 @@ runs:
         # which isn't deployed when the kernel has no loadable modules. Its embedded
         # version - e.g. "7.2.2+git0+52c36105f7-r0" - comes straight from the deploy
         # filename rather than the kernel recipe's own PV, which may not agree at all
-        # across builds of the same source.
+        # across builds of the same source. A persistent TMPDIR may hold
+        # older builds too, so take the newest.
         IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
-        shopt -s nullglob
-        CANDIDATES=("${IMAGE_DIR}"/Image*--*-"${RISCV_MACHINE}"-*.bin)
-        shopt -u nullglob
-        if [ ${#CANDIDATES[@]} -eq 0 ]; then
+        NEWEST=$(ls -1t "${IMAGE_DIR}"/Image*--*-"${RISCV_MACHINE}"-*.bin 2>/dev/null | head -1)
+        if [ -z "${NEWEST}" ]; then
           echo "::error::no Image*--*-${RISCV_MACHINE}-*.bin found in ${IMAGE_DIR}"
           exit 1
         fi
 
-        BASENAME=$(basename "${CANDIDATES[0]}")
+        BASENAME=$(basename "${NEWEST}")
         KERNEL_VERSION="${BASENAME#Image*--}"
         KERNEL_VERSION="${KERNEL_VERSION%-${RISCV_MACHINE}-*.bin}"
         KERNEL_VERSION="${KERNEL_VERSION%%+*}"
