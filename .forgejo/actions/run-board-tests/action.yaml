@@ -32,6 +32,18 @@ inputs:
   lg_coordinator:
     description: 'Hostname of the labgrid coordinator'
     required: true
+  board:
+    description: >
+      Board dir to test on (e.g. k3-pico-itx-8gb), for machines several
+      boards share. Ignored, with a notice, if no board for the machine matches.
+    required: false
+    default: ''
+  boot_method:
+    description: >
+      Boot strategy to test with (fastboot, tftp, sdmux), for boards with
+      more than one. Ignored, with a notice, if no board for the machine matches.
+    required: false
+    default: ''
   reports_root:
     description: 'Subdirectory prefix under /testresults/ on the report server'
     required: false
@@ -128,17 +140,31 @@ runs:
       env:
         RISCV_MACHINE: ${{ inputs.machine }}
         VERSION: ${{ inputs.kernel_version }}
+        BOARD_FILTER: ${{ inputs.board }}
+        BOOT_METHOD: ${{ inputs.boot_method }}
       run: |
         uv sync
+        # Rows for this machine (one per board and variant), narrowed by the
+        # board/boot_method inputs. Those apply across the whole matrix, so a
+        # machine with no matching row keeps all of its rows.
+        ALL_ROWS=$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info remote_place,variant,board,strategy,client "$RISCV_MACHINE")
+        ROWS=$(awk -F'\t' -v b="$BOARD_FILTER" -v s="$BOOT_METHOD" \
+          '(b == "" || $3 == b) && (s == "" || $4 == s)' <<< "$ALL_ROWS")
+        if [ -z "$ROWS" ]; then
+          echo "::notice::no board for ${RISCV_MACHINE} matches board='${BOARD_FILTER}' boot_method='${BOOT_METHOD}', using its default"
+          ROWS=$ALL_ROWS
+        fi
         # Base machines are reserved by the places' machine tag, so boards
-        # sharing one (RAM variants, etc.) can land on any of them. A board
-        # variant's machine isn't a place tag (a place carries one machine
-        # tag), so reserve its place by name instead.
-        read -r VARIANT PLACE <<< "$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info variant,remote_place "$RISCV_MACHINE" | sed -n 1p)"
-        if [ -n "$VARIANT" ] && [ "$VARIANT" != "-" ]; then
-          RESERVE_FILTER="name=$PLACE"
-        else
+        # sharing one (RAM variants, etc.) can land on any of them. That only
+        # works if every tagged place can serve one of the rows: a variant's
+        # machine isn't a place tag (a place carries one machine tag), and a
+        # board or boot method only some places have narrows the choice. Then
+        # reserve the first row's place by name instead.
+        TAGGED_PLACES=$(awk -F'\t' '$2 == "-" { print $1 }' <<< "$ALL_ROWS" | sort -u)
+        if [ "$(cut -f1 <<< "$ROWS" | sort -u)" = "$TAGGED_PLACES" ]; then
           RESERVE_FILTER="machine=$RISCV_MACHINE"
+        else
+          RESERVE_FILTER="name=$(sed -n 1p <<< "$ROWS" | cut -f1)"
         fi
         eval `uv run labgrid-client reserve --shell $RESERVE_FILTER`
         echo $LG_TOKEN
@@ -155,8 +181,7 @@ runs:
         ')
         # The client file picks the boot method: client.yaml for the base
         # machine, client-<variant>.yaml for a variant's.
-        read -r BOARD CLIENT <<< "$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info remote_place,board,client "$RISCV_MACHINE" |
-          awk -F'\t' -v p="$ALLOCATED_PLACE" '$1 == p { print $2, $3; exit }')"
+        read -r BOARD CLIENT <<< "$(awk -F'\t' -v p="$ALLOCATED_PLACE" '$1 == p { print $3, $5; exit }' <<< "$ROWS")"
         if [ -z "$BOARD" ]; then
           echo "::error::no board for ${RISCV_MACHINE} has remote_place: ${ALLOCATED_PLACE}"
           exit 1
