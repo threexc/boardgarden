@@ -41,6 +41,21 @@ on:
         required: true
         default: 'auto'
         type: string
+      board:
+        description: 'Board dir to test on, for machines several boards share (blank for any)'
+        required: false
+        default: ''
+        type: string
+      boot_method:
+        description: 'Boot method to test with, for boards that have several'
+        required: true
+        default: 'default'
+        type: choice
+        options:
+          - default
+          - fastboot
+          - tftp
+          - sdmux
 
 env:
   TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
@@ -165,6 +180,8 @@ jobs:
         with:
           machine: ${{ matrix.machine }}
           kernel_version: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
+          board: ${{ inputs.board || '' }}
+          boot_method: ${{ inputs.boot_method != 'default' && inputs.boot_method || '' }}
           lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
           tftp_server_ssh_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
