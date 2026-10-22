@@ -4,7 +4,7 @@
 
 | Label | Used by | Requirements |
 |---|---|---|
-| `yocto-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/buildcache` bind-mount |
+| `yocto-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/ssd/work/buildcache` bind-mount |
 | `qemu-test` | `riscv-ptest-nightly` | Same as `yocto-build`; runs QEMU |
 | `board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to the exporter/TFTP server |
 | `light-maintenance` | `meta-riscv-check-layer`, `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
@@ -87,11 +87,11 @@ Regenerate contents:
 ## Buildcache and UIDs/GIDs
 
 `build-yocto-image` (via `yocto-build-and-test` / `weekly-build-only`) and `riscv-ptest-nightly` bind-mount
-`/buildcache` into the container at the same path, populating
+`/ssd/work/buildcache` into the container as `/buildcache`, populating
 `DL_DIR` and `SSTATE_DIR`. Provision this on the runner host:
 
 ```
-sudo install -d -o 1500 -g 1500 /buildcache/{downloads,sstate-cache}
+sudo install -d -o 1500 -g 1500 /ssd/work/buildcache/{downloads,sstate-cache}
 ```
 
 `1500` is the default UID/GID for the custom containers from

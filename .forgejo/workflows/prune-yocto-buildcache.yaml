@@ -29,7 +29,7 @@ jobs:
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
-        - /buildcache:/buildcache
+        - /ssd/work/buildcache:/buildcache
     env:
       SSTATE_DIR: /buildcache/sstate-cache
       SSTATE_MAX_DAYS: 30
