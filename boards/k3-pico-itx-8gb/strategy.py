@@ -16,6 +16,14 @@ class K3PicoItxBootStrategy(FastbootFlashStrategy):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
+class K3PicoItxTftpBootStrategy(TftpBootStrategy):
+    """Boot strategy for K3 Pico-ITX, TFTP-booting the default BSP."""
+
+    manifest = load_board(Path(__file__).parent, variant="tftp")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
 class K3PicoItxMainlineBootStrategy(TftpBootStrategy):
     """Boot strategy for K3 Pico-ITX with the mainline-kernel BSP."""
 
