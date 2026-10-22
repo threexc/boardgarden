@@ -22,7 +22,6 @@ RUN apt-get update && \
     libacl1 \
     locales \
     lz4 \
-    nodejs \
     pcre2-utils \
     pylint \
     python3 \
@@ -58,6 +57,9 @@ RUN apt-get update && \
     locale-gen
 
 RUN apt-get clean
+
+# JS actions (e.g. astral-sh/setup-uv v7+) run on node24; Debian 13 ships node 20
+COPY --from=node:24-trixie-slim /usr/local/bin/node /usr/local/bin/node
 
 USER yoctouser
 WORKDIR /home/yoctouser/yocto-build
