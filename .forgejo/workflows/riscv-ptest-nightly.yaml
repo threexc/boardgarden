@@ -42,7 +42,7 @@ jobs:
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
-        - /ssd/work/buildcache:/buildcache
+        - /buildcache:/buildcache
       env:
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
         DL_DIR: "/buildcache/downloads"
