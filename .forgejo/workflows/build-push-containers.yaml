@@ -12,21 +12,29 @@ jobs:
     name: Build and push ${{ matrix.name }}
     runs-on: light-maintenance
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/container-builder:v1
     strategy:
       fail-fast: false
+      # Workflows pin these images by literal tag (zizmor unpinned-images).
+      # When an image changes incompatibly, bump its tag here and in every
+      # workflow that uses it, in the same commit.
       matrix:
         include:
           - name: yocto-builder
             dockerfile: ./.forgejo/dockerfiles/yocto-builder/Dockerfile
+            tag: v1
           - name: container-builder
             dockerfile: ./.forgejo/dockerfiles/container-builder/Dockerfile
+            tag: v1
           - name: lg-operator
             dockerfile: ./.forgejo/dockerfiles/labgrid-operator/Dockerfile
+            tag: v1
           - name: kernel-builder
             dockerfile: ./.forgejo/dockerfiles/kernel-builder/Dockerfile
+            tag: v1
           - name: qemu-builder
             dockerfile: ./.forgejo/dockerfiles/qemu-builder/Dockerfile
+            tag: v1
 
     steps:
     - name: Checkout
@@ -69,6 +77,7 @@ jobs:
         platforms: linux/amd64
         tags: |
           ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/${{ matrix.name }}:latest
+          ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/${{ matrix.name }}:${{ matrix.tag }}
         # Reuse layers across runs; the weekly run rebuilds from scratch to
         # pick up distro updates, then refreshes the cache.
         no-cache: ${{ github.event_name == 'schedule' }}

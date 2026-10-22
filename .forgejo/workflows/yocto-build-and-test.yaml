@@ -84,7 +84,7 @@ jobs:
               || fromJSON(needs.discover.outputs.matrix)
           }}
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       volumes:
         - /auto/runner/buildcache:/buildcache
@@ -169,7 +169,7 @@ jobs:
       matrix:
         machine: ${{ fromJSON(needs.collect_built_machines.outputs.matrix) }}
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:v1
       options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}

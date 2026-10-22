@@ -70,7 +70,7 @@ jobs:
   build-host:
     runs-on: yocto-build
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -114,7 +114,7 @@ jobs:
       matrix:
         package: ${{ fromJSON(inputs.packages) }}
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -136,7 +136,7 @@ jobs:
     if: ${{ !cancelled() && needs.build-host.result == 'success' }}
     runs-on: board-test
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:v1
       options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
       env:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}

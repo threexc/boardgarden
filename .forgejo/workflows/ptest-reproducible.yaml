@@ -70,7 +70,7 @@ jobs:
   build-ptest-image:
     runs-on: qemu-test
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
@@ -89,7 +89,7 @@ jobs:
     runs-on: qemu-test
     needs: build-ptest-image
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:v1
       # qemux86-64 boots with KVM; needs /dev/kvm on the runner host.
       options: >-
         --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
@@ -111,7 +111,7 @@ jobs:
     needs: run-ptest
     if: ${{ !cancelled() }}
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder:v1
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:

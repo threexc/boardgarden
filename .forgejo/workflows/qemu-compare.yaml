@@ -46,7 +46,7 @@ jobs:
       matrix:
         side: [base, test]
     container:
-      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/qemu-builder
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/qemu-builder:v1
       volumes:
         - /auto/runner/buildcache:/buildcache
       env:
