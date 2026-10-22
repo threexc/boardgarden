@@ -1,5 +1,5 @@
 name: 'bitbake-setup'
-description: 'Initialise a bitbake build tree via ./bitbake-bbs/bin/bitbake-setup, with optional source override.'
+description: 'Initialise a bitbake build tree with bitbake-setup from PyPI (run via uvx), with optional source override.'
 
 inputs:
   config_json:
@@ -26,17 +26,14 @@ inputs:
     description: 'Directory holding *-override.json files.'
     required: false
     default: 'boardgarden/.forgejo/bitbake-configs'
-  bitbake_setup_bin:
-    description: 'Path to the bitbake-setup binary.'
+  bitbake_setup_version:
+    description: 'bitbake-setup version from PyPI (default: latest)'
     required: false
-    default: './bitbake-bbs/bin/bitbake-setup'
-  repo_owner:
-    description: 'Owner/org of the mirrored bitbake repo, used to clone it.'
-    required: true
+    default: ''
   working_directory:
     description: >-
-      Directory to clone bitbake and run bitbake-setup in (config_json,
-      overrides_dir, and bitbake_setup_bin are resolved relative to it).
+      Directory to run bitbake-setup in (config_json and overrides_dir are
+      resolved relative to it).
       Needed because "working-directory" on the caller's step is ignored
       for "uses" steps.
     required: false
@@ -45,14 +42,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: clone bitbake
-      shell: bash
-      working-directory: ${{ inputs.working_directory }}
+    - name: install uv
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       env:
-        REPO_OWNER: ${{ inputs.repo_owner }}
-      run: |
-        set -euo pipefail
-        git clone "${GITHUB_SERVER_URL}/${REPO_OWNER}/bitbake.git" bitbake-bbs
+        # The default tool cache (/opt/hostedtoolcache) can be a root-owned
+        # volume when running in a container as a non-root user.
+        RUNNER_TOOL_CACHE: ${{ runner.temp }}/toolcache
 
     - name: bitbake-setup init
       shell: bash
@@ -63,7 +58,7 @@ runs:
         SOURCE_OVERRIDE: ${{ inputs.source_override }}
         CUSTOM_SOURCES: ${{ inputs.custom_sources }}
         OVERRIDES_DIR: ${{ inputs.overrides_dir }}
-        BITBAKE_SETUP_BIN: ${{ inputs.bitbake_setup_bin }}
+        BITBAKE_SETUP_VERSION: ${{ inputs.bitbake_setup_version }}
       run: |
         set -euo pipefail
 
@@ -87,10 +82,10 @@ runs:
                           "sources": sources, "version": "1.0"}, indent=4))
         EOF
           cat "${override_file}"
-          override_arg=(--source-override "${override_file}")
+          override_arg=(--source-overrides "${override_file}")
         elif [ "${SOURCE_OVERRIDE}" != "none" ] && [ -n "${SOURCE_OVERRIDE}" ]; then
           override_file="${OVERRIDES_DIR}/${SOURCE_OVERRIDE}-override.json"
-          override_arg=(--source-override "${override_file}")
+          override_arg=(--source-overrides "${override_file}")
 
           # Overrides that point at a github.com branch (e.g. a dev fork/branch
           # of meta-riscv) may carry their own config_json in that branch's
@@ -123,7 +118,7 @@ runs:
           positions+=("$line")
         done <<< "${POSITIONS}"
 
-        "${BITBAKE_SETUP_BIN}" \
+        uvx --from "bitbake-setup${BITBAKE_SETUP_VERSION:+==${BITBAKE_SETUP_VERSION}}" bitbake-setup \
           --debug \
           init \
           --non-interactive \

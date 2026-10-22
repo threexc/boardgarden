@@ -84,7 +84,6 @@ jobs:
           package: ${{ env.PACKAGE }}
           machine: ${{ env.QEMU_MACHINE }}
           custom_sources: ${{ env.CUSTOM_SOURCES }}
-          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
   run-ptest:
     runs-on: tgamblin-qemu
@@ -125,4 +124,3 @@ jobs:
           targets: ${{ env.PACKAGE }}
           machine: ${{ env.QEMU_MACHINE }}
           custom_sources: ${{ env.CUSTOM_SOURCES }}
-          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}

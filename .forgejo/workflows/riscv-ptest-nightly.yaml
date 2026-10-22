@@ -55,7 +55,6 @@ jobs:
           package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
           source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
-          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
   run-ptests:
     runs-on: tgamblin-qemu

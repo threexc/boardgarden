@@ -87,7 +87,6 @@ jobs:
           initramfs_image: ${{ inputs.initramfs_image || 'core-image-minimal-initramfs' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           distro: ${{ inputs.distro || 'testv' }}
-          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
       - uses: ./.forgejo/actions/deploy-to-tftp
         with:
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}

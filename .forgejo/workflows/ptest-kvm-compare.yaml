@@ -86,7 +86,6 @@ jobs:
           image: ${{ env.HOST_IMAGE }}
           distro: testv
           bitbake_setup_override: ${{ inputs.bitbake_setup_override }}
-          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
       # The files boards/k3-pico-itx-8gb/board.yaml flashes, named as there
       # (as deploy-tftp-artifacts does for the nightly).
@@ -129,7 +128,6 @@ jobs:
           package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
           source_override: ${{ startsWith(inputs.bitbake_setup_override, 'meta-riscv-') && 'none' || inputs.bitbake_setup_override }}
-          repo_owner: ${{ vars.BOARDGARDEN_OWNER }}
 
   compare:
     needs: [build-host, build]

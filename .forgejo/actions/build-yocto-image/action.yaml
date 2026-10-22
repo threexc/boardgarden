@@ -27,9 +27,6 @@ inputs:
     description: 'bitbake-setup source override (none for default)'
     required: false
     default: 'none'
-  boardgarden_owner:
-    description: 'Owner/org of the mirrored bitbake repo'
-    required: true
   layer_patches:
     description: >
       Optional directory of <layer>/*.patch files (e.g. from
@@ -106,7 +103,6 @@ runs:
           machine/${{ inputs.machine }}
           ${{ steps.config.outputs.distro_fragment }}
         source_override: ${{ inputs.bitbake_setup_override }}
-        repo_owner: ${{ inputs.boardgarden_owner }}
 
     - name: apply layer patches
       if: ${{ inputs.layer_patches != '' }}

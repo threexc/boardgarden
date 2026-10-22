@@ -25,10 +25,6 @@ inputs:
     description: 'Where to fetch config_name from when the workspace has no bitbake-registry/'
     required: false
     default: 'https://raw.githubusercontent.com/riscv/meta-riscv/master/bitbake-registry'
-  bitbake_url:
-    description: 'bitbake repository providing bitbake-setup'
-    required: false
-    default: 'https://git.openembedded.org/bitbake'
 
 runs:
   using: composite
@@ -51,6 +47,13 @@ runs:
         # to isolate task networking.
         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+    - name: install uv
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      env:
+        # The default tool cache (/opt/hostedtoolcache) can be a root-owned
+        # volume when running in a container as a non-root user.
+        RUNNER_TOOL_CACHE: ${{ runner.temp }}/toolcache
+
     - name: bitbake-setup init
       shell: bash
       env:
@@ -58,7 +61,6 @@ runs:
         CONFIG_NAME: ${{ inputs.config_name }}
         LAYER_SOURCE: ${{ inputs.layer_source }}
         REGISTRY_URL: ${{ inputs.registry_url }}
-        BITBAKE_URL: ${{ inputs.bitbake_url }}
       run: |
         set -euo pipefail
         # Outside the workspace so a layer checkout workspace stays clean.
@@ -82,8 +84,7 @@ runs:
         print(c["oe-fragments-one-of"]["machine"]["options"][0]["name"].removeprefix("machine/"))
         ')}"
 
-        git clone -q --depth 1 "${BITBAKE_URL}" bitbake-bbs
-        ./bitbake-bbs/bin/bitbake-setup init --non-interactive \
+        uvx bitbake-setup init --non-interactive \
           "${local_arg[@]}" config.conf.json nodistro "machine/${MACHINE}"
 
         BUILD_DIR=$(echo "${TOP}"/bitbake-builds/*/build)

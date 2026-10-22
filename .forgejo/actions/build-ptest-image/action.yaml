@@ -30,9 +30,6 @@ inputs:
     description: 'Ad-hoc source overrides, see the bitbake-setup action'
     required: false
     default: ''
-  repo_owner:
-    description: 'Owner/org of the mirrored bitbake repo'
-    required: true
 
 runs:
   using: composite
@@ -47,7 +44,6 @@ runs:
           machine/${{ inputs.machine }}
         source_override: ${{ inputs.source_override }}
         custom_sources: ${{ inputs.custom_sources }}
-        repo_owner: ${{ inputs.repo_owner }}
 
     - name: build core-image-ptest-${{ inputs.package }}
       id: bitbake

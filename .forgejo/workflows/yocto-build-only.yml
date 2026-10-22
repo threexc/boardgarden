@@ -72,4 +72,3 @@ jobs:
           image: ${{ inputs.image || 'core-image-full-cmdline' }}
           bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           distro: ${{ inputs.distro || 'testv' }}
-          boardgarden_owner: ${{ vars.BOARDGARDEN_OWNER }}
