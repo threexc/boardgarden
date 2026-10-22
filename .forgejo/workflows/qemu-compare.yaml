@@ -37,7 +37,7 @@ defaults:
 jobs:
   build-and-test:
     name: ${{ matrix.side }}
-    runs-on: tgamblin-build
+    runs-on: yocto-build
     strategy:
       fail-fast: false
       # One side at a time, so the two runs don't compete for CPU and skew

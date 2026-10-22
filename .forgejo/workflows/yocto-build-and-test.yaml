@@ -63,7 +63,7 @@ env:
 
 jobs:
   discover:
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     outputs:
       matrix: ${{ steps.disc.outputs.matrix }}
     steps:
@@ -73,7 +73,7 @@ jobs:
 
   build:
     needs: discover
-    runs-on: tgamblin-build
+    runs-on: yocto-build
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +128,7 @@ jobs:
     needs: [discover, build]
     # Run under any scenario other than builds being cancelled
     if: ${{ !cancelled() }}
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
       versions: ${{ steps.collect.outputs.versions }}
@@ -164,7 +164,7 @@ jobs:
 
   test:
     needs: [discover, collect_built_machines]
-    runs-on: tgamblin-board-test
+    runs-on: board-test
     strategy:
       matrix:
         machine: ${{ fromJSON(needs.collect_built_machines.outputs.matrix) }}

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 jobs:
   check-meta-riscv:
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
     steps:

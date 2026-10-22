@@ -22,7 +22,7 @@ jobs:
     # with fake targets/mocks. No labgrid environment, board, or hardware
     # required, so this runs on the same lightweight runner/image as
     # validate-manifests and lint-board-files.
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     container:
       image: ghcr.io/astral-sh/uv:python3.12-bookworm
     steps:

@@ -35,7 +35,7 @@ env:
 
 jobs:
   prepare:
-    runs-on: tgamblin-build  # PORT: ubuntu-latest
+    runs-on: yocto-build  # PORT: ubuntu-latest
     # PORT: delete container (GitHub-hosted runners build on the host)
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
@@ -69,7 +69,7 @@ jobs:
   build:
     needs: prepare
     if: ${{ needs.prepare.outputs.status == 'upgraded' }}
-    runs-on: tgamblin-build  # PORT: ubuntu-latest
+    runs-on: yocto-build  # PORT: ubuntu-latest
     # PORT: delete container
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
@@ -111,7 +111,7 @@ jobs:
   report:
     needs: [prepare, build]
     if: ${{ !cancelled() && needs.prepare.outputs.status == 'upgraded' }}
-    runs-on: tgamblin-maintenance  # PORT: ubuntu-latest
+    runs-on: light-maintenance  # PORT: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3  # PORT: @v4

@@ -31,7 +31,7 @@ env:
 
 jobs:
   build-riscv-image:
-    runs-on: tgamblin-qemu
+    runs-on: qemu-test
     strategy:
       matrix:
         package: >-
@@ -57,7 +57,7 @@ jobs:
           source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
 
   run-ptests:
-    runs-on: tgamblin-qemu
+    runs-on: qemu-test
     needs: build-riscv-image
     strategy:
       matrix:

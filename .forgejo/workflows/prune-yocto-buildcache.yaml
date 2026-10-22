@@ -25,7 +25,7 @@ defaults:
 
 jobs:
   prune:
-    runs-on: tgamblin-build
+    runs-on: yocto-build
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
       volumes:

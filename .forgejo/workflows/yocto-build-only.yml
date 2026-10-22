@@ -43,7 +43,7 @@ on:
 
 jobs:
   build:
-    runs-on: tgamblin-build
+    runs-on: yocto-build
     strategy:
       matrix:
         # Layer-sanity build set: meta-riscv machines with no local hardware.

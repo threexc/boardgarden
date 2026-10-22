@@ -68,7 +68,7 @@ env:
 
 jobs:
   build-ptest-image:
-    runs-on: tgamblin-qemu
+    runs-on: qemu-test
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/yocto-builder
       volumes:
@@ -86,7 +86,7 @@ jobs:
           custom_sources: ${{ env.CUSTOM_SOURCES }}
 
   run-ptest:
-    runs-on: tgamblin-qemu
+    runs-on: qemu-test
     needs: build-ptest-image
     container:
       image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator
@@ -107,7 +107,7 @@ jobs:
 
   # Runs after the ptest, pass or fail, rather than alongside it.
   reproducible:
-    runs-on: tgamblin-build
+    runs-on: yocto-build
     needs: run-ptest
     if: ${{ !cancelled() }}
     container:

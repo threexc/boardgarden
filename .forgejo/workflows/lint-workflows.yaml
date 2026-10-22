@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint:
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     steps:
       - uses: actions/checkout@v4
 

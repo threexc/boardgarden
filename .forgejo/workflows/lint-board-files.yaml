@@ -12,7 +12,7 @@ on:
 
 jobs:
   ruff:
-    runs-on: tgamblin-maintenance
+    runs-on: light-maintenance
     container:
       image: ghcr.io/astral-sh/uv:python3.12-bookworm
     steps:
