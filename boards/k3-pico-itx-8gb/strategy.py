@@ -24,7 +24,7 @@ class K3PicoItxTftpBootStrategy(TftpBootStrategy):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class K3PicoItxMainlineBootStrategy(TftpBootStrategy):
+class K3PicoItxMainlineBootStrategy(FastbootFlashStrategy):
     """Boot strategy for K3 Pico-ITX with the mainline-kernel BSP."""
 
     manifest = load_board(Path(__file__).parent, variant="mainline")
