@@ -1,0 +1,17 @@
+{
+    "description": "Source override for meta-riscv templates to use hfranco's review branch",
+    "sources": {
+        "meta-riscv": {
+            "git-remote": {
+                "branch": "hfranco/review",
+                "remotes": {
+                    "origin": {
+                        "uri": "https://github.com/hfranco/meta-riscv.git"
+                    }
+                },
+                "rev": "hfranco/review"
+            }
+        }
+    },
+    "version": "1.0"
+}

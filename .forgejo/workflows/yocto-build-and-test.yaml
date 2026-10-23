@@ -14,6 +14,7 @@ on:
           - none
           - meta-riscv-tgamblin-review
           - meta-riscv-tgamblin-fixes
+          - meta-riscv-hfranco-review
       distro:
         description: 'Distro: testv (meta-testv) or nodistro (oe-core)'
         required: true
