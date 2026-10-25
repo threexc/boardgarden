@@ -60,6 +60,15 @@ Fields inherited from `families/spacemit-k1/defaults.yaml`:
 If you're onboarding a board with a shared SoC/family, add a
 `boards/families/<family>/defaults.yaml` first and inherit from it.
 
+To boot a FIT image instead (kernel, DTB and initramfs in one file, with load
+addresses set at build time rather than taken from the U-Boot environment),
+set `tftp.kernel: fitImage`, drop `tftp.dtb`/`tftp.initramfs`, point
+`boot.kernel_addr` at a free staging address and boot it with
+`uboot.tftp_cmd: bootm <that address>`. CI then builds `linux-yocto-fitimage`
+with the initramfs bundled; the machine's `UBOOT_ENTRYPOINT` (and optionally
+`UBOOT_DTB_LOADADDRESS`/`UBOOT_RD_LOADADDRESS`) must be set in its layer. See
+`boards/beaglev-fire`.
+
 ### `sdmux` example
 
 ```yaml
