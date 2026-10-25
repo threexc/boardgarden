@@ -48,7 +48,7 @@ sudo systemctl enable --now labgrid-coordinator.service
 sudo systemctl enable --now labgrid-exporter@bananapi-f3.service
 sudo systemctl enable --now labgrid-exporter@k3-pico-itx.service
 sudo systemctl enable --now labgrid-exporter@muse-pi-pro.service
-sudo systemctl enable --now labgrid-exporter@orangepi-rv2.service
+sudo systemctl enable --now labgrid-exporter@beaglev-fire.service
 ```
 
 Adding a new board later only needs a new `boards/<name>` directory plus

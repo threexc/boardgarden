@@ -2,34 +2,34 @@ targets:
   main:
     resources:
       RemotePlace:
-        name: tg-opi-rv2
+        name: tg-beaglev-fire
     drivers:
       - SerialDriver:
-          name: 'orangepi-rv2-console-1'
+          name: 'beaglev-fire-console-1'
           bindings:
             port: 'serial'
       - GpioDigitalOutputDriver:
-          name: 'orangepi-rv2-power-gpio-1'
+          name: 'beaglev-fire-power-gpio-1'
           bindings:
             gpio: 'power-gpio'
       - DigitalOutputPowerDriver:
-          name: 'orangepi-rv2-power-1'
+          name: 'beaglev-fire-power-1'
           bindings:
-            output: 'orangepi-rv2-power-gpio-1'
+            output: 'beaglev-fire-power-gpio-1'
       - TFTPProviderDriver:
-          name: 'orangepi-rv2-tftp-1'
+          name: 'beaglev-fire-tftp-1'
           bindings:
             provider: 'tftp'
       - UBootDriver:
           prompt: '=> '
-          autoboot: 'Autoboot in 5 seconds'
+          autoboot: 'Hit any key to stop autoboot'
           interrupt: 's'
-          name: 'orangepi-rv2-uboot-1'
+          name: 'beaglev-fire-uboot-1'
           boot_commands:
             emmc: 'boot'
             tftp: 'booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r'
           bindings:
-            console: 'orangepi-rv2-console-1'
+            console: 'beaglev-fire-console-1'
           login_timeout: 30
           boot_timeout: 30
           strip_timestamp: True
@@ -37,17 +37,17 @@ targets:
           prompt: '~ #\s*'
           login_prompt: '[-\w]+ login: '
           username: 'root'
-          name: 'orangepi-rv2-shell-1'
+          name: 'beaglev-fire-shell-1'
           bindings:
-            console: 'orangepi-rv2-console-1'
-      - OrangePiRV2BootStrategy:
-          name: 'orangepi-rv2-strategy-1'
+            console: 'beaglev-fire-console-1'
+      - BeagleVFireBootStrategy:
+          name: 'beaglev-fire-strategy-1'
           bindings:
-            power: 'orangepi-rv2-power-1'
-            console: 'orangepi-rv2-console-1'
-            uboot: 'orangepi-rv2-uboot-1'
-            shell: 'orangepi-rv2-shell-1'
-            tftp: 'orangepi-rv2-tftp-1'
+            power: 'beaglev-fire-power-1'
+            console: 'beaglev-fire-console-1'
+            uboot: 'beaglev-fire-uboot-1'
+            shell: 'beaglev-fire-shell-1'
+            tftp: 'beaglev-fire-tftp-1'
 
 imports:
   - strategy.py

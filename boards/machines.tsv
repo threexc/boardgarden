@@ -1,12 +1,12 @@
 machine	board	variant	strategy	remote_place	tftp_subdir	initramfs	nightly	client	image_dir
 bananapi-f3	bananapi-f3	-	sdmux	tg-bpi-f3	bananapi-f3	no	yes	client.yaml	-
+beaglev-fire	beaglev-fire	-	tftp	tg-beaglev-fire	beaglev-fire	yes	no	client.yaml	-
 k3-pico-itx	k3-pico-itx-32gb	-	tftp	tg-k3-pitx-32gb	k3-pico-itx	yes	yes	client.yaml	-
 k3-pico-itx	k3-pico-itx-8gb	-	fastboot	tg-k3-pitx-8gb	k3-pico-itx-8gb	no	yes	client.yaml	/home/labgrid/k3-pico-itx-fastboot
 k3-pico-itx	k3-pico-itx-8gb	tftp	tftp	tg-k3-pitx-8gb	k3-pico-itx	yes	no	client-tftp.yaml	-
 k3-pico-itx-mainline	k3-pico-itx-8gb	mainline	fastboot	tg-k3-pitx-8gb	k3-pico-itx-mainline	no	no	client-mainline.yaml	/home/labgrid/k3-pico-itx-mainline-fastboot
 milkv-duo256m	milkv-duo256m	-	sdmux	tg-duo256m	milkv-duo256m	no	yes	client.yaml	-
 muse-pi-pro	muse-pi-pro	-	tftp	tg-muse-pi-pro	muse-pi-pro	yes	yes	client.yaml	-
-orangepi-rv2-mainline	orangepi-rv2	-	tftp	tg-opi-rv2	orangepi-rv2	yes	no	client.yaml	-
 qemuarm64	qemuarm64	-	qemu	-	qemuarm64	no	yes	env.yaml	-
 qemuriscv64	qemuriscv64	-	qemu	-	qemuriscv64	no	yes	env.yaml	-
 qemux86-64	qemux86-64	-	qemu	-	qemux86-64	no	yes	env.yaml	-

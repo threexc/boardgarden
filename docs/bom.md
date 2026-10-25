@@ -32,6 +32,7 @@
 | `board_2` | Muse Pi Pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power | active |
 | `board_3` | Milk-V Duo 256M | Milk-V | [Milk-V Duo 256M](https://milkv.io/docs/duo/getting-started/duo256m) | riscv64 (RV64GCV) | serial + power + sdmux | active |
 | `board_4` | K3 Pico-ITX | Sipeed | [K3 Pico-ITX](https://sipeed.com/k3) | riscv64 (RVA23) | serial + power | active |
+| `board_5` | BeagleV-Fire | BeagleBoard.org | [BeagleV-Fire](https://www.beagleboard.org/boards/beaglev-fire) | riscv64 (RV64GC, PolarFire SoC) | serial + power | active |
 
 ### BananaPi F3
 
@@ -57,6 +58,13 @@
 | SD mux | [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html) | usb-sd-mux_rev4.0 | USB SD Mux controller |
 
 ### K3 Pico-ITX
+
+| Interface | Part | Part Number | Role |
+|-----------|------|-------------|------|
+| power | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | Power control |
+| serial | [Raspberry Pi Debug Probe](https://www.raspberrypi.com/products/debug-probe/) | Debug_Probe__CMSIS-DAP_0101 | USB-to-UART bridge |
+
+### BeagleV-Fire
 
 | Interface | Part | Part Number | Role |
 |-----------|------|-------------|------|

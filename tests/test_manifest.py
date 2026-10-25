@@ -47,11 +47,11 @@ def test_load_board_applies_inherits_and_board_yaml_wins(tmp_path):
 
 
 def test_load_board_real_board_picks_up_family_defaults(boards_dir):
-    merged = load_board(boards_dir / "orangepi-rv2")
-    # orangepi-rv2/board.yaml sets no top-level `arch`; it only appears via
+    merged = load_board(boards_dir / "muse-pi-pro")
+    # muse-pi-pro/board.yaml sets no top-level `arch`; it only appears via
     # `inherits: [../families/spacemit-k1/defaults.yaml]`.
     assert merged["arch"] == "riscv64"
-    assert merged["name"] == "orangepi-rv2"
+    assert merged["name"] == "muse-pi-pro"
 
 
 def test_load_board_variant_merges_over_base(tmp_path):

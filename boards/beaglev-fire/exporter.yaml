@@ -1,4 +1,4 @@
-tg-opi-rv2:
+tg-beaglev-fire:
   location: ecoforge
   serial:
     cls: 'USBSerialPort'
@@ -13,5 +13,5 @@ tg-opi-rv2:
   tftp:
     cls: 'RemoteTFTPProvider'
     host: '192.168.40.166'
-    internal: '/srv/tftp/orangepi-rv2/'
-    external: 'orangepi-rv2/'
+    internal: '/srv/tftp/beaglev-fire/'
+    external: 'beaglev-fire/'

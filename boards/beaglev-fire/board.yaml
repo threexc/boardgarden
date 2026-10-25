@@ -1,0 +1,37 @@
+name: beaglev-fire
+yocto_machine: beaglev-fire
+exclude_from_nightly: true
+strategy: tftp
+description: BeagleV-Fire (Microchip PolarFire SoC) RISC-V SBC. Yocto initramfs root
+remote_place: tg-beaglev-fire
+image_source: yocto
+arch: riscv64
+
+boot:
+  method: tftp
+  bootargs: console=ttyS0,115200 shell
+  kernel_addr: $kernel_addr_r
+  dtb_addr: $fdt_addr_r
+  ramdisk_addr: $ramdisk_addr_r
+
+tftp:
+  subdir: beaglev-fire
+  kernel: Image
+  dtb: mpfs-beaglev-fire.dtb
+  initramfs: uRamdisk
+
+uboot:
+  prompt: '=> '
+  autoboot: 'Hit any key to stop autoboot'
+  interrupt: s
+  emmc_cmd: boot
+  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
+
+shell:
+  username: root
+  password: null
+  # initramfs-module-debug drops straight to a busybox shell, no login prompt.
+  prompt: '~ #\s*'
+  login_prompt: '[-\w]+ login: '
+
+strategy_class: BeagleVFireBootStrategy
