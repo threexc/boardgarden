@@ -21,7 +21,7 @@ targets:
           bindings:
             provider: 'tftp'
       - UBootDriver:
-          prompt: '=> '
+          prompt: 'RISC-V # '
           autoboot: 'Hit any key to stop autoboot'
           interrupt: 's'
           name: 'beaglev-fire-uboot-1'

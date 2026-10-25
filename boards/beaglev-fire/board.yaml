@@ -1,6 +1,6 @@
 name: beaglev-fire
 yocto_machine: beaglev-fire
-exclude_from_nightly: true
+exclude_from_nightly: false
 strategy: tftp
 description: BeagleV-Fire (Microchip PolarFire SoC) RISC-V SBC. Yocto initramfs root
 remote_place: tg-beaglev-fire
@@ -21,7 +21,7 @@ tftp:
   initramfs: uRamdisk
 
 uboot:
-  prompt: '=> '
+  prompt: 'RISC-V # '
   autoboot: 'Hit any key to stop autoboot'
   interrupt: s
   emmc_cmd: boot
