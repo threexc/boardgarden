@@ -153,19 +153,30 @@ runs:
         # but boards sharing a yocto_machine (RAM variants etc.) can boot either
         # way, so build whatever any of them needs.
         HAS_INITRAMFS="false"
+        HAS_FIT="false"
         HAS_FULL="false"
         for initramfs in $("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info initramfs "$RISCV_MACHINE"); do
-          if [ "$initramfs" = "yes" ]; then
-            HAS_INITRAMFS="true"
-          else
-            HAS_FULL="true"
-          fi
+          case "$initramfs" in
+            yes) HAS_INITRAMFS="true" ;;
+            fit) HAS_INITRAMFS="true"; HAS_FIT="true" ;;
+            *) HAS_FULL="true" ;;
+          esac
         done
 
         EFFECTIVE_IMAGES=""
         if [ "${HAS_INITRAMFS}" = "true" ]; then
           echo 'INITRAMFS_SCRIPTS:append = " initramfs-module-debug"' >> conf/local.conf
           EFFECTIVE_IMAGES="${RISCV_INITRAMFS_IMAGE}"
+        fi
+        # FIT boards boot one fitImage (kernel + DTB + initramfs) whose load
+        # addresses come from the machine's UBOOT_* variables, so they don't
+        # depend on the address variables in the board's U-Boot environment.
+        if [ "${HAS_FIT}" = "true" ]; then
+          echo "INITRAMFS_IMAGE:pn-linux-yocto-fitimage = \"${RISCV_INITRAMFS_IMAGE}\"" >> conf/local.conf
+          # TODO: drop once meta-riscv's beaglev-fire.conf sets UBOOT_ENTRYPOINT;
+          # oe-core's default (0x20008000) is outside its RAM.
+          echo 'UBOOT_ENTRYPOINT:beaglev-fire = "0x80200000"' >> conf/local.conf
+          EFFECTIVE_IMAGES="${EFFECTIVE_IMAGES} linux-yocto-fitimage"
         fi
         if [ "${HAS_FULL}" = "true" ] || [ -z "${EFFECTIVE_IMAGES}" ]; then
           EFFECTIVE_IMAGES="${EFFECTIVE_IMAGES} ${RISCV_IMAGE}"
