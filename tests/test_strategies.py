@@ -99,6 +99,15 @@ def test_tftp_transition_to_tftp_sets_bootargs_and_boots(tftp_strategy):
     tftp_strategy.uboot.await_boot.assert_called_once()
 
 
+def test_tftp_transition_without_dtb_loads_only_the_kernel(tftp_strategy):
+    tftp_strategy.manifest["tftp"] = {"subdir": "my-board", "kernel": "fitImage"}
+
+    tftp_strategy.transition("tftp")
+
+    tftpboots = [c for c in tftp_strategy.uboot.run.call_args_list if "tftpboot" in c.args[0]]
+    assert [c.args[0] for c in tftpboots] == ["tftpboot $kernel_addr_r my-board/fitImage"]
+
+
 def test_tftp_transition_same_status_is_a_noop(tftp_strategy):
     tftp_strategy.force("off")
     calls_before = len(tftp_strategy.target.activated)
