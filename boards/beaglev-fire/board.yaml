@@ -10,22 +10,21 @@ arch: riscv64
 boot:
   method: tftp
   bootargs: console=ttyS0,115200 shell
-  kernel_addr: $kernel_addr_r
-  dtb_addr: $fdt_addr_r
-  ramdisk_addr: $ramdisk_addr_r
+  # The board's U-Boot may define no *_addr_r variables (the vendor
+  # 2022.01-linux4microchip one doesn't), so boot a FIT image: its kernel load
+  # address comes from the build. Stage it clear of the kernel at 0x80200000.
+  kernel_addr: '0x90000000'
 
 tftp:
   subdir: beaglev-fire
-  kernel: Image
-  dtb: mpfs-beaglev-fire.dtb
-  initramfs: uRamdisk
+  kernel: fitImage
 
 uboot:
   prompt: 'RISC-V # '
   autoboot: 'Hit any key to stop autoboot'
   interrupt: s
   emmc_cmd: boot
-  tftp_cmd: booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r
+  tftp_cmd: bootm 0x90000000
 
 shell:
   username: root

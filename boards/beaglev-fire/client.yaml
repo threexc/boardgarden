@@ -27,7 +27,7 @@ targets:
           name: 'beaglev-fire-uboot-1'
           boot_commands:
             emmc: 'boot'
-            tftp: 'booti $kernel_addr_r $ramdisk_addr_r:$filesize $fdt_addr_r'
+            tftp: 'bootm 0x90000000'
           bindings:
             console: 'beaglev-fire-console-1'
           login_timeout: 30
