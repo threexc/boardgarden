@@ -97,6 +97,7 @@ boards:
     url: https://wiki.banana-pi.org/Banana_Pi_BPI-F3
     arch: riscv64 (RVA22 + RVV 1.0)
     connection: serial + power + sd mux
+    status: active
 
   - id: board_2
     label: Muse Pi Pro
@@ -105,6 +106,7 @@ boards:
     url: https://www.spacemit.com/muse-pi-pro/
     arch: riscv64 (RVA22 + RVV 1.0)
     connection: serial + power
+    status: active
 
   - id: board_3
     label: Milk-V Duo 256M
@@ -113,6 +115,7 @@ boards:
     url: https://milkv.io/docs/duo/getting-started/duo256m
     arch: riscv64 (RV64GCV)
     connection: serial + power + sdmux
+    status: active
 
   - id: board_4
     label: K3 Pico-ITX
@@ -120,6 +123,15 @@ boards:
     model: K3 Pico-ITX
     url: https://sipeed.com/k3
     arch: riscv64 (RVA23)
+    connection: serial + power
+    status: active
+
+  - id: board_5
+    label: BeagleV-Fire
+    vendor: BeagleBoard
+    model: BeagleV-Fire
+    url: https://www.beagleboard.org/boards/beaglev-fire
+    arch: riscv64 (RV64GC)
     connection: serial + power
     status: active
 
