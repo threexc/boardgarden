@@ -82,7 +82,12 @@ def render_index(board_dirs: list[Path]) -> str:
                 "strategy": m.get("strategy"),
                 "remote_place": m.get("remote_place"),
                 "tftp_subdir": tftp.get("subdir", board_dir.name),
-                "initramfs": "yes" if "initramfs" in tftp else "no",
+                # "fit": kernel, DTB and initramfs come bundled in one FIT image.
+                "initramfs": (
+                    "fit"
+                    if tftp.get("kernel") == "fitImage"
+                    else "yes" if "initramfs" in tftp else "no"
+                ),
                 "nightly": "no" if m.get("exclude_from_nightly") else "yes",
                 "client": _template(board_dir, m, variant)[1],
                 "image_dir": m["fastboot"]["image_dir"] if m["strategy"] == "fastboot" else None,

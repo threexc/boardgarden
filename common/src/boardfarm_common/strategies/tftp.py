@@ -50,7 +50,9 @@ class TftpBootStrategy(BoardStrategy):
         helpers.uboot_set_server_ip(self)
         helpers.uboot_set_bootargs(self, self.bootargs)
         helpers.uboot_tftpboot_file(self, boot["kernel_addr"], tftp["subdir"], tftp["kernel"])
-        helpers.uboot_tftpboot_file(self, boot["dtb_addr"], tftp["subdir"], tftp["dtb"])
+        if "dtb" in tftp:
+            # A FIT image carries its own DTB.
+            helpers.uboot_tftpboot_file(self, boot["dtb_addr"], tftp["subdir"], tftp["dtb"])
         if "initramfs" in tftp:
             # Staged last so U-Boot's $filesize (set by the most recent tftpboot)
             # reflects the initramfs size for a `$ramdisk_addr_r:$filesize` boot arg.

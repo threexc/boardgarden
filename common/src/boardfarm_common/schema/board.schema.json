@@ -98,10 +98,10 @@
         "required": ["boot", "tftp"],
         "properties": {
           "boot": {
-            "required": ["bootargs", "kernel_addr", "dtb_addr"]
+            "required": ["bootargs", "kernel_addr"]
           },
           "tftp": {
-            "required": ["subdir", "kernel", "dtb"]
+            "required": ["subdir", "kernel"]
           }
         }
       }
