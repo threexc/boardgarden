@@ -9,7 +9,11 @@ arch: riscv64
 
 boot:
   method: tftp
-  bootargs: console=ttyS0,115200 shell
+  # loglevel=6: eMMC probe messages (KERN_INFO) land on the console as the
+  # initramfs shell starts and drop the input labgrid sends; the "Linux
+  # version" banner await_boot waits for is KERN_NOTICE, so it still shows
+  # (the console prints only levels below loglevel).
+  bootargs: console=ttyS0,115200 loglevel=6 shell
   # The board's U-Boot may define no *_addr_r variables (the vendor
   # 2022.01-linux4microchip one doesn't), so boot a FIT image: its kernel load
   # address comes from the build. Stage it clear of the kernel at 0x80200000.
