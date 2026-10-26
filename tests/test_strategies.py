@@ -93,8 +93,8 @@ def test_tftp_transition_to_tftp_sets_bootargs_and_boots(tftp_strategy):
 
     assert tftp_strategy.status == TftpStatus.tftp
     tftp_strategy.uboot.run.assert_any_call("setenv bootargs console=ttyS0")
-    tftp_strategy.uboot.run.assert_any_call("tftpboot $kernel_addr_r my-board/Image")
-    tftp_strategy.uboot.run.assert_any_call("tftpboot $dtb_addr my-board/my-board.dtb")
+    tftp_strategy.uboot.run_check.assert_any_call("tftpboot $kernel_addr_r my-board/Image")
+    tftp_strategy.uboot.run_check.assert_any_call("tftpboot $dtb_addr my-board/my-board.dtb")
     tftp_strategy.uboot.boot.assert_called_once_with("tftp")
     tftp_strategy.uboot.await_boot.assert_called_once()
 
@@ -104,7 +104,9 @@ def test_tftp_transition_without_dtb_loads_only_the_kernel(tftp_strategy):
 
     tftp_strategy.transition("tftp")
 
-    tftpboots = [c for c in tftp_strategy.uboot.run.call_args_list if "tftpboot" in c.args[0]]
+    tftpboots = [
+        c for c in tftp_strategy.uboot.run_check.call_args_list if "tftpboot" in c.args[0]
+    ]
     assert [c.args[0] for c in tftpboots] == ["tftpboot $kernel_addr_r my-board/fitImage"]
 
 

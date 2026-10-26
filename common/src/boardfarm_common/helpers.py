@@ -35,7 +35,9 @@ def uboot_stage(strategy):
 
 def uboot_set_server_ip(strategy, serverip=default_serverip):
     strategy.uboot.run("setenv autoload no")
-    strategy.uboot.run("dhcp", timeout=10)
+    # run_check: a failed dhcp/tftpboot should fail here, not as a confusing
+    # boot timeout later.
+    strategy.uboot.run_check("dhcp", timeout=10)
     strategy.uboot.run(f"setenv serverip {serverip}")
 
 
@@ -44,4 +46,4 @@ def uboot_set_bootargs(strategy, bootargs=default_bootargs):
 
 
 def uboot_tftpboot_file(strategy, loadaddr, board_name, file_name):
-    strategy.uboot.run(f"tftpboot {loadaddr} {board_name}/{file_name}")
+    strategy.uboot.run_check(f"tftpboot {loadaddr} {board_name}/{file_name}")
