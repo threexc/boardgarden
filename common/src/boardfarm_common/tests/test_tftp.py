@@ -10,8 +10,9 @@ from labgrid.driver import ExecutionError
 
 def _is_initramfs(strategy) -> bool:
     """True if this board's manifest boots a bare initramfs rather than a
-    full rootfs (see ``tftp.initramfs`` in board.yaml)."""
-    return "initramfs" in strategy.manifest.get("tftp", {})
+    full rootfs (see ``tftp.initramfs`` in board.yaml; a fitImage bundles one)."""
+    tftp = strategy.manifest.get("tftp", {})
+    return "initramfs" in tftp or tftp.get("kernel") == "fitImage"
 
 
 def test_tools_available(tftp, strategy):
