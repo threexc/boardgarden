@@ -69,9 +69,6 @@ combination of:
 - Board support packages (BSPs) provided by the
   [meta-riscv](https://github.com/riscv/meta-riscv) layer for various RISC-V
   development boards
-- The meta-riscv layer's compliance against the
-  [yocto-check-layer-wrapper](https://git.openembedded.org/openembedded-core/tree/scripts/yocto-check-layer-wrapper)
-  script
 
 The `bitbake-configs` directory contains templates for running Yocto-specific
 workflows, while the `dockerfiles` directory contains definitions for the
