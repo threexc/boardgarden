@@ -88,6 +88,9 @@ class TftpBootStrategy(BoardStrategy):
             self.uboot.boot("tftp")
             self.uboot.await_boot()
             self.target.activate(self.shell)
+            # Keep late kernel messages (e.g. async driver probe errors) off the
+            # console, where they interleave with command output; dmesg keeps them.
+            self.shell.run("dmesg -n 1")
         else:
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status

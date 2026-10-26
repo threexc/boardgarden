@@ -96,6 +96,7 @@ def test_tftp_transition_to_tftp_sets_bootargs_and_boots(tftp_strategy):
     tftp_strategy.uboot.run_check.assert_any_call("tftpboot $kernel_addr_r my-board/Image")
     tftp_strategy.uboot.run_check.assert_any_call("tftpboot $dtb_addr my-board/my-board.dtb")
     tftp_strategy.uboot.boot.assert_called_once_with("tftp")
+    tftp_strategy.shell.run.assert_called_once_with("dmesg -n 1")
     tftp_strategy.uboot.await_boot.assert_called_once()
 
 
