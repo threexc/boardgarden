@@ -7,12 +7,14 @@ name: upgrade-u-boot
 # uploaded as a single artifact.
 #
 # upgrade-linux-mainline, upgrade-u-boot and upgrade-opensbi differ only in
-# RECIPE and the schedule; all logic lives in the recipe-upgrade-* actions.
+# RECIPE and the schedule; all logic lives in the recipe-upgrade actions
+# (https://forgejo.baylibre.com/tgamblin/recipe-upgrade).
 #
-# To run this from meta-riscv itself: copy it to .github/workflows/ and the
-# recipe-upgrade-* actions to .github/actions/, then edit the lines marked
-# "PORT:". The actions need no changes; from a layer checkout they build the
-# checked-out layer instead of upstream meta-riscv.
+# To run this from meta-riscv itself: copy it to .github/workflows/ and edit
+# the lines marked "PORT:". GitHub only runs actions hosted on GitHub, so the
+# recipe-upgrade repository needs a GitHub mirror there. The actions need no
+# changes; from a layer checkout they build the checked-out layer instead of
+# upstream meta-riscv.
 
 on:
   schedule:
@@ -52,9 +54,9 @@ jobs:
       refresh_failed: ${{ steps.prepare.outputs.refresh_failed }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/recipe-upgrade-setup  # PORT: ./.github/actions/...
+      - uses: https://forgejo.baylibre.com/tgamblin/recipe-upgrade/setup@main  # PORT: <mirror owner>/recipe-upgrade/setup@main
       - id: prepare
-        uses: ./.forgejo/actions/recipe-upgrade-prepare  # PORT: ./.github/actions/...
+        uses: https://forgejo.baylibre.com/tgamblin/recipe-upgrade/prepare@main  # PORT: <mirror owner>/recipe-upgrade/prepare@main
         with:
           recipe: ${{ env.RECIPE }}
           version: ${{ inputs.version }}
@@ -88,10 +90,10 @@ jobs:
         with:
           name: upgrade-patches
           path: ${{ runner.temp }}/upgrade
-      - uses: ./.forgejo/actions/recipe-upgrade-setup  # PORT: ./.github/actions/...
+      - uses: https://forgejo.baylibre.com/tgamblin/recipe-upgrade/setup@main  # PORT: <mirror owner>/recipe-upgrade/setup@main
         with:
           machine: ${{ matrix.machine }}
-      - uses: ./.forgejo/actions/recipe-upgrade-build  # PORT: ./.github/actions/...
+      - uses: https://forgejo.baylibre.com/tgamblin/recipe-upgrade/build@main  # PORT: <mirror owner>/recipe-upgrade/build@main
         with:
           recipe: ${{ env.RECIPE }}
           machine: ${{ matrix.machine }}
@@ -117,7 +119,7 @@ jobs:
       - uses: actions/download-artifact@v3  # PORT: @v4
         with:
           path: ${{ runner.temp }}/artifacts
-      - uses: ./.forgejo/actions/recipe-upgrade-report  # PORT: ./.github/actions/...
+      - uses: https://forgejo.baylibre.com/tgamblin/recipe-upgrade/report@main  # PORT: <mirror owner>/recipe-upgrade/report@main
         with:
           recipe: ${{ env.RECIPE }}
           old_version: ${{ needs.prepare.outputs.old_version }}

@@ -79,13 +79,23 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - id: build
-        uses: ./.forgejo/actions/build-yocto-image
+      - id: config
+        uses: ./.forgejo/actions/board-yocto-config
         with:
           machine: ${{ env.HOST_MACHINE }}
           image: ${{ env.HOST_IMAGE }}
           distro: testv
-          bitbake_setup_override: ${{ inputs.bitbake_setup_override }}
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-yocto-image@main
+        with:
+          config_json: ${{ steps.config.outputs.config_json }}
+          positions: ${{ steps.config.outputs.positions }}
+          machine: ${{ env.HOST_MACHINE }}
+          targets: ${{ steps.config.outputs.targets }}
+          fragments: ${{ steps.config.outputs.fragments }}
+          local_conf: ${{ steps.config.outputs.local_conf }}
+          source_override: ${{ inputs.bitbake_setup_override }}
+          overrides_dir: .forgejo/bitbake-configs
 
       # The files boards/k3-pico-itx-8gb/board.yaml flashes, named as there
       # (as deploy-tftp-artifacts does for the nightly).
@@ -123,11 +133,18 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/build-ptest-image
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-ptest-image@main
         with:
           package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
           source_override: ${{ startsWith(inputs.bitbake_setup_override, 'meta-riscv-') && 'none' || inputs.bitbake_setup_override }}
+          overrides_dir: .forgejo/bitbake-configs
+      - uses: ./.forgejo/actions/stage-ptest-images
+        with:
+          package: ${{ matrix.package }}
+          machine: qemuriscv64
+          images_path: ${{ steps.build.outputs.images_path }}
 
   compare:
     needs: [build-host, build]

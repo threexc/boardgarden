@@ -95,31 +95,62 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - id: build
-        uses: ./.forgejo/actions/build-yocto-image
+      - id: config
+        uses: ./.forgejo/actions/board-yocto-config
         with:
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-minimal' }}
           initramfs_image: ${{ inputs.initramfs_image || 'core-image-minimal-initramfs' }}
-          bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           distro: ${{ inputs.distro || 'testv' }}
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-yocto-image@main
+        with:
+          config_json: ${{ steps.config.outputs.config_json }}
+          positions: ${{ steps.config.outputs.positions }}
+          machine: ${{ matrix.machine }}
+          targets: ${{ steps.config.outputs.targets }}
+          fragments: ${{ steps.config.outputs.fragments }}
+          local_conf: ${{ steps.config.outputs.local_conf }}
+          source_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          overrides_dir: .forgejo/bitbake-configs
+      # boot_cmd uses $ramdisk_addr_r:$filesize (explicit size), which skips
+      # legacy-uImage header auto-detection in U-Boot - it loads whatever's at
+      # that address raw. So deploy the raw cpio.gz as-is; a
+      # mkimage/uImage-wrapped ramdisk here just leaves its header unstripped
+      # in front of the data the kernel tries to unpack.
+      - name: deploy raw initramfs cpio.gz as uRamdisk
+        if: ${{ steps.config.outputs.uramdisk == 'true' }}
+        env:
+          RISCV_MACHINE: ${{ matrix.machine }}
+          RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image || 'core-image-minimal-initramfs' }}
+          IMAGES_PATH: ${{ steps.build.outputs.images_path }}
+        run: |
+          IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
+          cp "${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.cpio.gz" "${IMAGE_DIR}/uRamdisk"
       - uses: ./.forgejo/actions/deploy-to-tftp
         with:
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
           ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           tftp_server: ${{ env.TFTP_SERVER }}
           tftp_user: ${{ env.TFTP_USER }}
-          board: ${{ steps.build.outputs.board }}
+          board: ${{ steps.config.outputs.board }}
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-minimal' }}
           images_path: ${{ steps.build.outputs.images_path }}
-          deploy_wic: ${{ steps.build.outputs.deploy_wic }}
-          deploy_fastboot: ${{ steps.build.outputs.deploy_fastboot }}
+          deploy_wic: ${{ steps.config.outputs.deploy_wic }}
+          deploy_fastboot: ${{ steps.config.outputs.deploy_fastboot }}
       # Marks this specific matrix entry as a successful build and records the
       # kernel version it produced, only if the build succeeded. Matrix job
       # outputs can't be aggregated directly, but artifacts can.
       - name: record build success and kernel version
-        run: echo "${{ steps.build.outputs.kernel_version }}" > /tmp/build-ok
+        env:
+          KERNEL_VERSION: ${{ steps.build.outputs.kernel_version }}
+        run: |
+          if [ -z "${KERNEL_VERSION}" ]; then
+            echo "::error::build deployed no kernel, so there is no version to test against"
+            exit 1
+          fi
+          echo "${KERNEL_VERSION}" > /tmp/build-ok
       - uses: actions/upload-artifact@v3
         with:
           name: built-machine-${{ matrix.machine }}

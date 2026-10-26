@@ -79,11 +79,17 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/build-ptest-image
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-ptest-image@main
         with:
           package: ${{ env.PACKAGE }}
           machine: ${{ env.QEMU_MACHINE }}
           custom_sources: ${{ env.CUSTOM_SOURCES }}
+      - uses: ./.forgejo/actions/stage-ptest-images
+        with:
+          package: ${{ env.PACKAGE }}
+          machine: ${{ env.QEMU_MACHINE }}
+          images_path: ${{ steps.build.outputs.images_path }}
 
   run-ptest:
     runs-on: qemu-test
@@ -118,8 +124,7 @@ jobs:
         DL_DIR: "/buildcache/downloads"
         SSTATE_DIR: "/buildcache/sstate-cache"
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/oe-selftest-reproducible
+      - uses: https://forgejo.baylibre.com/tgamblin/oe-selftest-reproducible@main
         with:
           targets: ${{ env.PACKAGE }}
           machine: ${{ env.QEMU_MACHINE }}

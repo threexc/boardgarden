@@ -1,0 +1,167 @@
+name: 'Board Yocto config'
+description: >
+  Work out what the generic build-yocto-image action
+  (https://forgejo.baylibre.com/tgamblin/build-yocto-image) should build for a
+  Yocto MACHINE from the boards using it (boards/machines.tsv, via
+  .forgejo/scripts/machine-info) and the chosen distro, plus where and how
+  deploy-to-tftp should deploy the result. Run after actions/checkout.
+
+inputs:
+  machine:
+    description: 'Full Yocto MACHINE value (may include -mainline suffix)'
+    required: true
+  image:
+    description: 'Yocto image to build (e.g. core-image-minimal)'
+    required: true
+  initramfs_image:
+    description: >
+      Yocto initramfs image to build, for boards whose board.yaml sets
+      tftp.initramfs (e.g. core-image-minimal-initramfs)
+    required: false
+    default: 'core-image-minimal-initramfs'
+  distro:
+    description: >
+      nodistro: meta-riscv's oe-core 'nodistro' configuration (checked in
+      here). testv: meta-testv's registry configuration with its testv distro
+    required: false
+    default: 'nodistro'
+
+outputs:
+  config_json:
+    description: 'build-yocto-image config_json'
+    value: ${{ steps.config.outputs.config_json }}
+  positions:
+    description: 'build-yocto-image positions'
+    value: ${{ steps.config.outputs.positions }}
+  targets:
+    description: 'build-yocto-image targets'
+    value: ${{ steps.config.outputs.targets }}
+  fragments:
+    description: 'build-yocto-image fragments'
+    value: ${{ steps.config.outputs.fragments }}
+  local_conf:
+    description: 'build-yocto-image local_conf'
+    value: ${{ steps.config.outputs.local_conf }}
+  uramdisk:
+    description: 'Whether a board boots the raw initramfs, which deploys as uRamdisk'
+    value: ${{ steps.config.outputs.uramdisk }}
+  board:
+    description: 'Short board name (TFTP subdirectory), machine with -mainline stripped'
+    value: ${{ steps.config.outputs.board }}
+  deploy_wic:
+    description: 'Whether the machine has wic flash artifacts worth deploying'
+    value: ${{ steps.config.outputs.deploy_wic }}
+  deploy_fastboot:
+    description: 'Whether the machine has fastboot flash artifacts worth deploying'
+    value: ${{ steps.config.outputs.deploy_fastboot }}
+
+runs:
+  using: composite
+  steps:
+    - id: config
+      shell: bash
+      env:
+        DISTRO: ${{ inputs.distro }}
+        RISCV_MACHINE: ${{ inputs.machine }}
+        RISCV_IMAGE: ${{ inputs.image }}
+        RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
+      run: |
+        set -euo pipefail
+        MACHINE_INFO="$GITHUB_WORKSPACE/.forgejo/scripts/machine-info"
+        case "${DISTRO}" in
+          nodistro)
+            CONFIG_JSON=.forgejo/bitbake-configs/meta-riscv-oe-nodistro-master.conf.json
+            CONFIGURATION=nodistro
+            DISTRO_FRAGMENT=
+            ;;
+          testv)
+            CONFIG_JSON=https://forgejo.baylibre.com/tgamblin/meta-testv/raw/branch/main/bitbake-registry/meta-testv-oe-master.conf.json
+            CONFIGURATION=testv
+            DISTRO_FRAGMENT=distro/testv
+            ;;
+          *)
+            echo "::error::unknown distro: ${DISTRO}"
+            exit 1
+            ;;
+        esac
+
+        LOCAL_CONF=(
+          # Disable osc-context for systemd to avoid labgrid prompt-detection
+          # issues when images are booted during board tests
+          'PACKAGECONFIG:remove:pn-systemd = "osc-context"'
+          # add buildinfo to the image
+          'IMAGE_CLASSES += "image-buildinfo"'
+          # fastboot sends images over the board's max-download-size as sparse
+          # images, which it can only build from whole 4 KiB blocks; OE only
+          # aligns rootfs images to 1 KiB by default.
+          'IMAGE_ROOTFS_ALIGNMENT = "4"'
+        )
+
+        # Boards that boot via kernel+dtb+initramfs (board.yaml sets tftp.initramfs)
+        # only need the initramfs image, with its debug module enabled so a shell
+        # bootarg can drop to a shell; boards booting a full disk/wic image only
+        # need that image. Building both per board wastes build time every night,
+        # but boards sharing a yocto_machine (RAM variants etc.) can boot either
+        # way, so build whatever any of them needs.
+        HAS_INITRAMFS="false"
+        HAS_FIT="false"
+        HAS_FULL="false"
+        URAMDISK="false"
+        for initramfs in $("${MACHINE_INFO}" initramfs "$RISCV_MACHINE"); do
+          case "$initramfs" in
+            yes) HAS_INITRAMFS="true"; URAMDISK="true" ;;
+            fit) HAS_INITRAMFS="true"; HAS_FIT="true" ;;
+            *) HAS_FULL="true" ;;
+          esac
+        done
+
+        TARGETS=""
+        if [ "${HAS_INITRAMFS}" = "true" ]; then
+          LOCAL_CONF+=('INITRAMFS_SCRIPTS:append = " initramfs-module-debug"')
+          TARGETS="${RISCV_INITRAMFS_IMAGE}"
+        fi
+        # FIT boards boot one fitImage (kernel + DTB + initramfs) whose load
+        # addresses come from the machine's UBOOT_* variables, so they don't
+        # depend on the address variables in the board's U-Boot environment.
+        if [ "${HAS_FIT}" = "true" ]; then
+          LOCAL_CONF+=("INITRAMFS_IMAGE:pn-linux-yocto-fitimage = \"${RISCV_INITRAMFS_IMAGE}\"")
+          # TODO: drop once meta-riscv's beaglev-fire.conf sets UBOOT_ENTRYPOINT;
+          # oe-core's default (0x20008000) is outside its RAM.
+          LOCAL_CONF+=('UBOOT_ENTRYPOINT:beaglev-fire = "0x80200000"')
+          TARGETS="${TARGETS} linux-yocto-fitimage"
+        fi
+        if [ "${HAS_FULL}" = "true" ] || [ -z "${TARGETS}" ]; then
+          TARGETS="${TARGETS} ${RISCV_IMAGE}"
+        fi
+
+        # Any board (or variant) using this machine may need the wic or the
+        # fastboot images.
+        STRATEGIES=$("${MACHINE_INFO}" strategy "$RISCV_MACHINE")
+        DEPLOY_WIC="false"
+        grep -qx sdmux <<< "$STRATEGIES" && DEPLOY_WIC="true"
+        DEPLOY_FASTBOOT="false"
+        grep -qx fastboot <<< "$STRATEGIES" && DEPLOY_FASTBOOT="true"
+        # TFTP subdir is a board.yaml field, not necessarily the board dir name
+        # (a board dir can be renamed - e.g. for a RAM-variant suffix - while
+        # still sharing the same on-server TFTP subdir as other variants).
+        # The first board for the machine decides.
+        TFTP_SUBDIR=$("${MACHINE_INFO}" tftp_subdir "$RISCV_MACHINE" | sed -n 1p)
+        [ -n "${TFTP_SUBDIR}" ] || TFTP_SUBDIR="${RISCV_MACHINE}"
+
+        {
+          echo "config_json=${CONFIG_JSON}"
+          echo "positions<<EOF"
+          echo "${CONFIGURATION}"
+          echo "machine/${RISCV_MACHINE}"
+          echo "${DISTRO_FRAGMENT}"
+          echo "EOF"
+          echo "targets=${TARGETS# }"
+          echo "fragments=core/yocto/root-login-with-empty-password"
+          echo "local_conf<<EOF"
+          printf '%s\n' "${LOCAL_CONF[@]}"
+          echo "EOF"
+          echo "uramdisk=${URAMDISK}"
+          echo "board=${TFTP_SUBDIR}"
+          echo "deploy_wic=${DEPLOY_WIC}"
+          echo "deploy_fastboot=${DEPLOY_FASTBOOT}"
+        } >> "$GITHUB_OUTPUT"

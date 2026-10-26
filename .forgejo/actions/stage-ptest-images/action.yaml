@@ -1,0 +1,50 @@
+name: 'Stage ptest images'
+description: >
+  Upload the images listed in boards/<machine>/board.yaml from a
+  build-ptest-image (https://forgejo.baylibre.com/tgamblin/build-ptest-image)
+  build, named as listed there, as the ptest_image_<package> artifact for
+  run-qemu-ptest. Run after actions/checkout.
+
+inputs:
+  package:
+    description: 'Package the ptest image was built for'
+    required: true
+  machine:
+    description: 'qemu MACHINE, with a matching boards/<machine>/board.yaml'
+    required: true
+  images_path:
+    description: 'build-ptest-image images_path output'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: stage images
+      shell: bash
+      env:
+        BUILD_MACHINE: ${{ inputs.machine }}
+        PTEST_PACKAGE: ${{ inputs.package }}
+        IMAGES_PATH: ${{ inputs.images_path }}
+      run: |
+        set -euo pipefail
+        DEPLOY="${IMAGES_PATH}/${BUILD_MACHINE}"
+        STAGE="$GITHUB_WORKSPACE/ptest-images"
+        mkdir -p "${STAGE}"
+        # board.yaml's images: "<key>: <path>" lines, e.g. "kernel: /home/labgrid/Image"
+        awk '/^images:/{f=1; next} /^[^[:space:]]/{f=0} f && NF==2 {print $1, $2}' \
+          "$GITHUB_WORKSPACE/boards/${BUILD_MACHINE}/board.yaml" |
+        while read -r key path; do
+          if [ "${key}" = "ext4:" ]; then
+            src="${DEPLOY}/core-image-ptest-${PTEST_PACKAGE}-${BUILD_MACHINE}.rootfs.ext4"
+          else
+            src="${DEPLOY}/$(basename "${path}")"
+          fi
+          cp -L "${src}" "${STAGE}/$(basename "${path}")"
+        done
+        ls -l "${STAGE}"
+
+    - name: archive images
+      uses: actions/upload-artifact@v3
+      with:
+        name: ptest_image_${{ inputs.package }}
+        path: ${{ github.workspace }}/ptest-images

@@ -50,11 +50,18 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.forgejo/actions/build-ptest-image
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-ptest-image@main
         with:
           package: ${{ matrix.package }}
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
           source_override: ${{ env.BITBAKE_SETUP_OVERRIDE }}
+          overrides_dir: .forgejo/bitbake-configs
+      - uses: ./.forgejo/actions/stage-ptest-images
+        with:
+          package: ${{ matrix.package }}
+          machine: qemuriscv64
+          images_path: ${{ steps.build.outputs.images_path }}
 
   run-ptests:
     runs-on: qemu-test

@@ -65,10 +65,20 @@ jobs:
         PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
-      - id: build
-        uses: ./.forgejo/actions/build-yocto-image
+      - id: config
+        uses: ./.forgejo/actions/board-yocto-config
         with:
           machine: ${{ matrix.machine }}
           image: ${{ inputs.image || 'core-image-full-cmdline' }}
-          bitbake_setup_override: ${{ inputs.bitbake_setup_override || 'none' }}
           distro: ${{ inputs.distro || 'testv' }}
+      - id: build
+        uses: https://forgejo.baylibre.com/tgamblin/build-yocto-image@main
+        with:
+          config_json: ${{ steps.config.outputs.config_json }}
+          positions: ${{ steps.config.outputs.positions }}
+          machine: ${{ matrix.machine }}
+          targets: ${{ steps.config.outputs.targets }}
+          fragments: ${{ steps.config.outputs.fragments }}
+          local_conf: ${{ steps.config.outputs.local_conf }}
+          source_override: ${{ inputs.bitbake_setup_override || 'none' }}
+          overrides_dir: .forgejo/bitbake-configs
