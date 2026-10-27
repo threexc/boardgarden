@@ -125,9 +125,6 @@ runs:
         # depend on the address variables in the board's U-Boot environment.
         if [ "${HAS_FIT}" = "true" ]; then
           LOCAL_CONF+=("INITRAMFS_IMAGE:pn-linux-yocto-fitimage = \"${RISCV_INITRAMFS_IMAGE}\"")
-          # TODO: drop once meta-riscv's beaglev-fire.conf sets UBOOT_ENTRYPOINT;
-          # oe-core's default (0x20008000) is outside its RAM.
-          LOCAL_CONF+=('UBOOT_ENTRYPOINT:beaglev-fire = "0x80200000"')
           TARGETS="${TARGETS} linux-yocto-fitimage"
         fi
         if [ "${HAS_FULL}" = "true" ] || [ -z "${TARGETS}" ]; then
