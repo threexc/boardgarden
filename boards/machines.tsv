@@ -4,7 +4,7 @@ beaglev-fire	beaglev-fire	-	tftp	tg-beaglev-fire	beaglev-fire	fit	yes	client.yam
 k3-pico-itx	k3-pico-itx-32gb	-	tftp	tg-k3-pitx-32gb	k3-pico-itx	yes	yes	client.yaml	-
 k3-pico-itx	k3-pico-itx-8gb	-	fastboot	tg-k3-pitx-8gb	k3-pico-itx-8gb	no	yes	client.yaml	/home/labgrid/k3-pico-itx-fastboot
 k3-pico-itx	k3-pico-itx-8gb	tftp	tftp	tg-k3-pitx-8gb	k3-pico-itx	yes	no	client-tftp.yaml	-
-k3-pico-itx-mainline	k3-pico-itx-8gb	mainline	fastboot	tg-k3-pitx-8gb	k3-pico-itx-mainline	no	no	client-mainline.yaml	/home/labgrid/k3-pico-itx-mainline-fastboot
+k3-pico-itx-mainline	k3-pico-itx-8gb	mainline	fastboot	tg-k3-pitx-8gb	k3-pico-itx-mainline	no	yes	client-mainline.yaml	/home/labgrid/k3-pico-itx-mainline-fastboot
 milkv-duo256m	milkv-duo256m	-	sdmux	tg-duo256m	milkv-duo256m	no	yes	client.yaml	-
 muse-pi-pro	muse-pi-pro	-	tftp	tg-muse-pi-pro	muse-pi-pro	yes	yes	client.yaml	-
 qemuarm64	qemuarm64	-	qemu	-	qemuarm64	no	yes	env.yaml	-
