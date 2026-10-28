@@ -3,7 +3,8 @@ tg-muse-pi-pro:
   serial:
     cls: 'USBSerialPort'
     match:
-      '@ID_SERIAL_SHORT': 'E6616408434F1027'
+      ID_SERIAL_SHORT: 'D30HF056'
+      ID_USB_INTERFACE_NUM: '00'
   power-gpio:
     cls: 'MatchedSysfsGPIO'
     match:
