@@ -3,7 +3,8 @@ tg-k3-pitx-8gb:
   serial:
     cls: 'USBSerialPort'
     match:
-      '@ID_SERIAL_SHORT': 'E6647C740371802F'
+      ID_SERIAL_SHORT: 'DU0ET816'
+      ID_USB_INTERFACE_NUM: '00'
   power-gpio:
     cls: 'MatchedSysfsGPIO'
     match:
