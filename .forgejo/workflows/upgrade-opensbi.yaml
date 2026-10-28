@@ -83,7 +83,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        machine: ${{ fromJSON(needs.prepare.outputs.machines) }}
+        # An empty matrix leaves the job blocked forever on Forgejo (the
+        # matrix is expanded before 'if' is checked), so give it a
+        # placeholder entry for 'if' to skip when nothing was upgraded.
+        machine: ${{ fromJSON(needs.prepare.outputs.status == 'upgraded' && needs.prepare.outputs.machines || '["none"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3  # PORT: @v4
