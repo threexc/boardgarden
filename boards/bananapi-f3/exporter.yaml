@@ -3,7 +3,8 @@ tg-bpi-f3:
   serial:
     cls: 'USBSerialPort'
     match:
-      '@ID_SERIAL_SHORT': 'E663AC91D35CA332'
+      ID_SERIAL_SHORT: 'D30HE1U6'
+      ID_USB_INTERFACE_NUM: '00'
   power-gpio:
     cls: 'MatchedSysfsGPIO'
     match:
