@@ -37,7 +37,12 @@ machines:
       - name: Milk-V Duo 256M Exporter
         package: labgrid
         version: "25.1.dev273"
+        role: Exposes USB-to-UART and power to coordinator
       - name: K3 Pico-ITX Exporter
+        package: labgrid
+        version: "25.1.dev273"
+        role: Exposes USB-to-UART and power to coordinator
+      - name: BeagleV-Fire Exporter
         package: labgrid
         version: "25.1.dev273"
         role: Exposes USB-to-UART and power to coordinator
@@ -60,10 +65,24 @@ machines:
         port: 20408
 
   - id: runner1
-    label: "blacksmith"
+    label: "paris"
     hide_tailnet: true
     role:
       - "Forgejo Runner (Large)"
+    tailscale_name: paris
+    os: Debian 13
+    hardware:
+      hide_details: true
+      model: Custom
+      specs:
+        - AMD Ryzen 9 9950X 16-Core Processor
+        - 96 GB DDR5 RAM
+
+  - id: runner2
+    label: "blacksmith"
+    hide_tailnet: true
+    role:
+      - "Forgejo Runner (Small)"
     tailscale_name: blacksmith
     os: Debian 13
     hardware:
@@ -72,20 +91,6 @@ machines:
       specs:
         - Intel i9-9900T
         - 64 GB DDR4 RAM
-
-  - id: runner2
-    label: "microlith"
-    hide_tailnet: true
-    role:
-      - "Forgejo Runner (Small)"
-    tailscale_name: microlith
-    os: Fedora 44
-    hardware:
-      hide_details: true
-      model: ThinkCentre M75q-1
-      specs:
-        - AMD Ryzen 5 PRO 3400GE
-        - 16 GB DDR4 RAM
 
 # Physical boards — connected to halifax via serial/USB/power through Labgrid exporter
 boards:
@@ -153,9 +158,9 @@ links:
             role: Power control
       - label: serial
         hardware:
-          - part: Raspberry Pi Debug Probe
-            pn: Debug_Probe__CMSIS-DAP_0101
-            url: https://www.raspberrypi.com/products/debug-probe/
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
       - label: SD mux
         hardware:
@@ -176,9 +181,9 @@ links:
             role: Power control
       - label: serial
         hardware:
-          - part: Raspberry Pi Debug Probe
-            pn: Debug_Probe__CMSIS-DAP_0101
-            url: https://www.raspberrypi.com/products/debug-probe/
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
 
   - from: halifax
@@ -193,9 +198,9 @@ links:
             role: Power control
       - label: serial
         hardware:
-          - part: Raspberry Pi Debug Probe
-            pn: Debug_Probe__CMSIS-DAP_0101
-            url: https://www.raspberrypi.com/products/debug-probe/
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
       - label: SD mux
         hardware:
@@ -216,9 +221,26 @@ links:
             role: Power control
       - label: serial
         hardware:
-          - part: Raspberry Pi Debug Probe
-            pn: Debug_Probe__CMSIS-DAP_0101
-            url: https://www.raspberrypi.com/products/debug-probe/
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
+            role: USB-to-UART bridge
+
+  - from: halifax
+    to: board_5
+    type: physical
+    interfaces:
+      - label: power
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
+            role: Power control
+      - label: serial
+        hardware:
+          - part: BayLibre CoPilot
+            pn: BayLibre_Copilot_Lite_V1.2
+            url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
 
   # Logical: test harness interactions (what the runners/boards actually call)
@@ -263,5 +285,11 @@ links:
   - from: board_4
     to: halifax
     label: kernel + dtb + Yocto initramfs
+    type: logical
+    reverse: true
+
+  - from: board_5
+    to: halifax
+    label: Yocto FIT image
     type: logical
     reverse: true
