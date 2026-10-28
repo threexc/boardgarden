@@ -3,7 +3,8 @@ tg-duo256m:
   serial:
     cls: 'USBSerialPort'
     match:
-      '@ID_SERIAL_SHORT': 'EUANb147613'
+      ID_SERIAL_SHORT: 'DU0ET82D'
+      ID_USB_INTERFACE_NUM: '00'
   power-gpio:
     cls: 'MatchedSysfsGPIO'
     match:
