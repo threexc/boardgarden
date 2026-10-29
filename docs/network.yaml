@@ -101,7 +101,7 @@ boards:
     model: BPI-F3
     url: https://wiki.banana-pi.org/Banana_Pi_BPI-F3
     arch: riscv64 (RVA22 + RVV 1.0)
-    connection: serial + power + sd mux
+    connection: serial + power
     status: active
 
   - id: board_2
@@ -110,7 +110,7 @@ boards:
     model: Muse Pi Pro
     url: https://www.spacemit.com/muse-pi-pro/
     arch: riscv64 (RVA22 + RVV 1.0)
-    connection: serial + power
+    connection: serial + power + sd mux
     status: active
 
   - id: board_3
@@ -162,12 +162,6 @@ links:
             pn: BayLibre_Copilot_Lite_V1.2
             url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
-      - label: SD mux
-        hardware:
-          - part: USB SD Mux
-            pn: usb-sd-mux_rev4.0
-            url: https://linux-automation.com/en/products/usb-sd-mux.html
-            role: USB SD Mux controller
 
   - from: halifax
     to: board_2
@@ -185,6 +179,12 @@ links:
             pn: BayLibre_Copilot_Lite_V1.2
             url: https://baylibre.com/copilot/
             role: USB-to-UART bridge
+      - label: SD mux
+        hardware:
+          - part: USB SD Mux
+            pn: usb-sd-mux_rev4.0
+            url: https://linux-automation.com/en/products/usb-sd-mux.html
+            role: USB SD Mux controller
 
   - from: halifax
     to: board_3

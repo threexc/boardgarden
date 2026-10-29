@@ -28,8 +28,8 @@
 
 | ID | Label | Vendor | Model | Arch | Connection | Status |
 |----|-------|--------|-------|------|------------|--------|
-| `board_1` | BananaPi F3 | BananaPi | [BPI-F3](https://wiki.banana-pi.org/Banana_Pi_BPI-F3) | riscv64 (RVA22 + RVV 1.0) | serial + power + sd mux | active |
-| `board_2` | Muse Pi Pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power | active |
+| `board_1` | BananaPi F3 | BananaPi | [BPI-F3](https://wiki.banana-pi.org/Banana_Pi_BPI-F3) | riscv64 (RVA22 + RVV 1.0) | serial + power | active |
+| `board_2` | Muse Pi Pro | SpacemiT | [Muse Pi Pro](https://www.spacemit.com/muse-pi-pro/) | riscv64 (RVA22 + RVV 1.0) | serial + power + sd mux | active |
 | `board_3` | Milk-V Duo 256M | Milk-V | [Milk-V Duo 256M](https://milkv.io/docs/duo/getting-started/duo256m) | riscv64 (RV64GCV) | serial + power + sdmux | active |
 | `board_4` | K3 Pico-ITX | Sipeed | [K3 Pico-ITX](https://sipeed.com/k3) | riscv64 (RVA23) | serial + power | active |
 | `board_5` | BeagleV-Fire | BeagleBoard | [BeagleV-Fire](https://www.beagleboard.org/boards/beaglev-fire) | riscv64 (RV64GC) | serial + power | active |
@@ -40,7 +40,6 @@
 |-----------|------|-------------|------|
 | power | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | Power control |
 | serial | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | USB-to-UART bridge |
-| SD mux | [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html) | usb-sd-mux_rev4.0 | USB SD Mux controller |
 
 ### Muse Pi Pro
 
@@ -48,6 +47,7 @@
 |-----------|------|-------------|------|
 | power | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | Power control |
 | serial | [BayLibre CoPilot](https://baylibre.com/copilot/) | BayLibre_Copilot_Lite_V1.2 | USB-to-UART bridge |
+| SD mux | [USB SD Mux](https://linux-automation.com/en/products/usb-sd-mux.html) | usb-sd-mux_rev4.0 | USB SD Mux controller |
 
 ### Milk-V Duo 256M
 
