@@ -16,7 +16,3 @@ tg-bpi-f3:
     host: '192.168.40.166'
     internal: '/srv/tftp/bananapi-f3/'
     external: 'bananapi-f3/'
-  sdmux:
-    cls: 'USBSDMuxDevice'
-    match:
-      ID_SERIAL_SHORT: '000000001034'

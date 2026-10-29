@@ -1,5 +1,6 @@
 name: bananapi-f3
 yocto_machine: bananapi-f3
+exclude_from_nightly: true
 strategy: sdmux
 arch: riscv64
 description: BananaPi F3 (SpacemiT K1). Boots from microSD via USB SD-Mux
