@@ -1,3 +1,7 @@
+"""Shared SD-mux boot smoke tests. Auto-skipped for boards whose strategy
+isn't an SdMuxBootStrategy (see ``sd`` fixture in ``boardfarm_common.fixtures``).
+"""
+
 import os
 
 from labgrid.driver import ExecutionError
