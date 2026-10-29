@@ -6,10 +6,6 @@ name: prune-yocto-buildcache
 # - downloads: drop a download (a top-level file, or a directory one level
 #   down, e.g. a git2/ mirror) when nothing in it was read for
 #   DOWNLOADS_MAX_DAYS.
-# - tmp: build-yocto-image and build-ptest-image keep TMPDIRs here between
-#   runs. Drop those not used for TMPDIR_MAX_IDLE_DAYS, then the least
-#   recently used ones while the disk is still over MAX_USE_PERCENT. TMPDIRs
-#   whose lock is held (a bitbake running in them) are skipped.
 # Ages are by atime, so the buildcache mount must not be noatime.
 
 on:
@@ -35,9 +31,6 @@ jobs:
       SSTATE_MAX_DAYS: 30
       DL_DIR: /buildcache/downloads
       DOWNLOADS_MAX_DAYS: 90
-      TMPDIR_BASE: /buildcache/tmp
-      TMPDIR_MAX_IDLE_DAYS: 7
-      MAX_USE_PERCENT: 80
     steps:
       - name: disk usage before
         run: df -h /buildcache
@@ -63,31 +56,6 @@ jobs:
             rm -rf "$u" "$u.done"
           done
           find "${DL_DIR}" -mindepth 1 -type d -empty -delete
-
-      - name: prune tmp
-        run: |
-          set -euo pipefail
-          [ -d "${TMPDIR_BASE}" ] || exit 0
-
-          prune() {
-            echo "removing $1 ($(du -sh "$1" | cut -f1))"
-            flock -n "$1.lock" rm -rf "$1" || echo "  in use, skipped"
-          }
-          use_percent() {
-            df --output=pcent "${TMPDIR_BASE}" | tail -1 | tr -dc 0-9
-          }
-
-          find "${TMPDIR_BASE}" -mindepth 1 -maxdepth 1 -type d -mtime +"${TMPDIR_MAX_IDLE_DAYS}" -print0 |
-          while IFS= read -r -d '' d; do
-            prune "$d"
-          done
-
-          # Oldest first; builds touch their TMPDIR when they start.
-          mapfile -t LRU < <(ls -1dtr "${TMPDIR_BASE}"/*/ 2>/dev/null)
-          for d in "${LRU[@]}"; do
-            [ "$(use_percent)" -gt "${MAX_USE_PERCENT}" ] || break
-            prune "${d%/}"
-          done
 
       - name: disk usage after
         run: df -h /buildcache

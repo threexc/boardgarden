@@ -47,7 +47,6 @@ jobs:
         BITBAKE_SETUP_OVERRIDE: ${{ inputs.bitbake_setup_override || 'none' }}
         DL_DIR: "/buildcache/downloads"
         SSTATE_DIR: "/buildcache/sstate-cache"
-        PERSISTENT_TMPDIR_BASE: "/buildcache/tmp"
     steps:
       - uses: actions/checkout@v4
       - id: build
