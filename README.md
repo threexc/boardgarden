@@ -110,7 +110,7 @@ As an example, once you have created a place called
 should be able to invoke the labgrid CLI using `uv run`, e.g.:
 
 1. `uv run labgrid-client -p tg-muse-pi-pro acquire`
-2. `uv run labgrid-client -p tg-muse-pi-pro -c boards/muse-pi-pro/client.yaml -s tftp con`
+2. `uv run labgrid-client -p tg-muse-pi-pro -c boards/muse-pi-pro/client.yaml -s sd con`
 
 Or, if you want to run the test suite, you can do:
 
