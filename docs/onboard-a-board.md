@@ -185,22 +185,22 @@ uv run boardfarm-validate              # all boards
 Errors point at the schema rule that failed. Fix the manifest, not the
 schema (unless a genuinely new field is being introduced).
 
-## 6. Add a pytest suite
+## 6. Tests
 
-Copy an existing board's `pytest/` directory as a starting point:
+No per-board test code is needed for the standard smoke tests. The shared
+suite in `common/src/boardfarm_common/tests/` (`test_sd.py`, `test_tftp.py`,
+`test_fastboot.py`) runs against every board, and each test is skipped
+unless the board's strategy matches it (see the `sd` / `tftp` / `fastboot`
+fixtures in `boardfarm_common/fixtures.py`).
 
-```
-boards/my-board/pytest/
-  conftest.py       # sets --lg-env to ../client.yaml, exposes tftp fixture
-  pytest.ini        # (optional; global config is in pyproject.toml)
-  test_tftp.py      # smoke tests
-```
-
-Run the suite locally against real hardware:
+Run it locally against real hardware:
 
 ```
-uv run pytest -vvv boards/my-board/pytest/
+uv run pytest -vvv --lg-env boards/my-board/client.yaml common/src/boardfarm_common/tests
 ```
+
+For board-specific tests, add a `boards/my-board/pytest/` directory. CI
+runs it after the shared suite when it exists.
 
 ## 7. Exporter-side setup
 
@@ -220,8 +220,7 @@ boards/my-board/board.yaml
 boards/my-board/strategy.py
 boards/my-board/client.yaml        # generated
 boards/machines.tsv                # generated
-boards/my-board/pytest/conftest.py
-boards/my-board/pytest/test_tftp.py
+boards/my-board/pytest/            # optional, board-specific tests only
 systemd_services/labgrid-exporter-my-board.service   # if physical
 udev/50-my-board.rules                                # if new USB IDs
 ```
@@ -233,7 +232,7 @@ the PR.
 
 ```
 uv run labgrid-client -p tg-my-board acquire
-uv run pytest -vvv boards/my-board/pytest/
+uv run pytest -vvv --lg-env boards/my-board/client.yaml common/src/boardfarm_common/tests
 uv run labgrid-client -p tg-my-board release
 ```
 
