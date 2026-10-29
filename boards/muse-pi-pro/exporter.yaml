@@ -16,3 +16,7 @@ tg-muse-pi-pro:
     host: '192.168.40.166'
     internal: '/srv/tftp/muse-pi-pro/'
     external: 'muse-pi-pro/'
+  sdmux:
+    cls: 'USBSDMuxDevice'
+    match:
+      ID_SERIAL_SHORT: '000000001034'
