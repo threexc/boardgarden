@@ -2,7 +2,7 @@ targets:
   main:
     resources:
       RemotePlace:
-        name: tg-duo256m
+        name: tg-milkv-duo256m
     drivers:
       - SerialDriver:
           name: 'milkv-duo256m-console-1'

@@ -1,4 +1,4 @@
-tg-duo256m:
+tg-milkv-duo256m:
   location: ecoforge
   serial:
     cls: 'USBSerialPort'

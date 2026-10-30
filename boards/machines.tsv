@@ -5,7 +5,7 @@ k3-pico-itx	k3-pico-itx-32gb	-	tftp	tg-k3-pitx-32gb	k3-pico-itx	yes	yes	client.y
 k3-pico-itx	k3-pico-itx-8gb	-	fastboot	tg-k3-pitx-8gb	k3-pico-itx-8gb	no	yes	client.yaml	/home/labgrid/k3-pico-itx-fastboot
 k3-pico-itx	k3-pico-itx-8gb	tftp	tftp	tg-k3-pitx-8gb	k3-pico-itx	yes	no	client-tftp.yaml	-
 k3-pico-itx-mainline	k3-pico-itx-8gb	mainline	fastboot	tg-k3-pitx-8gb	k3-pico-itx-mainline	no	yes	client-mainline.yaml	/home/labgrid/k3-pico-itx-mainline-fastboot
-milkv-duo256m	milkv-duo256m	-	sdmux	tg-duo256m	milkv-duo256m	no	yes	client.yaml	-
+milkv-duo256m	milkv-duo256m	-	sdmux	tg-milkv-duo256m	milkv-duo256m	no	yes	client.yaml	-
 muse-pi-pro	muse-pi-pro	-	sdmux	tg-muse-pi-pro	muse-pi-pro	no	yes	client.yaml	-
 muse-pi-pro	muse-pi-pro	tftp	tftp	tg-muse-pi-pro	muse-pi-pro	yes	no	client-tftp.yaml	-
 qemuarm64	qemuarm64	-	qemu	-	qemuarm64	no	yes	env.yaml	-
