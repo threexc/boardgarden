@@ -3,7 +3,7 @@ description: >
   Upload the images listed in boards/<machine>/board.yaml from a
   build-ptest-image (https://forgejo.baylibre.com/tgamblin/build-ptest-image)
   build, named as listed there, as the ptest_image_<package> artifact for
-  run-qemu-ptest. Run after actions/checkout.
+  ptest-kvm-compare. Run after actions/checkout.
 
 inputs:
   package:

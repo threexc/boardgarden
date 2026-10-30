@@ -5,7 +5,6 @@
 | Label | Used by | Requirements |
 |---|---|---|
 | `yocto-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/buildcache` bind-mount |
-| `qemu-test` | `riscv-ptest-nightly` | Same as `yocto-build`; runs QEMU |
 | `board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to the exporter/TFTP server |
 | `light-maintenance` | `build-push-containers`, `lint`, `validate-manifests`, `renovate` | Docker, outbound to Forgejo + ghcr.io |
 
@@ -45,7 +44,7 @@ Set these in Settings → Actions → Secrets.
 | `REGISTRY_TOKEN` | `build-push-containers` | Forgejo container registry token (paired with `REGISTRY_USERNAME`) |
 | `REGISTRY_USERNAME` | `build-push-containers` | Forgejo user or bot with `write:package` scope |
 | `RENOVATE_TOKEN` | `renovate` | Forgejo bot PAT with `read:repository`, `write:repository`, `write:issue` |
-| `REPORT_SSH_KEY` | `run-board-tests`, `riscv-ptest-nightly` | Private key for `reporter@halifax`. rsync of `report.html` to `/testresults/` |
+| `REPORT_SSH_KEY` | `run-board-tests` | Private key for `reporter@halifax`. rsync of `report.html` to `/testresults/` |
 | `SSH_KNOWN_HOSTS` | `deploy-to-tftp` (via `setup-ssh`), `run-board-tests` | Multi-line known_hosts covering every host the runner will ssh to (TFTP server, report server, Labgrid exporter host — all `halifax` today; the coordinator needs no ssh). Seed with `ssh-keyscan -H -T 10 <host>` |
 | `TFTP_SERVER_SSH_KEY` | `deploy-to-tftp` → `setup-ssh`; `run-board-tests` | Private key for `auto@halifax`. rsync build artifacts into `/srv/tftp/<board>/` |
 
@@ -86,7 +85,7 @@ Regenerate contents:
 
 ## Buildcache and UIDs/GIDs
 
-`build-yocto-image` (via `yocto-build-and-test` / `weekly-build-only`) and `riscv-ptest-nightly` bind-mount
+`build-yocto-image` (via `yocto-build-and-test` / `weekly-build-only`) and the other `yocto-build` jobs bind-mount
 `/buildcache` into the container at the same path, populating
 `DL_DIR` and `SSTATE_DIR`. Provision this on the runner host:
 
