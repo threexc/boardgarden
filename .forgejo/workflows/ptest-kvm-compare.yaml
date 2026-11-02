@@ -20,8 +20,9 @@ on:
         options:
           - none
           - oe-core-master-next
-          - meta-riscv-tgamblin-review
+          - meta-riscv-tgamblin-dev
           - meta-riscv-tgamblin-fixes
+          - meta-riscv-tgamblin-review
       packages:
         description: 'JSON array of ptest recipes'
         required: true

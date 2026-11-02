@@ -12,8 +12,9 @@ on:
         type: choice
         options:
           - none
-          - meta-riscv-tgamblin-review
+          - meta-riscv-tgamblin-dev
           - meta-riscv-tgamblin-fixes
+          - meta-riscv-tgamblin-review
           - meta-riscv-hfranco-review
       distro:
         description: 'Distro: testv (meta-testv) or nodistro (oe-core)'
