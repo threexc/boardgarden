@@ -79,11 +79,11 @@ machines:
         - 96 GB DDR5 RAM
 
   - id: runner2
-    label: "blacksmith"
+    label: "ottawa"
     hide_tailnet: true
     role:
       - "Forgejo Runner (Small)"
-    tailscale_name: blacksmith
+    tailscale_name: ottawa
     os: Debian 13
     hardware:
       hide_details: true
