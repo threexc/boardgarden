@@ -1,6 +1,6 @@
 # boardgarden
 
-tgamblin's boardfarm repo, built for testing RISC-V development boards with [Labgrid](https://github.com/labgrid-project/labgrid) and [Forgejo](https://forgejo.org/) Actions
+tgamblin's boardfarm repo, built primarily for testing RISC-V development boards (plus QEMU targets) with [Labgrid](https://github.com/labgrid-project/labgrid) and [Forgejo](https://forgejo.org/) Actions
 
 ## Table of Contents
 
@@ -11,10 +11,9 @@ tgamblin's boardfarm repo, built for testing RISC-V development boards with [Lab
 - [Usage](#usage)
   - [.forgejo](#forgejo)
   - [boards](#boards)
-  - [systemd_services](#systemd-services)
+  - [systemd_services](#systemd_services)
   - [ansible](#ansible)
   - [udev](#udev)
-  - [workbench](#workbench)
 
 ## Motivation
 
@@ -60,9 +59,17 @@ automated testing infrastructure.
 ### .forgejo
 
 These should mostly just work on a sufficiently-resourced Forgejo instance with
-Actions enabled. Each pipeline is intended to be run automatically on a nightly
-or weekly schedule. Most of the workflows within are intended for testing some
-combination of:
+Actions enabled. The workflows fall into a few groups:
+
+- Scheduled (nightly or weekly) Yocto build and board test pipelines
+- Scheduled recipe upgrade jobs (`upgrade-linux-mainline`, `upgrade-u-boot`,
+  `upgrade-opensbi`), which use the external
+  [recipe-upgrade](https://forgejo.baylibre.com/tgamblin/recipe-upgrade) actions
+- On-demand comparisons such as `ptest-kvm-compare`
+- Repository checks run on push (`lint-board-files`, `lint-workflows`,
+  `unit-tests`, `validate-manifests`)
+
+The build and test pipelines target some combination of:
 
 - Packages whose test suites are known to have intermittent failure issues when
   run on `qemuriscv64` in the Yocto Project [Autobuilder](https://autobuilder.yoctoproject.org/valkyrie/)
@@ -72,7 +79,8 @@ combination of:
 
 The `bitbake-configs` directory contains templates for running Yocto-specific
 workflows, while the `dockerfiles` directory contains definitions for the
-`container-builder`, `labgrid-operator`, and `yocto-builder` container images
+`container-builder`, `kernel-builder`, `labgrid-operator`, `qemu-builder`, and
+`yocto-builder` container images
 stored in the registry.
 
 For the list of runners, repository secrets, and repository variables these
@@ -81,10 +89,9 @@ migration checklist for spinning boardgarden up on a fresh Forgejo instance.
 
 ### boards
 
-This entire subdirectory is meant to be used with
-[uv](https://docs.astral.sh/uv/) for installing and managing Python projects. It
-includes a `common` module, which the `pyproject.toml` files are used to help
-install in the virtualenv. This allows re-use of various Labgrid strategy
+The repository is a [uv](https://docs.astral.sh/uv/) workspace: the root
+`pyproject.toml` pulls in the top-level `common` package (`boardfarm-common`)
+as a workspace member. This allows re-use of various Labgrid strategy
 functions and pytest fixtures across multiple boards, since the fundamental
 actions used (such as setting a TFTP server's IP address on the U-Boot prompt)
 are more or less the same.
@@ -96,13 +103,11 @@ Using the board configurations will depend on how you have structured your
 Labgrid deployment (see the [docs](https://labgrid.readthedocs.io/en/latest/)
 for more details). **In addition, you may need to make some basic changes to the
 default bootloaders and operating systems in place** before beginning to use the
-Labgrid configurations for automation. The boards supported in `boardgarden`
-thus far all make use of an [Armbian](https://armbian.com/boards) or
-[Bianbu](https://gitee.com/bianbu/docs-en) installation to eMMC storage (even
-for targets utilizing an SD Mux) as a fallback, and to provide flexibility
-should per-board testing goals change. These U-Boot environments include default
-settings (such as autoboot wait times) that you may want to change before
-deployment - please ensure that you review them.
+Labgrid configurations for automation. For example, `muse-pi-pro` keeps an
+[Armbian](https://armbian.com/boards) installation on eMMC as a fallback
+even though it boots test images from an SD Mux. Vendor U-Boot environments
+include default settings (such as autoboot wait times) that you may want to
+change before deployment - please ensure that you review them.
 
 As an example, once you have created a place called
 `tg-muse-pi-pro` and exported the corresponding resources in
@@ -136,8 +141,16 @@ coordinator, Forgejo) to containers, one service at a time. See
 
 ### udev
 
-udev rules for enabling the [BayLibre
-Copilot](https://github.com/BayLibre/Copilot) board on a system to perform
-remote power control to boards under test. These have only been deployed thus
-far on Debian-based systems, where the `/sys/class/gpio` path exists and the
-necessary Linux kernel configuration is enabled.
+udev rules for the Labgrid exporter hosts:
+
+- `90-copilot.rules`: GPIO and tty symlinks for the [BayLibre
+  Copilot](https://github.com/BayLibre/Copilot) board, which provides remote
+  power control and the serial console (UART) for boards under test
+- `90-spacemit-fastboot.rules`: access to SpacemiT devices in USB download
+  mode, for fastboot flashing
+- `99-gpio.rules`: sysfs GPIO permissions, and a flag for selecting the legacy
+  sysfs gpiochip node in board match rules
+
+These have only been deployed thus far on Debian-based systems, where the
+`/sys/class/gpio` path exists and the necessary Linux kernel configuration is
+enabled.
