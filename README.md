@@ -14,6 +14,8 @@ tgamblin's boardfarm repo, built primarily for testing RISC-V development boards
   - [systemd_services](#systemd_services)
   - [ansible](#ansible)
   - [udev](#udev)
+  - [docs](#docs)
+- [Development](#development)
 
 ## Motivation
 
@@ -54,6 +56,10 @@ automated testing infrastructure.
 
 ![tgamblin's boardfarm](docs/network.png)
 
+The diagram and [docs/bom.md](docs/bom.md) are generated from
+`docs/network.yaml` by `docs/generate_diagram.py` (see its docstring for the
+Mermaid rendering steps) - edit the YAML rather than the outputs.
+
 ## Usage
 
 ### .forgejo
@@ -77,6 +83,9 @@ The build and test pipelines target some combination of:
   [meta-riscv](https://github.com/riscv/meta-riscv) layer for various RISC-V
   development boards
 
+The `actions` directory holds local composite actions shared by the workflows
+(machine discovery, TFTP deployment, running board tests, etc.), and
+`scripts/machine-info` queries `boards/machines.tsv` from workflow steps.
 The `bitbake-configs` directory contains templates for running Yocto-specific
 workflows, while the `dockerfiles` directory contains definitions for the
 `container-builder`, `kernel-builder`, `labgrid-operator`, `qemu-builder`, and
@@ -98,6 +107,20 @@ are more or less the same.
 
 Assuming you have `uv` installed, you can set up the Python virtual environment
 with all of the necessary modules by doing `uv sync`.
+
+Each board is described by a `boards/<name>/board.yaml` manifest, which is the
+source of truth. It names a strategy family (`tftp`, `sdmux`, `fastboot`, or
+`qemu`) and can `inherit` shared SoC defaults from `boards/families/`. The
+Labgrid `client.yaml` (plus `client-<variant>.yaml` for any `variants`) and the
+`boards/machines.tsv` index used by the workflows are generated from it, so
+don't edit those by hand:
+
+- `uv run boardfarm-validate` checks manifests against the JSON schema
+- `uv run boardfarm-render` regenerates the outputs (`--check` fails if
+  anything is out of date, as CI does)
+
+See [docs/onboard-a-board.md](docs/onboard-a-board.md) for adding a new board
+end-to-end.
 
 Using the board configurations will depend on how you have structured your
 Labgrid deployment (see the [docs](https://labgrid.readthedocs.io/en/latest/)
@@ -154,3 +177,25 @@ udev rules for the Labgrid exporter hosts:
 These have only been deployed thus far on Debian-based systems, where the
 `/sys/class/gpio` path exists and the necessary Linux kernel configuration is
 enabled.
+
+### docs
+
+- [onboard-a-board.md](docs/onboard-a-board.md): adding a new board, from
+  manifest to CI
+- [k3-fastboot-setup.md](docs/k3-fastboot-setup.md): hardware and exporter
+  setup for fastboot-flashing the K3 Pico-ITX
+- [runners.md](docs/runners.md): Forgejo runners, secrets, and variables
+- [bom.md](docs/bom.md): machines and services in the farm (generated)
+
+## Development
+
+Unit tests for the `common` package (manifest loading, rendering, validation,
+strategies) live in `tests/` and don't need hardware:
+
+```sh
+uv run pytest tests
+```
+
+Linting uses [ruff](https://docs.astral.sh/ruff/) (in the `dev` dependency
+group) via [pre-commit](https://pre-commit.com/); run `pre-commit install` to
+enable the hooks locally.
