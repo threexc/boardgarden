@@ -9,6 +9,7 @@ strategy wiring, labgrid config, tests, exporter-side setup, and CI.
 |---|---|---|
 | `tftp`  | Physical board booted via U-Boot + TFTP | `TftpBootStrategy` |
 | `sdmux` | Physical board booted from an SD card written through a USB SD-Mux | `SdMuxBootStrategy` |
+| `fastboot` | Physical board whose storage is flashed over USB fastboot (see [k3-fastboot-setup.md](k3-fastboot-setup.md)) | `FastbootFlashStrategy` |
 | `qemu`  | Emulated target (Yocto image, no hardware) | `QemuBootStrategy` |
 
 Adding a new family? See [Adding a strategy family](#adding-a-strategy-family)
