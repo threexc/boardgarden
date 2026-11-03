@@ -26,7 +26,7 @@ on:
       packages:
         description: 'JSON array of ptest recipes'
         required: true
-        default: '["bzip2", "coreutils", "parted", "xz"]'
+        default: '["bzip2", "coreutils", "xz"]'
         type: string
       tcg:
         description: 'Also run each ptest under TCG for comparison (slow)'
