@@ -54,7 +54,11 @@ The K3 Pico-ITX [Getting Started Guide][getting-started-guide-ref] indicates tha
 6. Connect the USB-C power cable to the Copilot power input.
 7. Connect the final USB-C cable between the PC (or USB hub) and the Copilot's control input.
 8. (Optional, if in use) connect the Ethernet cable to the K3 Pico-ITX.
-9. A completed setup may look something like:
+9. Reference the following diagram to ensure connections are made correctly:
+
+![Connection Diagram for K3 Pico-ITX Fastboot Setup](./images/k3-pico-itx-fastboot-wiring-diagram.png)
+
+A completed setup may look something like:
 
 ![K3 Pico-ITX complete connection setup](./images/PXL_20261102_200947364.jpg)
 
