@@ -58,13 +58,18 @@ on:
         required: true
         default: '3600'
         type: string
+      host_machine:
+        description: 'MACHINE to build the host image for'
+        required: true
+        default: 'k3-pico-itx'
+        type: string
 
 defaults:
   run:
     shell: bash
 
 env:
-  HOST_MACHINE: k3-pico-itx
+  HOST_MACHINE: ${{ inputs.host_machine }}
   HOST_IMAGE: testv-image-kvm-test
 
 jobs:
