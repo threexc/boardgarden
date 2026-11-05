@@ -189,22 +189,10 @@ runs:
         echo "resolved board: ${BOARD} (place: ${ALLOCATED_PLACE}, env: ${CLIENT})"
         uv run labgrid-client -p + lock
         uv run labgrid-client -p + show
-        EXIT_CODE=1
-        for ATTEMPT in 1 2 3; do
-          echo "Test attempt ${ATTEMPT} of 3"
-          TESTS="common/src/boardfarm_common/tests"
-          [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
-          if BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/$CLIENT" $TESTS; then
-            echo "Tests passed on attempt ${ATTEMPT}. Releasing reservation"
-            EXIT_CODE=0
-            break
-          else
-            echo "Attempt ${ATTEMPT} failed"
-          fi
-        done
-        if [ $EXIT_CODE -ne 0 ]; then
-          echo "All 3 pytest attempts failed"
-        fi
+        TESTS="common/src/boardfarm_common/tests"
+        [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
+        EXIT_CODE=0
+        BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/$CLIENT" $TESTS || EXIT_CODE=$?
         uv run labgrid-client -p + -c "boards/$BOARD/$CLIENT" pw off
         uv run labgrid-client -p + release
         exit $EXIT_CODE
