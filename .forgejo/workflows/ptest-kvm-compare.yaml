@@ -112,7 +112,10 @@ jobs:
           SRC="${IMAGES_PATH}/${HOST_MACHINE}"
           STAGE="$GITHUB_WORKSPACE/host-images"
           mkdir -p "${STAGE}"
-          cp -L "${SRC}"/{FSBL.bin,u-boot.itb,bootinfo_spinor.bin,u-boot-env-default.bin,esos.itb,fw_dynamic.itb,bootfs.ext4} "${STAGE}/"
+          # Not every BSP builds all of these (see deploy-tftp-artifacts).
+          for f in FSBL.bin u-boot.itb bootinfo_spinor.bin u-boot-env-default.bin esos.itb fw_dynamic.itb bootfs.ext4; do
+            if [ -e "${SRC}/${f}" ]; then cp -L "${SRC}/${f}" "${STAGE}/"; fi
+          done
           cp -L "${SRC}/${HOST_IMAGE}-${HOST_MACHINE}.rootfs.ext4" "${STAGE}/rootfs.ext4"
           ls -l "${STAGE}"
 

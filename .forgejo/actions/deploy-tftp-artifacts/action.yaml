@@ -105,7 +105,10 @@ runs:
         RSH="ssh -o StrictHostKeyChecking=accept-new"
         # -L: several of these are symlinks into the deploy dir. The rootfs is
         # renamed so board.yaml can name it independently of the image built.
-        rsync -avzL -e "${RSH}" \
+        # Not every BSP builds all of the boot firmware (newer K3 ones drop
+        # esos.itb, fw_dynamic.itb and u-boot-env-default.bin), so skip what's
+        # missing; a board.yaml flash entry naming one fails at flash time.
+        rsync -avzL --ignore-missing-args -e "${RSH}" \
           "${SRC}"/FSBL.bin \
           "${SRC}"/u-boot.itb \
           "${SRC}"/bootinfo_spinor.bin \
