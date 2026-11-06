@@ -6,6 +6,7 @@ import os
 
 from labgrid.driver import ExecutionError
 
+
 def test_uname_a(sd):
     version = os.environ.get("VERSION")
     try:

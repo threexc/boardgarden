@@ -92,7 +92,9 @@ def render_index(board_dirs: list[Path]) -> str:
                 "initramfs": (
                     "fit"
                     if tftp.get("kernel") == "fitImage"
-                    else "yes" if "initramfs" in tftp else "no"
+                    else "yes"
+                    if "initramfs" in tftp
+                    else "no"
                 ),
                 "nightly": "no" if m.get("exclude_from_nightly") else "yes",
                 "client": _template(board_dir, m, variant)[1],
