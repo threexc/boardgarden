@@ -66,8 +66,10 @@ variants:
     shell:
       prompt: '~ #\s*'
   # meta-riscv BSP with linux-mainline: the vendor boot firmware with a
-  # mainline kernel, flashed over fastboot like the default. Its own TFTP
-  # subdir and image_dir keep its flash images apart from the default's.
+  # mainline kernel, flashed over fastboot like the default. Select it with
+  # run-board-tests' boot_method: fastboot (mainline-fit is the default for
+  # this MACHINE). Its own TFTP subdir and image_dir keep its flash images
+  # apart from the default's.
   mainline:
     yocto_machine: k3-pico-itx-mainline
     strategy_class: K3PicoItxMainlineBootStrategy
@@ -80,12 +82,14 @@ variants:
   # bootm copies the kernel to the FIT's load address, so the machine must set
   # UBOOT_ENTRYPOINT (and FIT_ADDRESS_CELLS = "2": K3 DRAM is above 4 GiB) to
   # where booti would put it: U-Boot's ram_base + the Image's 2 MiB
-  # text_offset. Select it with run-board-tests' boot_method: tftp.
+  # text_offset. The default for k3-pico-itx-mainline; select the fastboot
+  # flash with run-board-tests' boot_method: fastboot. This leaves SPI-NOR
+  # holding whatever boot firmware the last fastboot flash wrote.
   mainline-fit:
     yocto_machine: k3-pico-itx-mainline
+    default: true
     strategy: tftp
     strategy_class: K3PicoItxMainlineFitBootStrategy
-    exclude_from_nightly: true
     boot:
       method: tftp
       bootargs: console=ttyS0,115200 shell
