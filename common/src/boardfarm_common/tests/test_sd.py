@@ -6,13 +6,15 @@ import os
 
 from labgrid.driver import ExecutionError
 
+from boardfarm_common import helpers
+
 
 def test_uname_a(sd):
     version = os.environ.get("VERSION")
     try:
         state = sd.run_check("/bin/uname -a", timeout=60.0)
 
-        assert version in state[0]
+        assert helpers.kernel_version_in(version, state[0]), state[0]
     except ExecutionError:
         sd.run("ls /bin/uname")
         raise

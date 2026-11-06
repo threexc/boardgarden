@@ -7,6 +7,8 @@ import os
 import pytest
 from labgrid.driver import ExecutionError
 
+from boardfarm_common import helpers
+
 
 def _is_initramfs(strategy) -> bool:
     """True if this board's manifest boots a bare initramfs rather than a
@@ -27,7 +29,7 @@ def test_uname_a(tftp):
     version = os.environ.get("VERSION")
     try:
         state = tftp.run_check("/bin/uname -a", timeout=60.0)
-        assert version in state[0]
+        assert helpers.kernel_version_in(version, state[0]), state[0]
     except ExecutionError:
         tftp.run("ls /bin/uname")
         raise

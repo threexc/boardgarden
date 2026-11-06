@@ -1,5 +1,7 @@
 # Helper functions for the boardfarm's test suites and strategies
 
+import re
+
 default_bootargs = (
     "console=tty1 "
     "console=ttyS0,115200 "
@@ -18,6 +20,13 @@ default_bootargs = (
 )
 
 default_serverip = "192.168.40.166"
+
+
+def kernel_version_in(version: str, uname: str) -> bool:
+    """True if the kernel recipe's version (as CI takes it from the deployed
+    kernel's file name, e.g. "7.4-rc1") is the one ``uname`` reports. The
+    kernel always has a sublevel, so an rc reports "7.4.0-rc1"."""
+    return version in uname or re.sub(r"^(\d+\.\d+)(?=-|$)", r"\1.0", version) in uname
 
 
 def uboot_stage(strategy):

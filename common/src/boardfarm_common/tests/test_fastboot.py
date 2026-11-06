@@ -7,10 +7,12 @@ import os
 
 from labgrid.driver import ExecutionError
 
+from boardfarm_common import helpers
+
 
 def test_uname_a(fastboot):
     stdout = fastboot.run_check("/bin/uname -a", timeout=60.0)
-    assert os.environ.get("VERSION") in stdout[0]
+    assert helpers.kernel_version_in(os.environ.get("VERSION"), stdout[0]), stdout[0]
 
 
 def test_buildinfo(fastboot):
