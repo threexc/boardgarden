@@ -22,7 +22,7 @@ targets:
             provider: 'tftp'
       - UBootDriver:
           prompt: '=> '
-          autoboot: 'Autoboot in 5 seconds'
+          autoboot: 'Err:\s+serial'
           interrupt: 's'
           name: 'k3-pico-itx-8gb-uboot-1'
           boot_commands:

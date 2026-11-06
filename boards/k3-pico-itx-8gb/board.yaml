@@ -40,6 +40,14 @@ shell:
   username: root
   password: null
 
+# For the TFTP variants. The fastboot flash writes U-Boot's default env, so
+# bootdelay is 0: "Autoboot in 0 seconds" leaves no time to answer it. Send
+# the stop key ("s", AUTOBOOT_KEYED) once the console is up after relocation
+# instead: it waits in the UART FIFO for autoboot's single key check. Earlier
+# is too early, as the post-relocation serial probe resets the FIFO.
+uboot:
+  autoboot: 'Err:\s+serial'
+
 strategy_class: K3PicoItxBootStrategy
 
 # Other ways to boot this board, each for its own Yocto MACHINE. Each renders
