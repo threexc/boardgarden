@@ -85,6 +85,11 @@ variants:
       subdir: k3-pico-itx-mainline
     fastboot:
       image_dir: /home/labgrid/k3-pico-itx-mainline-fastboot
+      # Not built by the newer K3 BSP: leave these NOR partitions as they are.
+      flash:
+        env: null
+        esos: null
+        opensbi: null
   # Same MACHINE as mainline, but TFTP-booted from the vendor U-Boot on
   # SPI-NOR as one FIT image (kernel, DTB and initramfs), storage untouched.
   # bootm copies the kernel to the FIT's load address, so the machine must set

@@ -24,7 +24,8 @@ class FastbootFlashStrategy(BoardStrategy):
     Holding the ``recovery`` button while power comes up, then pulsing
     ``reset``, drops the board into USB download mode. Each ``fastboot.stage`` image is
     then staged and continued in order (e.g. SPL, then a fastboot-capable
-    U-Boot), and each ``fastboot.flash`` partition is written. File names are
+    U-Boot), and each ``fastboot.flash`` partition is written, except those
+    set to null (how a variant drops one of the base board's). File names are
     relative to ``fastboot.image_dir``.
     """
 
@@ -98,6 +99,8 @@ class FastbootFlashStrategy(BoardStrategy):
             self.fastboot.continue_boot()
             time.sleep(fb.get("continue_delay", 3))
         for partition, image in fb["flash"].items():
+            if image is None:  # a variant nulls out a base-board partition
+                continue
             self.fastboot.flash(partition, self._image(image))
         self.target.deactivate(self.fastboot)
 

@@ -72,7 +72,11 @@
         "recovery_button": { "type": "string" },
         "reset_button": { "type": "string" },
         "stage": { "type": "array", "items": { "type": "string" } },
-        "flash": { "type": "object", "additionalProperties": { "type": "string" } },
+        "flash": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "null"] },
+          "description": "Partition name to image file, in flash order. null skips a partition (a variant dropping one of the base board's)."
+        },
         "press_time": { "type": "number" },
         "power_on_delay": { "type": "number" },
         "continue_delay": { "type": "number" },

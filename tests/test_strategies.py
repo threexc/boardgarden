@@ -170,7 +170,7 @@ def fastboot_strategy():
             "recovery_button": "fdl",
             "reset_button": "rst",
             "stage": ["FSBL.bin", "u-boot.itb"],
-            "flash": {"gpt": "parts.json", "rootfs": "rootfs.ext4"},
+            "flash": {"gpt": "parts.json", "esos": None, "rootfs": "rootfs.ext4"},
             "press_time": 0,
             "power_on_delay": 0,
             "continue_delay": 0,
