@@ -47,6 +47,29 @@ def test_machine_index_has_a_row_per_variant(tmp_path):
     assert row["client"] == "env-mainline.yaml"
 
 
+def test_machine_index_puts_default_variant_first(tmp_path):
+    board_dir = tmp_path / "my-board"
+    board_dir.mkdir()
+    board_yaml = (
+        "name: my-board\n"
+        "yocto_machine: my-machine\n"
+        "strategy: qemu\n"
+        "variants:\n"
+        "  other:\n"
+        "    strategy: qemu\n"
+        "  fit:\n"
+        "    default: true\n"
+    )
+    (board_dir / "board.yaml").write_text(board_yaml)
+
+    rows = [line.split("\t")[2] for line in render_index([board_dir]).splitlines()[1:]]
+    assert rows == ["fit", "-", "other"]
+
+    (board_dir / "board.yaml").write_text(board_yaml + "  other2:\n    default: true\n")
+    with pytest.raises(ValueError, match="more than one default"):
+        render_index([board_dir])
+
+
 def test_render_unknown_strategy_raises(tmp_path):
     board_dir = tmp_path / "mystery-board"
     board_dir.mkdir()

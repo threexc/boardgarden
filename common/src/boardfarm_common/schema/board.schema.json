@@ -14,6 +14,10 @@
     "image_source": { "type": "string" },
     "yocto_machine": { "type": "string" },
     "exclude_from_nightly": { "type": "boolean" },
+    "default": {
+      "type": "boolean",
+      "description": "Set in a variant: CI boots this variant, not the base board, for its yocto_machine unless a workflow's boot_method says otherwise."
+    },
     "inherits": {
       "type": "array",
       "items": { "type": "string" },

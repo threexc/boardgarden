@@ -176,6 +176,12 @@ CI reserves a variant's place by name (a place carries only one `machine` tag)
 and runs the tests with `client-<variant>.yaml`. The exporter config must
 include the resources every variant needs.
 
+When several rows share a Yocto MACHINE, CI boots the first one in
+`machines.tsv` unless a workflow's `boot_method` input picks another. That's
+the base board unless a variant for that MACHINE sets `default: true`, which
+moves it ahead (one per MACHINE per board). To change a board's default boot
+method, move `default: true` and re-run `boardfarm-render`.
+
 ## 5. Validate
 
 ```

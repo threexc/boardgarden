@@ -72,8 +72,14 @@ def render_index(board_dirs: list[Path]) -> str:
     """Return the tab-separated MACHINE index: one row per board and variant."""
     lines = ["\t".join(INDEX_COLUMNS)]
     for board_dir in board_dirs:
-        for variant in [None, *board_variants(board_dir)]:
-            m = load_board(board_dir, variant)
+        manifests = [(v, load_board(board_dir, v)) for v in [None, *board_variants(board_dir)]]
+        # CI boots a machine's first row unless asked for a boot_method, so a
+        # variant marked `default: true` goes ahead of the board's other rows.
+        defaults = [m.get("yocto_machine") for v, m in manifests if v and m.get("default")]
+        if len(defaults) != len(set(defaults)):
+            raise ValueError(f"{board_dir}: more than one default variant for a yocto_machine")
+        manifests.sort(key=lambda vm: not (vm[0] and vm[1].get("default")))
+        for variant, m in manifests:
             tftp = m.get("tftp", {})
             row = {
                 "machine": m.get("yocto_machine"),
