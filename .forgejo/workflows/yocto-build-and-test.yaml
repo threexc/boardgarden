@@ -58,6 +58,7 @@ on:
           - fastboot
           - tftp
           - sdmux
+          - ymodem
 
 env:
   TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}

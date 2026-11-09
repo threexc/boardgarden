@@ -40,7 +40,7 @@ inputs:
     default: ''
   boot_method:
     description: >
-      Boot strategy to test with (fastboot, tftp, sdmux), for boards with
+      Boot strategy to test with (fastboot, tftp, sdmux, ymodem), for boards with
       more than one. Ignored, with a notice, if no board for the machine matches.
     required: false
     default: ''
@@ -120,7 +120,7 @@ runs:
       run: |
         set -euo pipefail
         # Any board sharing this machine may be the one flashed over fastboot.
-        FASTBOOT=$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info strategy,board,image_dir "$RISCV_MACHINE" | awk -F'\t' '$1 == "fastboot"' | sed -n 1p)
+        FASTBOOT=$("$GITHUB_WORKSPACE"/.forgejo/scripts/machine-info strategy,board,image_dir "$RISCV_MACHINE" | awk -F'\t' '$1 == "fastboot" || $1 == "ymodem"' | sed -n 1p)
         [ -n "${FASTBOOT}" ] || exit 0
         IFS=$'\t' read -r _ FASTBOOT_BOARD IMAGE_DIR <<< "${FASTBOOT}"
         # The TFTP subdir comes from the first board for this machine, as in

@@ -137,7 +137,8 @@ runs:
         DEPLOY_WIC="false"
         grep -qx sdmux <<< "$STRATEGIES" && DEPLOY_WIC="true"
         DEPLOY_FASTBOOT="false"
-        grep -qx fastboot <<< "$STRATEGIES" && DEPLOY_FASTBOOT="true"
+        # ymodem boards stage a loader from the same fastboot images.
+        grep -qxE 'fastboot|ymodem' <<< "$STRATEGIES" && DEPLOY_FASTBOOT="true"
         # TFTP subdir is a board.yaml field, not necessarily the board dir name
         # (a board dir can be renamed - e.g. for a RAM-variant suffix - while
         # still sharing the same on-server TFTP subdir as other variants).
