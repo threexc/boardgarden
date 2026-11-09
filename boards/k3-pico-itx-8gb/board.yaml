@@ -137,8 +137,10 @@ variants:
       subdir: k3-pico-itx-mainline
       kernel: fitImage
     uboot:
-      # Mainline U-Boot: bootdelay 2, any key stops it.
-      autoboot: 'Hit any key to stop autoboot'
+      # Mainline U-Boot: bootdelay 2, any key stops it. It redraws the whole
+      # line each second, ": 0" included once stopped, so only match a count
+      # still running: a second interrupt would land at the prompt.
+      autoboot: 'Hit any key to stop autoboot: +[1-9]'
       tftp_cmd: bootm $kernel_addr_r
     shell:
       prompt: '~ #\s*'
