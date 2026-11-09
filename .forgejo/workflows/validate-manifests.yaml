@@ -2,21 +2,16 @@ on:
   push:
     paths:
       - 'boards/**/board.yaml'
+      - 'boards/**/client*.yaml'
+      - 'boards/**/env*.yaml'
       - 'boards/machines.tsv'
       - 'boards/families/**'
-      - 'common/src/boardfarm_common/schema/**'
-      - 'common/src/boardfarm_common/templates/**'
-      - 'common/src/boardfarm_common/validate.py'
-      - 'common/src/boardfarm_common/render.py'
-      - 'common/src/boardfarm_common/loader.py'
-      - 'common/src/boardfarm_common/manifest.py'
-      - 'common/pyproject.toml'
       - 'pyproject.toml'
   pull_request:
   workflow_dispatch:
 
 jobs:
-  validate-boardfarm-manifests:
+  validate-board-manifests:
     runs-on: light-maintenance
     container:
       image: ghcr.io/astral-sh/uv:python3.12-bookworm
@@ -29,12 +24,12 @@ jobs:
           git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           git fetch --depth=1 origin "${GITHUB_SHA}"
           git checkout -q FETCH_HEAD
-      - name: sync uv workspace
+      - name: sync uv environment
         working-directory: repo
         run: uv sync
       - name: validate all board.yaml
         working-directory: repo
-        run: uv run boardfarm-validate
+        run: uv run boardkit-validate
       - name: check rendered client.yaml is in sync with manifests
         working-directory: repo
-        run: uv run boardfarm-render --check
+        run: uv run boardkit-render --check

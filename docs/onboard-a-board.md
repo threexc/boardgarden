@@ -21,7 +21,8 @@ at the end of this doc.
 `env.yaml` are generated from it (see step 4).
 
 Minimum fields depend on the family — the JSON Schema
-(`common/src/boardfarm_common/schema/board.schema.json`) enforces
+(`schema/board.schema.json` in
+[labgrid-boardkit](https://github.com/threexc/labgrid-boardkit)) enforces
 this in CI.
 
 ### `tftp` example
@@ -110,8 +111,8 @@ import attr
 
 from labgrid.factory import target_factory
 
-from boardfarm_common.manifest import load_board
-from boardfarm_common.strategies import TftpBootStrategy
+from labgrid_boardkit.manifest import load_board
+from labgrid_boardkit.strategies import TftpBootStrategy
 
 
 @target_factory.reg_driver
@@ -130,15 +131,15 @@ for other families.
 Do not hand-write `client.yaml`. Generate it from the manifest:
 
 ```
-uv run boardfarm-render boards/my-board       # writes boards/my-board/client.yaml
+uv run boardkit-render boards/my-board       # writes boards/my-board/client.yaml
 ```
 
-CI runs `boardfarm-render --check` on every push. If someone edits
+CI runs `boardkit-render --check` on every push. If someone edits
 `client.yaml` by hand, CI fails. Change `board.yaml` (or the template) and
 re-render.
 
-Available templates live at
-`common/src/boardfarm_common/templates/client-<family>.yaml.j2`.
+The templates live in labgrid-boardkit, at
+`src/labgrid_boardkit/templates/client-<family>.yaml.j2`.
 Extend them there — not in per-board files.
 
 Rendering also refreshes `boards/machines.tsv`, a flat index of every board's
@@ -180,13 +181,13 @@ When several rows share a Yocto MACHINE, CI boots the first one in
 `machines.tsv` unless a workflow's `boot_method` input picks another. That's
 the base board unless a variant for that MACHINE sets `default: true`, which
 moves it ahead (one per MACHINE per board). To change a board's default boot
-method, move `default: true` and re-run `boardfarm-render`.
+method, move `default: true` and re-run `boardkit-render`.
 
 ## 5. Validate
 
 ```
-uv run boardfarm-validate boards/my-board     # single board
-uv run boardfarm-validate              # all boards
+uv run boardkit-validate boards/my-board     # single board
+uv run boardkit-validate              # all boards
 ```
 
 Errors point at the schema rule that failed. Fix the manifest, not the
@@ -195,15 +196,15 @@ schema (unless a genuinely new field is being introduced).
 ## 6. Tests
 
 No per-board test code is needed for the standard smoke tests. The shared
-suite in `common/src/boardfarm_common/tests/` (`test_sd.py`, `test_tftp.py`,
+suite in labgrid-boardkit's `labgrid_boardkit.tests` package (`test_sd.py`, `test_tftp.py`,
 `test_fastboot.py`) runs against every board, and each test is skipped
 unless the board's strategy matches it (see the `sd` / `tftp` / `fastboot`
-fixtures in `boardfarm_common/fixtures.py`).
+fixtures in `labgrid_boardkit/fixtures.py`).
 
 Run it locally against real hardware:
 
 ```
-uv run pytest -vvv --lg-env boards/my-board/client.yaml common/src/boardfarm_common/tests
+uv run pytest -vvv --lg-env boards/my-board/client.yaml --pyargs labgrid_boardkit.tests
 ```
 
 For board-specific tests, add a `boards/my-board/pytest/` directory. CI
@@ -239,7 +240,7 @@ the PR.
 
 ```
 uv run labgrid-client -p tg-my-board acquire
-uv run pytest -vvv --lg-env boards/my-board/client.yaml common/src/boardfarm_common/tests
+uv run pytest -vvv --lg-env boards/my-board/client.yaml --pyargs labgrid_boardkit.tests
 uv run labgrid-client -p tg-my-board release
 ```
 
@@ -247,21 +248,23 @@ uv run labgrid-client -p tg-my-board release
 
 ## Adding a strategy family
 
-Only needed if none of `tftp` / `sdmux` / `qemu` fit.
+Only needed if none of `tftp` / `sdmux` / `fastboot` / `qemu` fit. Families
+live in [labgrid-boardkit](https://github.com/threexc/labgrid-boardkit), so
+these steps are changes to that repository; paths below are relative to it.
 
-1. `common/src/boardfarm_common/strategies/<family>.py` — new class
+1. `src/labgrid_boardkit/strategies/<family>.py` — new class
    plus its own `Status` enum, subclass `BoardStrategy`.
-2. Re-export from `common/src/boardfarm_common/strategies/__init__.py`.
-3. Register the family in `common/pyproject.toml`:
+2. Re-export from `src/labgrid_boardkit/strategies/__init__.py`.
+3. Register the family in `pyproject.toml`:
    ```toml
-   [project.entry-points."boardfarm.strategies"]
-   <family> = "boardfarm_common.strategies.<family>:<ClassName>"
+   [project.entry-points."labgrid_boardkit.strategies"]
+   <family> = "labgrid_boardkit.strategies.<family>:<ClassName>"
    ```
-4. Extend `schema/board.schema.json`:
+4. Extend `src/labgrid_boardkit/schema/board.schema.json`:
    - add `<family>` to the top-level `strategy` enum
    - add an `allOf/if-then` block declaring required fields for the family
-5. Add `templates/client-<family>.yaml.j2`.
-6. `docs/onboard-a-board.md` — extend the family table.
+5. Add `src/labgrid_boardkit/templates/client-<family>.yaml.j2`.
+6. Back in boardgarden, extend the family table in `docs/onboard-a-board.md`.
 
-External packages register in the same entry-point group; no upstream edit
-required to add a family from outside this repo.
+Another package can also register a family in the same entry-point group,
+without changing labgrid-boardkit.

@@ -1,10 +1,14 @@
 [project]
-name = "boardfarm"
+name = "boardgarden"
 version = "0.1.0"
 description = "tgamblin's board farm test suites"
 requires-python = ">=3.11"
 dependencies = [
-    "boardfarm-common",
+    "labgrid-boardkit",
+    # Used by the CI board runs, not by labgrid-boardkit itself.
+    "ansicolors",
+    "pytest-html",
+    "usbsdmux",
 ]
 
 [build-system]
@@ -14,19 +18,13 @@ build-backend = "uv_build"
 [tool.uv]
 package = false
 
-[tool.uv.workspace]
-members = ["common"]
-
 [tool.uv.sources]
-boardfarm-common = { workspace = true }
+# Pinned until labgrid-boardkit is on PyPI. To work on both at once, point it
+# at a local clone: { path = "<clone>", editable = true }.
+labgrid-boardkit = { git = "https://github.com/threexc/labgrid-boardkit", rev = "ef97a3a19f4c4c65e4c8f9b8062d3d4af33f9040" }
 
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-    "common/src/boardfarm_common/tests",
-    "common/src/boardfarm_common/ptest",
-]
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
 

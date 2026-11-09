@@ -44,4 +44,4 @@ targets:
       ExternalQemuStrategy: {}
 
 imports:
-  - boardfarm_common.strategies.qemu
+  - labgrid_boardkit.strategies.qemu

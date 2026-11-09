@@ -1,7 +1,7 @@
 name: 'Discover machines'
 description: >
   Emit a JSON array of Yocto MACHINE names from boards/machines.tsv (the
-  index boardfarm-render builds from boards/*/board.yaml, one row per board
+  index boardkit-render builds from boards/*/board.yaml, one row per board
   and per variant). Excludes qemu-strategy rows, any board dir lacking a
   strategy.py file (config-only entries with no boot logic), and any row
   whose manifest sets `exclude_from_nightly: true`. Uses only awk + sort (no

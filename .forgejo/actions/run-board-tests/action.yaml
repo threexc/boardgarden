@@ -189,7 +189,7 @@ runs:
         echo "resolved board: ${BOARD} (place: ${ALLOCATED_PLACE}, env: ${CLIENT})"
         uv run labgrid-client -p + lock
         uv run labgrid-client -p + show
-        TESTS="common/src/boardfarm_common/tests"
+        TESTS="--pyargs labgrid_boardkit.tests"
         [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
         EXIT_CODE=0
         BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/$CLIENT" $TESTS || EXIT_CODE=$?

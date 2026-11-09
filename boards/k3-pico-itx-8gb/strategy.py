@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import attr
-from boardfarm_common.manifest import load_board
-from boardfarm_common.strategies import FastbootFlashStrategy, TftpBootStrategy
 from labgrid.factory import target_factory
+from labgrid_boardkit.manifest import load_board
+from labgrid_boardkit.strategies import FastbootFlashStrategy, TftpBootStrategy
 
 
 @target_factory.reg_driver

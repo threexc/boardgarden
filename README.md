@@ -98,12 +98,14 @@ migration checklist for spinning boardgarden up on a fresh Forgejo instance.
 
 ### boards
 
-The repository is a [uv](https://docs.astral.sh/uv/) workspace: the root
-`pyproject.toml` pulls in the top-level `common` package (`boardfarm-common`)
-as a workspace member. This allows re-use of various Labgrid strategy
-functions and pytest fixtures across multiple boards, since the fundamental
-actions used (such as setting a TFTP server's IP address on the U-Boot prompt)
-are more or less the same.
+The Labgrid strategies, pytest fixtures, manifest schema and templates shared
+by every board come from
+[labgrid-boardkit](https://github.com/threexc/labgrid-boardkit), a separate
+package that `pyproject.toml` depends on. The fundamental actions used (such
+as setting a TFTP server's IP address on the U-Boot prompt) are more or less
+the same across boards, so they live there rather than here. To work on both
+at once, point the `labgrid-boardkit` source in `pyproject.toml` at a local
+clone with `{ path = "<clone>", editable = true }`.
 
 Assuming you have `uv` installed, you can set up the Python virtual environment
 with all of the necessary modules by doing `uv sync`.
@@ -115,8 +117,8 @@ Labgrid `client.yaml` (plus `client-<variant>.yaml` for any `variants`) and the
 `boards/machines.tsv` index used by the workflows are generated from it, so
 don't edit those by hand:
 
-- `uv run boardfarm-validate` checks manifests against the JSON schema
-- `uv run boardfarm-render` regenerates the outputs (`--check` fails if
+- `uv run boardkit-validate` checks manifests against the JSON schema
+- `uv run boardkit-render` regenerates the outputs (`--check` fails if
   anything is out of date, as CI does)
 
 See [docs/onboard-a-board.md](docs/onboard-a-board.md) for adding a new board

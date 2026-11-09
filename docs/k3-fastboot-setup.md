@@ -155,7 +155,7 @@ The exporter unit runs `labgrid-exporter` from `boards/.venv`. If you use a diff
 5. If you have more than one board, also rename the place (`tg-k3-pitx-8gb`) in `exporter.yaml` and `remote_place` in [board.yaml](../boards/k3-pico-itx-8gb/board.yaml). Then regenerate the client configurations:
 
    ```bash
-   uv run boardfarm-render boards/k3-pico-itx-8gb
+   uv run boardkit-render boards/k3-pico-itx-8gb
    ```
 
 ### 2.5 Coordinator and Exporter Services
@@ -216,7 +216,7 @@ The match pattern has the form `<exporter name>/<resource group>/<class>`. The e
 
    ```bash
    uv run labgrid-client -p tg-k3-pitx-8gb acquire
-   uv run pytest -vvv --lg-env boards/k3-pico-itx-8gb/client.yaml common/src/boardfarm_common/tests
+   uv run pytest -vvv --lg-env boards/k3-pico-itx-8gb/client.yaml --pyargs labgrid_boardkit.tests
    uv run labgrid-client -p tg-k3-pitx-8gb release
    ```
 

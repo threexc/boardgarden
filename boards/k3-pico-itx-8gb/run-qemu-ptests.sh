@@ -60,7 +60,7 @@ for pkg in "${order[@]}"; do
       --lg-env boards/k3-pico-itx-8gb/qemu-ptest.yaml \
       --lg-log "$out" \
       --junitxml "$out/junit.xml" \
-      common/src/boardfarm_common/ptest 2>&1 | tee "$out/pytest.log" || failed=1
+      --pyargs labgrid_boardkit.ptest 2>&1 | tee "$out/pytest.log" || failed=1
     kill "$tail_pid" 2>/dev/null
     # Belt and braces: never leave a guest running into the next run.
     ssh ptest-board 'pkill -f qemu-system-riscv64' || true

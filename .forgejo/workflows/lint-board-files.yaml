@@ -2,9 +2,6 @@ on:
   push:
     paths:
       - 'boards/**/*.py'
-      - 'common/**/*.py'
-      - 'tests/**/*.py'
-      - 'common/pyproject.toml'
       - 'pyproject.toml'
       - '.pre-commit-config.yaml'
   pull_request:
