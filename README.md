@@ -1,6 +1,13 @@
 # boardgarden
 
-tgamblin's boardfarm repo, built primarily for testing RISC-V development boards (plus QEMU targets) with [Labgrid](https://github.com/labgrid-project/labgrid) and [Forgejo](https://forgejo.org/) Actions
+tgamblin's boardfarm repo, built primarily for testing RISC-V development boards
+(plus QEMU targets) with [Labgrid](https://github.com/labgrid-project/labgrid)
+and [Forgejo](https://forgejo.org/) Actions.
+
+This repository relies on the
+[labgrid-boardkit](https://pypi.org/project/labgrid-boardkit/) Python module,
+which was originally implemented as part of boardgarden to support generic test
+strategy/suite re-use.
 
 ## Table of Contents
 
