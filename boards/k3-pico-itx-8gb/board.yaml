@@ -141,9 +141,12 @@ variants:
       # line each second, ": 0" included once stopped, so only match a count
       # still running: a second interrupt would land at the prompt.
       autoboot: 'Hit any key to stop autoboot: +[1-9]'
-      # PHY autonegotiation alone takes ~3 s of dhcp's time here, and 10 s
-      # (the default) wasn't enough to see a lease.
-      dhcp_timeout: 30
+      # Longer than U-Boot's own dhcp limit (~3 s autonegotiation plus 28 s),
+      # so a failure shows U-Boot's message rather than a labgrid timeout.
+      dhcp_timeout: 40
+      # Mainline U-Boot can't read the MAC from the EEPROM yet and picks a
+      # random one, which the lab's DHCP server doesn't answer.
+      ethaddr: '50:0A:52:0B:E4:DA'
       tftp_cmd: bootm $kernel_addr_r
     shell:
       prompt: '~ #\s*'
