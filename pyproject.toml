@@ -18,6 +18,12 @@ build-backend = "uv_build"
 [tool.uv]
 package = false
 
+[tool.uv.sources]
+# Pinned until the ymodem strategy family (labgrid-boardkit 0.2.0) is on PyPI.
+# To work on both at once, point it at a local clone:
+# { path = "<clone>", editable = true }.
+labgrid-boardkit = { git = "https://github.com/threexc/labgrid-boardkit", rev = "521878babfa2ac88985f6a2049275f99d8d3d6a1" }
+
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
 log_format = "%(asctime)s %(levelname)s %(message)s"
