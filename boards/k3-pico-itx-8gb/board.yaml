@@ -141,6 +141,9 @@ variants:
       # line each second, ": 0" included once stopped, so only match a count
       # still running: a second interrupt would land at the prompt.
       autoboot: 'Hit any key to stop autoboot: +[1-9]'
+      # PHY autonegotiation alone takes ~3 s of dhcp's time here, and 10 s
+      # (the default) wasn't enough to see a lease.
+      dhcp_timeout: 30
       tftp_cmd: bootm $kernel_addr_r
     shell:
       prompt: '~ #\s*'
