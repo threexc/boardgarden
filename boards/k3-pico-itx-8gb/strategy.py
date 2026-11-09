@@ -3,7 +3,11 @@ from pathlib import Path
 import attr
 from labgrid.factory import target_factory
 from labgrid_boardkit.manifest import load_board
-from labgrid_boardkit.strategies import FastbootFlashStrategy, TftpBootStrategy
+from labgrid_boardkit.strategies import (
+    FastbootFlashStrategy,
+    TftpBootStrategy,
+    YmodemBootStrategy,
+)
 
 
 @target_factory.reg_driver
@@ -36,3 +40,11 @@ class K3PicoItxMainlineFitBootStrategy(TftpBootStrategy):
     """Boot strategy for K3 Pico-ITX, TFTP-booting the mainline BSP as a FIT image."""
 
     manifest = load_board(Path(__file__).parent, variant="mainline-fit")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class K3PicoItxMainlineYmodemBootStrategy(YmodemBootStrategy):
+    """Boot strategy for K3 Pico-ITX with the mainline BSP's reduced SPL, U-Boot over YMODEM and a TFTP FIT."""
+
+    manifest = load_board(Path(__file__).parent, variant="mainline-ymodem")
