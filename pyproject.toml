@@ -18,11 +18,6 @@ build-backend = "uv_build"
 [tool.uv]
 package = false
 
-[tool.uv.sources]
-# Pinned until labgrid-boardkit is on PyPI. To work on both at once, point it
-# at a local clone: { path = "<clone>", editable = true }.
-labgrid-boardkit = { git = "https://github.com/threexc/labgrid-boardkit", rev = "ef97a3a19f4c4c65e4c8f9b8062d3d4af33f9040" }
-
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
 log_format = "%(asctime)s %(levelname)s %(message)s"
