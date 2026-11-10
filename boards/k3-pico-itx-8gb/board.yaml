@@ -99,6 +99,7 @@ variants:
   # whatever boot firmware the last fastboot flash left on SPI-NOR.
   mainline-fit:
     yocto_machine: k3-pico-itx-mainline
+    default: true
     strategy: tftp
     strategy_class: K3PicoItxMainlineFitBootStrategy
     boot:
@@ -121,7 +122,6 @@ variants:
   # The default for k3-pico-itx-mainline.
   mainline-ymodem:
     yocto_machine: k3-pico-itx-mainline
-    default: true
     strategy: ymodem
     strategy_class: K3PicoItxMainlineYmodemBootStrategy
     fastboot:
