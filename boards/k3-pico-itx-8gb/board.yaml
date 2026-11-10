@@ -135,7 +135,7 @@ variants:
       image: u-boot.itb
     boot:
       method: tftp
-      bootargs: console=ttyS0,115200 shell
+      bootargs: earlycon=sbi console=ttyS0,115200 shell
     tftp:
       subdir: k3-pico-itx-mainline
       kernel: fitImage
