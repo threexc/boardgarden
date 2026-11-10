@@ -116,6 +116,7 @@ runs:
           "${SRC}"/esos.itb \
           "${SRC}"/fw_dynamic.itb \
           "${SRC}"/bootfs.ext4 \
+          "${SRC}"/u-boot-spl-mkimage-uart-spi.bin \
           "${SRC}"/u-boot-spl-mkimage-uart-nospi.bin \
           "${DST}/"
         rsync -avzL -e "${RSH}" \
