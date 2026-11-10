@@ -22,7 +22,7 @@ package = false
 # Pinned until the ymodem strategy family (labgrid-boardkit 0.2.0) is on PyPI.
 # To work on both at once, point it at a local clone:
 # { path = "<clone>", editable = true }.
-labgrid-boardkit = { git = "https://github.com/threexc/labgrid-boardkit", rev = "b5cec6e1b0aab792f3ac42d197928fa264ca1e37" }
+labgrid-boardkit = { git = "https://github.com/threexc/labgrid-boardkit", rev = "ab2657887f1d802e3b001a0baca2130a59d12bac" }
 
 # Tell pytest where to look and set a sensible rootdir.
 [tool.pytest.ini_options]
