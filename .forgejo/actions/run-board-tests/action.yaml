@@ -44,6 +44,12 @@ inputs:
       more than one. Ignored, with a notice, if no board for the machine matches.
     required: false
     default: ''
+  bootargs:
+    description: >
+      Kernel command line to boot with instead of the board's own, for boards
+      whose U-Boot sets bootargs (tftp and ymodem). Empty keeps the board's.
+    required: false
+    default: ''
   reports_root:
     description: 'Subdirectory prefix under /testresults/ on the report server'
     required: false
@@ -142,6 +148,7 @@ runs:
         VERSION: ${{ inputs.kernel_version }}
         BOARD_FILTER: ${{ inputs.board }}
         BOOT_METHOD: ${{ inputs.boot_method }}
+        BOARDKIT_BOOTARGS: ${{ inputs.bootargs }}
       run: |
         uv sync
         # Rows for this machine (one per board and variant), narrowed by the

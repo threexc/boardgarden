@@ -59,6 +59,11 @@ on:
           - tftp
           - sdmux
           - ymodem
+      bootargs:
+        description: 'Kernel command line overriding the board''s, for tftp/ymodem boots (blank for the board''s own)'
+        required: false
+        default: ''
+        type: string
 
 env:
   TFTP_SERVER: ${{ vars.TFTP_SERVER_HOST }}
@@ -215,6 +220,7 @@ jobs:
           kernel_version: ${{ fromJSON(needs.collect_built_machines.outputs.versions)[matrix.machine] }}
           board: ${{ inputs.board || '' }}
           boot_method: ${{ inputs.boot_method != 'default' && inputs.boot_method || '' }}
+          bootargs: ${{ inputs.bootargs || '' }}
           lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
           tftp_server_ssh_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
           report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
