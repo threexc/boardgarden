@@ -132,7 +132,7 @@ variants:
       image: u-boot.itb
     boot:
       method: tftp
-      bootargs: earlycon=sbi console=ttyS0,115200 usbcore.nousb rdinit=/bin/sh shell
+      bootargs: earlycon=sbi console=ttyS0,115200 usbcore.nousb rdinit=/bin/sh
     tftp:
       subdir: k3-pico-itx-mainline
       kernel: fitImage
