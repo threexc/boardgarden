@@ -1,0 +1,14 @@
+# Zhihe A210 fastboot and adb access for labgrid.
+#
+# The boot ROM's download mode enumerates as 37f2:d00d, and the flashing
+# U-Boot it loads comes back on the same port under another ID. labgrid's
+# AndroidUSBFastboot matches one vendor/product pair unless the device has
+# adb_user=yes, so flag the boot ROM by vendor and every other stage by its
+# fastboot interface (ff/42/03), and let exporter.yaml pin the port with
+# ID_PATH. The fastboot binary runs as the exporter user, so it also needs
+# access to the device node.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="37f2", ENV{adb_user}="yes", MODE="0660", GROUP="plugdev"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:ff4203:*", ENV{adb_user}="yes", MODE="0660", GROUP="plugdev"
+
+# Android itself enumerates as Google (18d1:4ee7): adb access.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="18d1", MODE="0660", GROUP="plugdev"

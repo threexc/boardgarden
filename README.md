@@ -193,6 +193,8 @@ enabled.
   manifest to CI
 - [k3-fastboot-setup.md](docs/k3-fastboot-setup.md): hardware and exporter
   setup for fastboot-flashing the K3 Pico-ITX
+- [a210-fastboot-setup.md](docs/a210-fastboot-setup.md): hardware and exporter
+  setup for fastboot-flashing the Alibaba A210
 - [runners.md](docs/runners.md): Forgejo runners, secrets, and variables
 - [bom.md](docs/bom.md): machines and services in the farm (generated)
 
