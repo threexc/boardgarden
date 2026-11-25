@@ -1,6 +1,6 @@
 name: ptest-kvm-compare
 
-# Builds testv-image-kvm-test (meta-testv: core-image-full-cmdline plus qemu
+# Builds testv-image-kvm-base (meta-testv: core-image-full-cmdline plus qemu
 # and room for a ptest image) with the testv distro for the k3-pico-itx-8gb,
 # then qemuriscv64 ptest images. Flashes the host image to the board over
 # fastboot, then boots each ptest image, in random order, under the board's
@@ -70,7 +70,7 @@ defaults:
 
 env:
   HOST_MACHINE: ${{ inputs.host_machine }}
-  HOST_IMAGE: testv-image-kvm-test
+  HOST_IMAGE: testv-image-kvm-base
 
 jobs:
   build-host:
@@ -214,7 +214,7 @@ jobs:
 
       # Same fastboot flash as the nightly's tests (K3PicoItxBootStrategy),
       # then the board's address from its serial console for ssh.
-      - name: flash and boot testv-image-kvm-test
+      - name: flash and boot testv-image-kvm-base
         run: |
           set -euo pipefail
           IMAGE_DIR=/home/labgrid/k3-pico-itx-fastboot

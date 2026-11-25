@@ -1,5 +1,5 @@
 # Labgrid env for booting a qemuriscv64 ptest image *on* this board, using
-# the qemu-system-riscv64 in its flashed testv-image-kvm-test (meta-testv),
+# the qemu-system-riscv64 in its flashed testv-image-kvm-base (meta-testv),
 # over SSH. Used by the ptest-kvm-compare workflow; the board itself must
 # already be up (no power/U-Boot handling here).
 #
