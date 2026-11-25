@@ -50,6 +50,12 @@ inputs:
       whose U-Boot sets bootargs (tftp and ymodem). Empty keeps the board's.
     required: false
     default: ''
+  image:
+    description: >
+      Yocto image under test. testv-profile-test also runs
+      board-tests/test_riscv_profile.py (riscv-ext-probe).
+    required: false
+    default: ''
   reports_root:
     description: 'Subdirectory prefix under /testresults/ on the report server'
     required: false
@@ -149,6 +155,7 @@ runs:
         BOARD_FILTER: ${{ inputs.board }}
         BOOT_METHOD: ${{ inputs.boot_method }}
         BOARDKIT_BOOTARGS: ${{ inputs.bootargs }}
+        IMAGE: ${{ inputs.image }}
       run: |
         uv sync
         # Rows for this machine (one per board and variant), narrowed by the
@@ -198,6 +205,7 @@ runs:
         uv run labgrid-client -p + show
         TESTS="--pyargs labgrid_boardkit.tests"
         [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
+        [ "$IMAGE" = testv-profile-test ] && TESTS="$TESTS board-tests/test_riscv_profile.py"
         EXIT_CODE=0
         BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/$CLIENT" $TESTS || EXIT_CODE=$?
         uv run labgrid-client -p + -c "boards/$BOARD/$CLIENT" pw off

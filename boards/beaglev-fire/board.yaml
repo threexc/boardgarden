@@ -5,6 +5,8 @@ strategy: tftp
 description: BeagleV-Fire (Microchip PolarFire SoC) RISC-V SBC. Yocto initramfs root
 remote_place: tg-beaglev-fire
 image_source: yocto
+# RISC-V profile the SoC claims; checked by board-tests/test_riscv_profile.py
+riscv_profile: riscv64gc
 arch: riscv64
 
 boot:

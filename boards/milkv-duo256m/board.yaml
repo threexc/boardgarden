@@ -5,6 +5,8 @@ arch: riscv64
 description: Milk-V Duo (256M model). Boots from microSD via USB SD-Mux
 remote_place: tg-milkv-duo256m
 image_source: yocto
+# RISC-V profile the SoC claims; checked by board-tests/test_riscv_profile.py
+riscv_profile: riscv64gc
 
 boot:
   method: sdmux

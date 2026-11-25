@@ -5,6 +5,8 @@ arch: riscv64
 description: Muse Pi Pro (SpacemiT K1) RISC-V SBC. Boots from microSD via USB SD-Mux
 remote_place: tg-muse-pi-pro
 image_source: yocto
+# RISC-V profile the SoC claims; checked by board-tests/test_riscv_profile.py
+riscv_profile: rva22u64
 inherits:
   - ../families/spacemit-k1/defaults.yaml
 
