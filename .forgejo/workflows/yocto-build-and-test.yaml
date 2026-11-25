@@ -33,6 +33,7 @@ on:
           - core-image-minimal
           - core-image-full-cmdline
           - core-image-ptest-python3
+          - testv-profile-test
       initramfs_image:
         description: 'Initramfs image to build for boards using kernel+dtb+initramfs boot'
         required: true
