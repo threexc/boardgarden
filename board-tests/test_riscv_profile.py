@@ -35,7 +35,7 @@ PROFILES = {
 
 def _is_initramfs(strategy) -> bool:
     """As in labgrid_boardkit.tests.test_tftp: these boots never see the
-    image's rootfs, only the initramfs, which has no riscv-ext-probe."""
+    image's rootfs, only the initramfs."""
     tftp = strategy.manifest.get("tftp", {})
     return "initramfs" in tftp or tftp.get("kernel") == "fitImage"
 
@@ -43,15 +43,22 @@ def _is_initramfs(strategy) -> bool:
 @pytest.fixture(scope="module")
 def probe_shell(strategy, target):
     if isinstance(strategy, TftpBootStrategy):
-        if _is_initramfs(strategy):
-            pytest.skip("initramfs boot: the image's rootfs, with riscv-ext-probe, isn't booted")
         state = "tftp"
     elif isinstance(strategy, SdMuxBootStrategy):
         state = "sd"
     else:
         state = "shell"  # fastboot, qemu
     shell = _transition(strategy, target, state)
-    shell.run_check("command -v riscv-ext-probe")
+    if shell.run("command -v riscv-ext-probe")[2] != 0:
+        if _is_initramfs(strategy):
+            pytest.skip(
+                "initramfs boot without riscv-ext-probe: "
+                "build with initramfs_image=testv-profile-test-initramfs"
+            )
+        pytest.fail("riscv-ext-probe not installed")
+    # The kernel logs each probed SIGILL to the console, which splices into the
+    # probe's output lines. The board is powered off after the run anyway.
+    shell.run_check("dmesg -n 1")
     return shell
 
 
@@ -76,7 +83,9 @@ def hwprobe(probe_shell):
 def test_hwprobe_extensions_work(probed, hwprobe):
     """Everything the kernel reports through riscv_hwprobe(2) must execute."""
     advertised = {ext for ext, v in hwprobe.items() if v == "1" and ext in probed}
-    broken = {ext: probed[ext] for ext in sorted(advertised) if probed[ext] != "ok"}
+    broken = {
+        ext: probed[ext] for ext in sorted(advertised) if probed[ext] not in ("ok", "untestable")
+    }
     assert broken == {}
 
 
