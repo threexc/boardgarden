@@ -120,6 +120,7 @@ jobs:
           local_conf: ${{ steps.config.outputs.local_conf }}
           source_override: ${{ inputs.bitbake_setup_override || 'none' }}
           overrides_dir: .forgejo/bitbake-configs
+          logs_dir: ${{ github.workspace }}/results/logs
       # boot_cmd uses $ramdisk_addr_r:$filesize (explicit size), which skips
       # legacy-uImage header auto-detection in U-Boot - it loads whatever's at
       # that address raw. So deploy the raw cpio.gz as-is; a
@@ -134,7 +135,8 @@ jobs:
         run: |
           IMAGE_DIR="${IMAGES_PATH}/${RISCV_MACHINE}"
           cp "${IMAGE_DIR}/${RISCV_INITRAMFS_IMAGE}-${RISCV_MACHINE}.cpio.gz" "${IMAGE_DIR}/uRamdisk"
-      - uses: ./.forgejo/actions/deploy-to-tftp
+      - id: deploy
+        uses: ./.forgejo/actions/deploy-to-tftp
         with:
           ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
           ssh_private_key: ${{ secrets.TFTP_SERVER_SSH_KEY }}
@@ -162,6 +164,26 @@ jobs:
         with:
           name: built-machine-${{ matrix.machine }}
           path: /tmp/build-ok
+      # One testcase per stage; a step that never ran (an earlier one
+      # failed) is recorded as skipped.
+      - name: record build results
+        if: ${{ always() }}
+        env:
+          RISCV_MACHINE: ${{ matrix.machine }}
+          CONFIG: ${{ steps.config.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          DEPLOY: ${{ steps.deploy.outcome }}
+        run: |
+          R=.forgejo/scripts/results
+          X=results/build.xml
+          $R record $X "build-${RISCV_MACHINE}" config "${CONFIG:-skipped}"
+          $R record $X "build-${RISCV_MACHINE}" bitbake "${BUILD:-skipped}" \
+            --log "results/logs/cooker/${RISCV_MACHINE}/console-latest.log" --match '^ERROR:'
+          $R record $X "build-${RISCV_MACHINE}" deploy "${DEPLOY:-skipped}"
+      - if: ${{ always() }}
+        uses: ./.forgejo/actions/collect-results
+        with:
+          name: build-${{ matrix.machine }}
 
   collect_built_machines:
     needs: [discover, build]
@@ -230,3 +252,23 @@ jobs:
           tftp_server: ${{ env.TFTP_SERVER }}
           tftp_user: ${{ env.TFTP_USER }}
           lg_coordinator: ${{ vars.LG_COORDINATOR_HOST }}
+      - if: ${{ always() }}
+        uses: ./.forgejo/actions/collect-results
+        with:
+          name: test-${{ matrix.machine }}
+
+  report:
+    needs: [build, test]
+    if: ${{ !cancelled() }}
+    runs-on: light-maintenance
+    container:
+      image: ${{ vars.BOARDGARDEN_HOST }}/${{ vars.BOARDGARDEN_OWNER }}/lg-operator:v1
+      options: --add-host ${{ vars.TFTP_SERVER_HOST }}:${{ vars.TFTP_SERVER_IP }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.forgejo/actions/report-results
+        with:
+          name: yocto-build-and-test ${{ inputs.image || 'core-image-minimal' }}
+          report_ssh_key: ${{ secrets.REPORT_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          tftp_server: ${{ env.TFTP_SERVER }}
