@@ -1,0 +1,87 @@
+name: 'Report results'
+description: >
+  Merge every results-* artifact (from collect-results) in a workflow run
+  into one summary.md, upload it together with the per-job .tar.xz archives
+  as artifact results-report, and, if report_ssh_key is given, rsync the same
+  to /testresults/<reports_root>/runs/<date>/<run id>/ on the report server.
+  Run it in a final job that needs all the others, with if: !cancelled().
+
+inputs:
+  name:
+    description: 'Heading for the summary, e.g. the workflow name'
+    required: true
+  report_ssh_key:
+    description: 'Private key for reporter@<tftp_server>; empty skips the report server'
+    required: false
+    default: ''
+  ssh_known_hosts:
+    description: 'known_hosts covering the report server'
+    required: false
+    default: ''
+  tftp_server:
+    description: 'Hostname of the report server'
+    required: false
+    default: ''
+  reports_root:
+    description: 'Subdirectory prefix under /testresults/ on the report server'
+    required: false
+    default: 'yocto/meta-riscv'
+
+runs:
+  using: composite
+  steps:
+    # Without a name, each artifact lands in its own artifacts/<name>/ subdir.
+    - uses: actions/download-artifact@v3
+      with:
+        path: ${{ runner.temp }}/artifacts
+
+    - name: merge results
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        OUT="$RUNNER_TEMP/report"
+        mkdir -p "$OUT/all"
+        for t in "$RUNNER_TEMP"/artifacts/results-*/*.tar.xz; do
+          [ -e "$t" ] || continue
+          n=$(basename "$t" .tar.xz)
+          mkdir -p "$OUT/all/$n"
+          tar -xJf "$t" -C "$OUT/all/$n"
+          cp "$t" "$OUT/"
+        done
+        {
+          echo "# ${NAME} (run ${RUN_ID})"
+          echo
+          "$GITHUB_WORKSPACE"/.forgejo/scripts/results summary "$OUT/all"
+        } > "$OUT/summary.md"
+        rm -rf "$OUT/all"
+        cat "$OUT/summary.md"
+        cat "$OUT/summary.md" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: results-report
+        path: ${{ runner.temp }}/report
+
+    - if: ${{ inputs.report_ssh_key != '' }}
+      uses: ./.forgejo/actions/setup-ssh
+      with:
+        ssh_private_key: ${{ inputs.report_ssh_key }}
+        ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
+        key_filename: id_rsa_report
+
+    - name: deploy to report server
+      if: ${{ inputs.report_ssh_key != '' }}
+      shell: bash
+      env:
+        TFTP_SERVER: ${{ inputs.tftp_server }}
+        REPORTS_ROOT: ${{ inputs.reports_root }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        REPORT_DIR="/testresults/${REPORTS_ROOT}/runs/$(date +%Y%m%d)/${RUN_ID}"
+        ssh -i ~/.ssh/id_rsa_report "reporter@${TFTP_SERVER}" "mkdir -p ${REPORT_DIR}"
+        rsync -av -e "ssh -i ~/.ssh/id_rsa_report" \
+          "$RUNNER_TEMP/report/" "reporter@${TFTP_SERVER}:${REPORT_DIR}/"

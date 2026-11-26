@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Record and summarize JUnit XML results, for any kind of job.
+
+JUnit XML is the common results format for every workflow: pytest writes it
+with --junitxml, and steps that aren't tests (a bitbake build, a kernel make)
+are recorded as one testcase each with `record`. `summary` turns any number
+of results directories into one Markdown report.
+
+  results record FILE SUITE CASE OUTCOME [--time SECS] [--log PATH] [--match RE]
+      Add a testcase to the JUnit file FILE (created if missing). OUTCOME is
+      pass/fail/skip/error or a step outcome (success/failure/skipped/
+      cancelled). For fail/error, the testcase's text is the lines of --log
+      matching --match, or its last 50 lines.
+
+  results summary DIR...
+      Print a Markdown summary of every JUnit file under each DIR.
+
+Standard library only: it runs in every builder and test container.
+"""
+
+import argparse
+import re
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+OUTCOMES = {
+    "pass": None, "success": None,
+    "fail": "failure", "failure": "failure",
+    "skip": "skipped", "skipped": "skipped",
+    "error": "error", "cancelled": "error",
+}
+TAIL = 50
+DETAIL_LINES = 40
+
+
+def log_excerpt(log, match):
+    try:
+        lines = Path(log).read_text(errors="replace").splitlines()
+    except OSError as e:
+        return f"(no log: {e})"
+    if match:
+        hits = [line for line in lines if re.search(match, line)]
+        if hits:
+            return "\n".join(hits)
+    return "\n".join(lines[-TAIL:])
+
+
+def record(a):
+    path = Path(a.file)
+    if path.exists():
+        root = ET.parse(path).getroot()
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        root = ET.Element("testsuites")
+    suite = next((s for s in root.iter("testsuite") if s.get("name") == a.suite), None)
+    if suite is None:
+        suite = ET.SubElement(root, "testsuite", name=a.suite)
+    case = ET.SubElement(suite, "testcase", classname=a.suite, name=a.case,
+                         time=str(a.time))
+    kind = OUTCOMES[a.outcome]
+    if kind:
+        text = log_excerpt(a.log, a.match) if a.log and kind != "skipped" else ""
+        first = next((line for line in text.splitlines() if line.strip()), a.outcome)
+        ET.SubElement(case, kind, message=first[:200]).text = text
+    cases = list(suite.iter("testcase"))
+    suite.set("tests", str(len(cases)))
+    suite.set("time", str(sum(float(c.get("time") or 0) for c in cases)))
+    for k in ("failure", "error", "skipped"):
+        suite.set(k + ("s" if k != "skipped" else ""),
+                  str(sum(1 for c in cases if c.find(k) is not None)))
+    ET.indent(root)
+    ET.ElementTree(root).write(path, encoding="unicode", xml_declaration=True)
+
+
+def status(case):
+    for kind in ("failure", "error", "skipped"):
+        el = case.find(kind)
+        if el is not None:
+            return kind, el
+    return "pass", None
+
+
+def summary(a):
+    rows, failures = [], []
+    total = {"pass": 0, "failure": 0, "error": 0, "skipped": 0}
+    for d in map(Path, a.dirs):
+        for f in sorted(d.rglob("*.xml")):
+            try:
+                root = ET.parse(f).getroot()
+            except ET.ParseError:
+                continue
+            if root.tag not in ("testsuites", "testsuite"):
+                continue
+            label = str(f.relative_to(d).with_suffix(""))
+            n = dict.fromkeys(total, 0)
+            secs = 0.0
+            for case in root.iter("testcase"):
+                kind, el = status(case)
+                n[kind] += 1
+                secs += float(case.get("time") or 0)
+                if kind in ("failure", "error"):
+                    failures.append((label, case, kind, el))
+            for k in total:
+                total[k] += n[k]
+            rows.append((label, n, secs))
+
+    ok = not (total["failure"] or total["error"])
+    print(f"**{'PASS' if ok else 'FAIL'}**: {total['pass']} passed, "
+          f"{total['failure']} failed, {total['error']} errors, "
+          f"{total['skipped']} skipped\n")
+    print("| results | pass | fail | error | skip | time (s) |")
+    print("|---|---|---|---|---|---|")
+    for label, n, secs in rows:
+        print(f"| {label} | {n['pass']} | {n['failure']} | {n['error']} "
+              f"| {n['skipped']} | {secs:.0f} |")
+    if failures:
+        print("\n### Failures\n")
+    for label, case, kind, el in failures:
+        name = f"{case.get('classname', '')}::{case.get('name')}"
+        print(f"- **{label}** `{name}` ({kind}): {el.get('message', '')[:200]}")
+        lines = (el.text or "").strip().splitlines()
+        if lines:
+            more = len(lines) - DETAIL_LINES
+            body = "\n".join(lines[-DETAIL_LINES:])
+            tail = f" (last {DETAIL_LINES} of {len(lines)} lines)" if more > 0 else ""
+            print(f"\n<details><summary>log{tail}</summary>\n\n```\n"
+                  + body.replace("```", "'''") + "\n```\n\n</details>\n")
+    return 0
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("record")
+    r.add_argument("file")
+    r.add_argument("suite")
+    r.add_argument("case")
+    r.add_argument("outcome", choices=OUTCOMES)
+    r.add_argument("--time", type=float, default=0.0)
+    r.add_argument("--log")
+    r.add_argument("--match")
+    s = sub.add_parser("summary")
+    s.add_argument("dirs", nargs="+")
+    a = p.parse_args()
+    return record(a) if a.cmd == "record" else summary(a)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,43 @@
+name: 'Collect results'
+description: >
+  Summarize the JUnit XML files in a job's results directory (see
+  .forgejo/scripts/results) into summary.md and the job summary, then pack
+  the whole directory - logs and all - into <name>.tar.xz and upload it as
+  artifact results-<name>. Run it last in a job, with if: always(), so
+  failed jobs report too. A workflow's report job merges these.
+
+inputs:
+  name:
+    description: 'Unique name for this job''s results, e.g. build-<machine>'
+    required: true
+  path:
+    description: 'Results directory, relative to the workspace'
+    required: false
+    default: 'results'
+
+runs:
+  using: composite
+  steps:
+    - name: summarize and archive results
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        RESULTS: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+        cd "$GITHUB_WORKSPACE"
+        mkdir -p "$RESULTS" "$RUNNER_TEMP/results-out"
+        {
+          echo "## ${NAME}"
+          echo
+          "$GITHUB_WORKSPACE"/.forgejo/scripts/results summary "$RESULTS"
+        } > "$RUNNER_TEMP/summary.md"
+        mv "$RUNNER_TEMP/summary.md" "$RESULTS/summary.md"
+        cat "$RESULTS/summary.md" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+        tar -cJf "$RUNNER_TEMP/results-out/${NAME}.tar.xz" -C "$RESULTS" .
+        ls -lh "$RUNNER_TEMP/results-out/${NAME}.tar.xz"
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: results-${{ inputs.name }}
+        path: ${{ runner.temp }}/results-out/${{ inputs.name }}.tar.xz
