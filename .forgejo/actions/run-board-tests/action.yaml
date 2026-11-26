@@ -1,8 +1,10 @@
 name: 'Run board tests'
 description: >
   For a given Yocto MACHINE, drive labgrid to run the corresponding pytest
-  suite against a physical board, then upload the HTML report. Intended to
-  be used inside a job with a lg-operator container.
+  suite against a physical board, writing the JUnit XML, HTML report, pytest
+  output and serial console logs to results/ in the workspace (for
+  collect-results), then upload them to the report server. Intended to be
+  used inside a job with a lg-operator container.
 
 inputs:
   machine:
@@ -206,11 +208,30 @@ runs:
         TESTS="--pyargs labgrid_boardkit.tests"
         [ -d "boards/$BOARD/pytest" ] && TESTS="$TESTS boards/$BOARD/pytest"
         [ "$IMAGE" = testv-profile-test ] && TESTS="$TESTS board-tests/test_riscv_profile.py"
+        mkdir -p results/console
+        # bash runs this with -e -o pipefail, so a failing pytest sets
+        # EXIT_CODE here instead of skipping the power off and release below.
         EXIT_CODE=0
-        BOARD="$BOARD" uv run pytest -vvv --html=report.html --self-contained-html --lg-env "boards/$BOARD/$CLIENT" $TESTS || EXIT_CODE=$?
+        BOARD="$BOARD" uv run pytest -vvv \
+          --junitxml=results/pytest.xml \
+          --html=results/report.html --self-contained-html \
+          --lg-log=results/console \
+          --lg-env "boards/$BOARD/$CLIENT" $TESTS 2>&1 | tee results/pytest.log || EXIT_CODE=$?
         uv run labgrid-client -p + -c "boards/$BOARD/$CLIENT" pw off
         uv run labgrid-client -p + release
         exit $EXIT_CODE
+
+    # Anything failing before pytest (reservation, image fetch) leaves no
+    # pytest.xml; record that so the summary doesn't show the machine as clean.
+    - name: record setup failure
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        RISCV_MACHINE: ${{ inputs.machine }}
+      run: |
+        [ -f results/pytest.xml ] && exit 0
+        .forgejo/scripts/results record results/setup.xml "test-${RISCV_MACHINE}" setup error
 
     - name: install report SSH key
       if: ${{ !cancelled() }}
@@ -232,5 +253,5 @@ runs:
         REPORT_DIR="${REPORTS_ROOT}/${RISCV_MACHINE}/$(date +%Y%m%d)/${{ forgejo.run_id }}"
         ssh -i ~/.ssh/id_rsa_report "reporter@${TFTP_SERVER}" "mkdir -p /testresults/$REPORT_DIR"
         rsync -av -e "ssh -i ~/.ssh/id_rsa_report" \
-          "${{ github.workspace }}/report.html" \
+          "${{ github.workspace }}/results/" \
           "reporter@${TFTP_SERVER}:/testresults/$REPORT_DIR/"
