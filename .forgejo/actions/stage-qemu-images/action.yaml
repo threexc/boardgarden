@@ -1,19 +1,22 @@
-name: 'Stage ptest images'
+name: 'Stage qemu images'
 description: >
-  Upload the images listed in boards/<machine>/board.yaml from a
-  build-ptest-image (https://forgejo.baylibre.com/tgamblin/build-ptest-image)
-  build, named as listed there, as the ptest_image_<package> artifact for
-  ptest-kvm-compare. Run after actions/checkout.
+  Upload the images listed in boards/<machine>/board.yaml from a Yocto build
+  (e.g. build-ptest-image or build-yocto-image), named as listed there, as an
+  artifact for booting under qemu elsewhere (e.g. ptest-kvm-compare). Run
+  after actions/checkout.
 
 inputs:
-  package:
-    description: 'Package the ptest image was built for'
+  image:
+    description: 'Image recipe whose rootfs is staged as board.yaml''s ext4 entry (e.g. core-image-ptest-xz)'
+    required: true
+  artifact:
+    description: 'Name of the uploaded artifact'
     required: true
   machine:
     description: 'qemu MACHINE, with a matching boards/<machine>/board.yaml'
     required: true
   images_path:
-    description: 'build-ptest-image images_path output'
+    description: 'images_path output of the build action'
     required: true
 
 runs:
@@ -23,19 +26,19 @@ runs:
       shell: bash
       env:
         BUILD_MACHINE: ${{ inputs.machine }}
-        PTEST_PACKAGE: ${{ inputs.package }}
+        ROOTFS_IMAGE: ${{ inputs.image }}
         IMAGES_PATH: ${{ inputs.images_path }}
       run: |
         set -euo pipefail
         DEPLOY="${IMAGES_PATH}/${BUILD_MACHINE}"
-        STAGE="$GITHUB_WORKSPACE/ptest-images"
+        STAGE="$GITHUB_WORKSPACE/qemu-images"
         mkdir -p "${STAGE}"
         # board.yaml's images: "<key>: <path>" lines, e.g. "kernel: /home/labgrid/Image"
         awk '/^images:/{f=1; next} /^[^[:space:]]/{f=0} f && NF==2 {print $1, $2}' \
           "$GITHUB_WORKSPACE/boards/${BUILD_MACHINE}/board.yaml" |
         while read -r key path; do
           if [ "${key}" = "ext4:" ]; then
-            src="${DEPLOY}/core-image-ptest-${PTEST_PACKAGE}-${BUILD_MACHINE}.rootfs.ext4"
+            src="${DEPLOY}/${ROOTFS_IMAGE}-${BUILD_MACHINE}.rootfs.ext4"
           else
             src="${DEPLOY}/$(basename "${path}")"
           fi
@@ -46,5 +49,5 @@ runs:
     - name: archive images
       uses: actions/upload-artifact@v3
       with:
-        name: ptest_image_${{ inputs.package }}
-        path: ${{ github.workspace }}/ptest-images
+        name: ${{ inputs.artifact }}
+        path: ${{ github.workspace }}/qemu-images

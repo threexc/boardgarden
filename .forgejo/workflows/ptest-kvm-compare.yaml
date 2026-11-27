@@ -147,9 +147,10 @@ jobs:
           config_json: ./.forgejo/bitbake-configs/poky-master-dl-sstate-passthrough.conf.json
           source_override: ${{ startsWith(inputs.bitbake_setup_override, 'meta-riscv-') && 'none' || inputs.bitbake_setup_override }}
           overrides_dir: .forgejo/bitbake-configs
-      - uses: ./.forgejo/actions/stage-ptest-images
+      - uses: ./.forgejo/actions/stage-qemu-images
         with:
-          package: ${{ matrix.package }}
+          image: core-image-ptest-${{ matrix.package }}
+          artifact: ptest_image_${{ matrix.package }}
           machine: qemuriscv64
           images_path: ${{ steps.build.outputs.images_path }}
 
