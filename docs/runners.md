@@ -4,8 +4,8 @@
 
 | Label | Used by | Requirements |
 |---|---|---|
-| `yocto-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`) | Cores, RAM, storage, Docker, `/buildcache` bind-mount |
-| `board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare` | Docker, network route to the exporter/TFTP server |
+| `yocto-build` | `yocto-build-and-test`, `weekly-build-only` (via `build-yocto-image` + `deploy-to-tftp`), `ffmpeg-bench` (builds) | Cores, RAM, storage, Docker, `/buildcache` bind-mount |
+| `board-test` | `yocto-build-and-test` (via `run-board-tests`), `ptest-kvm-compare`, `ffmpeg-bench` (KVM `bench` job) | Docker, network route to the exporter/TFTP server |
 | `light-maintenance` | `build-push-containers`, `lint`, `validate-manifests`, `renovate`, `yocto-build-and-test` (`report` job, via `report-results`) | Docker, outbound to Forgejo + ghcr.io, network route to the report server |
 
 ## Host containers
