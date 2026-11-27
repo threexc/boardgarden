@@ -25,6 +25,12 @@ inputs:
       here). testv: meta-testv's registry configuration with its testv distro
     required: false
     default: 'nodistro'
+  extra_local_conf:
+    description: >
+      Extra local.conf lines, one per line, appended after this action's own
+      (e.g. DEFAULTTUNE = "rva23u64")
+    required: false
+    default: ''
 
 outputs:
   config_json:
@@ -65,6 +71,7 @@ runs:
         RISCV_MACHINE: ${{ inputs.machine }}
         RISCV_IMAGE: ${{ inputs.image }}
         RISCV_INITRAMFS_IMAGE: ${{ inputs.initramfs_image }}
+        EXTRA_LOCAL_CONF: ${{ inputs.extra_local_conf }}
       run: |
         set -euo pipefail
         MACHINE_INFO="$GITHUB_WORKSPACE/.forgejo/scripts/machine-info"
@@ -157,6 +164,7 @@ runs:
           echo "fragments=core/yocto/root-login-with-empty-password"
           echo "local_conf<<EOF"
           printf '%s\n' "${LOCAL_CONF[@]}"
+          [ -z "${EXTRA_LOCAL_CONF}" ] || printf '%s\n' "${EXTRA_LOCAL_CONF}"
           echo "EOF"
           echo "uramdisk=${URAMDISK}"
           echo "board=${TFTP_SUBDIR}"
