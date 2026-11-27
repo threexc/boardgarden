@@ -1,0 +1,110 @@
+name: 'K3 KVM host'
+description: >
+  Reserve and lock the k3-pico-itx-8gb place, flash it over fastboot with a
+  testv-image-kvm-base build (as the nightly's K3PicoItxBootStrategy does),
+  boot it, and add an ~/.ssh/config Host entry named "kvm-host" for it, so
+  qemu guests can be run on it with boards/k3-pico-itx-8gb/qemu-guest.yaml.
+  Exports LG_TOKEN; the caller must power off and release the place in an
+  "if: always()" step of its own, since composite actions have no post steps:
+
+    uv run labgrid-client -p "+" -c boards/k3-pico-itx-8gb/client.yaml pw off || true
+    uv run labgrid-client -p "+" release || true
+    uv run labgrid-client cancel-reservation || true
+
+  Run in the lg-operator container, after actions/checkout.
+
+inputs:
+  host_images:
+    description: 'Directory holding the fastboot images, named as boards/k3-pico-itx-8gb/board.yaml flashes them'
+    required: true
+  lg_exporter_ssh_key:
+    description: 'SSH private key for the labgrid exporter'
+    required: true
+  ssh_known_hosts:
+    description: 'known_hosts content to append'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.forgejo/actions/setup-ssh
+      with:
+        ssh_private_key: ${{ inputs.lg_exporter_ssh_key }}
+        ssh_known_hosts: ${{ inputs.ssh_known_hosts }}
+
+    - name: accept new host keys
+      shell: bash
+      run: |
+        cat >> ~/.ssh/config <<EOF
+        Host *
+            StrictHostKeyChecking accept-new
+        EOF
+        chmod 600 ~/.ssh/config
+
+    - name: install uv
+      uses: astral-sh/setup-uv@v5
+      env:
+        # /opt/hostedtoolcache is a runner-mounted volume owned by root,
+        # not the image's chown'd copy - redirect to a path labgrid owns.
+        RUNNER_TOOL_CACHE: /home/labgrid/hostedtoolcache
+      with:
+        working-directory: ${{ github.workspace }}
+        enable-cache: true
+
+    - name: reserve board
+      shell: bash
+      run: |
+        set -euo pipefail
+        uv sync
+        # The place boards/k3-pico-itx-8gb/client.yaml uses.
+        eval "$(uv run labgrid-client reserve --shell name=tg-k3-pitx-8gb)"
+        echo "LG_TOKEN=${LG_TOKEN}" >> "$GITHUB_ENV"
+        uv run labgrid-client wait
+        uv run labgrid-client -p "+" lock
+
+    # Same fastboot flash as the nightly's tests (K3PicoItxBootStrategy),
+    # then the board's address from its serial console for ssh.
+    - name: flash and boot testv-image-kvm-base
+      shell: bash
+      env:
+        HOST_IMAGES: ${{ inputs.host_images }}
+      run: |
+        set -euo pipefail
+        IMAGE_DIR=/home/labgrid/k3-pico-itx-fastboot
+        mv "${HOST_IMAGES}" "${IMAGE_DIR}"
+        # Partition layouts aren't build output; they live in the board dir.
+        cp boards/k3-pico-itx-8gb/*.json "${IMAGE_DIR}/"
+        uv run python - <<'EOF'
+        import time
+        from labgrid import Environment
+
+        target = Environment("boards/k3-pico-itx-8gb/client.yaml").get_target()
+        target.get_driver("Strategy").transition("shell")
+        shell = target.get_driver("ShellDriver")
+        for _ in range(30):
+            out, _, _ = shell.run("ip -4 -o addr show scope global")
+            addrs = [l.split()[3].split("/")[0] for l in out if " inet " in l]
+            if addrs:
+                break
+            time.sleep(5)
+        else:
+            raise SystemExit("board got no IPv4 address")
+        with open("/tmp/board-ip", "w") as f:
+            f.write(addrs[0])
+        EOF
+        # The image allows root login with an empty password; its host key
+        # is new on every flash.
+        cat >> ~/.ssh/config <<EOF
+        Host kvm-host
+            HostName $(cat /tmp/board-ip)
+            User root
+            UserKnownHostsFile /dev/null
+            StrictHostKeyChecking no
+            LogLevel ERROR
+            ConnectTimeout 10
+        EOF
+        for _ in $(seq 30); do
+          ssh kvm-host true 2>/dev/null && break
+          sleep 10
+        done
+        ssh kvm-host 'uname -a; qemu-system-riscv64 --version; ls -l /dev/kvm || true; df -h /'

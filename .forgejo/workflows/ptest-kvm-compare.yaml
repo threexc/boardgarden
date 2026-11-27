@@ -167,26 +167,10 @@ jobs:
         LG_COORDINATOR: ${{ vars.LG_COORDINATOR_HOST }}
         LG_PROXY: ${{ vars.TFTP_SERVER_HOST }}
     env:
-      PLACE: tg-k3-pitx-8gb
       # On the rootfs (where the image's extra space is), not tmpfs /var/tmp.
       BOARD_DIR: /home/root/ptest-kvm-compare
     steps:
       - uses: actions/checkout@v4
-
-      - name: set up keys
-        env:
-          LG_EXPORTER_SSH_KEY: ${{ secrets.LG_EXPORTER_SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          umask 077
-          printf '%s\n' "$LG_EXPORTER_SSH_KEY" > ~/.ssh/id_rsa
-          printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
-          cat > ~/.ssh/config <<EOF
-          Host *
-              StrictHostKeyChecking accept-new
-          EOF
 
       # Without a name, each artifact lands in its own
       # images/<artifact>/ subdir.
@@ -194,68 +178,11 @@ jobs:
         with:
           path: /home/labgrid/images
 
-      - name: install uv
-        uses: astral-sh/setup-uv@v5
-        env:
-          # /opt/hostedtoolcache is a runner-mounted volume owned by root,
-          # not the image's chown'd copy - redirect to a path labgrid owns.
-          RUNNER_TOOL_CACHE: /home/labgrid/hostedtoolcache
+      - uses: ./.forgejo/actions/k3-kvm-host
         with:
-          working-directory: ${{ github.workspace }}
-          enable-cache: true
-
-      - name: reserve board
-        run: |
-          set -euo pipefail
-          uv sync
-          eval "$(uv run labgrid-client reserve --shell "name=${PLACE}")"
-          echo "LG_TOKEN=${LG_TOKEN}" >> "$GITHUB_ENV"
-          uv run labgrid-client wait
-          uv run labgrid-client -p "+" lock
-
-      # Same fastboot flash as the nightly's tests (K3PicoItxBootStrategy),
-      # then the board's address from its serial console for ssh.
-      - name: flash and boot testv-image-kvm-base
-        run: |
-          set -euo pipefail
-          IMAGE_DIR=/home/labgrid/k3-pico-itx-fastboot
-          mv /home/labgrid/images/kvm-host-image "${IMAGE_DIR}"
-          # Partition layouts aren't build output; they live in the board dir.
-          cp boards/k3-pico-itx-8gb/*.json "${IMAGE_DIR}/"
-          uv run python - <<'EOF'
-          import time
-          from labgrid import Environment
-
-          target = Environment("boards/k3-pico-itx-8gb/client.yaml").get_target()
-          target.get_driver("Strategy").transition("shell")
-          shell = target.get_driver("ShellDriver")
-          for _ in range(30):
-              out, _, _ = shell.run("ip -4 -o addr show scope global")
-              addrs = [l.split()[3].split("/")[0] for l in out if " inet " in l]
-              if addrs:
-                  break
-              time.sleep(5)
-          else:
-              raise SystemExit("board got no IPv4 address")
-          with open("/tmp/board-ip", "w") as f:
-              f.write(addrs[0])
-          EOF
-          # The image allows root login with an empty password; its host key
-          # is new on every flash.
-          cat >> ~/.ssh/config <<EOF
-          Host ptest-board
-              HostName $(cat /tmp/board-ip)
-              User root
-              UserKnownHostsFile /dev/null
-              StrictHostKeyChecking no
-              LogLevel ERROR
-              ConnectTimeout 10
-          EOF
-          for _ in $(seq 30); do
-            ssh ptest-board true 2>/dev/null && break
-            sleep 10
-          done
-          ssh ptest-board 'uname -a; qemu-system-riscv64 --version; ls -l /dev/kvm || true; df -h /'
+          host_images: /home/labgrid/images/kvm-host-image
+          lg_exporter_ssh_key: ${{ secrets.LG_EXPORTER_SSH_KEY }}
+          ssh_known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
       # Failed ptests show up in the summary; don't fail the job over them.
       - name: run ptests

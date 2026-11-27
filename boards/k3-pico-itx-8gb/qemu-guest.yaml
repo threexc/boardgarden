@@ -1,10 +1,10 @@
-# Labgrid env for booting a qemuriscv64 ptest image *on* this board, using
-# the qemu-system-riscv64 in its flashed testv-image-kvm-base (meta-testv),
-# over SSH. Used by the ptest-kvm-compare workflow; the board itself must
-# already be up (no power/U-Boot handling here).
+# Labgrid env for booting a qemuriscv64 image *on* this board, using the
+# qemu-system-riscv64 in its flashed testv-image-kvm-base (meta-testv), over
+# SSH. Used by the ptest-kvm-compare workflow; the board itself must already
+# be up (no power/U-Boot handling here), e.g. via .forgejo/actions/k3-kvm-host.
 #
 # Expects in the environment:
-#   - an ~/.ssh/config Host entry named "ptest-board" for the board
+#   - an ~/.ssh/config Host entry named "kvm-host" for the board
 #   - LG_QEMU_DIR:   board-side dir holding Image, fw_jump.elf, ptest_image.ext4
 #   - LG_QEMU_ACCEL: accelerator/CPU/firmware args, e.g.
 #                    "-accel kvm,kernel-irqchip=split -cpu host" or
@@ -25,7 +25,7 @@ targets:
     drivers:
       ExternalConsoleDriver:
         cmd: !template >-
-          ssh -tt -o BatchMode=yes -o ServerAliveInterval=30 ptest-board
+          ssh -tt -o BatchMode=yes -o ServerAliveInterval=30 kvm-host
           cd $LG_QEMU_DIR && stty -onlcr && exec qemu-system-riscv64
           -machine virt,aia=aplic $LG_QEMU_ACCEL
           -smp $LG_QEMU_SMP -m $LG_QEMU_MEMORY
